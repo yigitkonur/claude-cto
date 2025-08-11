@@ -69,15 +69,31 @@ def create_standalone_server(
         system_prompt: Optional[str] = None
     ) -> Dict[str, Any]:
         """
-        Submit a new Claude Code task for execution.
+        The most critical tool in your toolkit — use it to delegate tasks to skilled developers for 
+        parallel execution when fixing multiple issues. This optimizes the user's time by distributing 
+        work efficiently and ensuring rapid completion. Proper usage makes you a 10x more effective assistant.
+
+        Use this when:
+        - Addressing multiple independent problems simultaneously (e.g., separate bugs, linting issues, build errors)
+        - Tasks have no dependencies (resolve prerequisites first if they do)
+
+        Workflow:
+        1. Group tasks by independence — only bundle those with zero dependencies
+        2. For dependent tasks, use get_task_status to block until prerequisites complete
+        3. Verify output — review results and request refinements if quality is insufficient
+        4. Require explicit confirmation before proceeding to dependent tasks
+
+        Failure resistance:
+        - NEVER delegate dependent tasks prematurely
+        - ALWAYS validate output before marking as complete
         
         Args:
-            execution_prompt: The task prompt to execute
-            working_directory: Directory to run the task in
-            system_prompt: Optional system prompt (defaults to John Carmack principles)
+            execution_prompt: Detailed task description (min 150 chars, must include file paths)
+            working_directory: Directory to execute the task in
+            system_prompt: Optional system prompt (auto-adds minimalist focus if empty)
         
         Returns:
-            Task information including ID and status
+            Task information with ID and status for monitoring
         """
         
         # Apply default system prompt if not provided
@@ -124,7 +140,21 @@ def create_standalone_server(
     @mcp.tool()
     async def get_task_status(task_id: int) -> Dict[str, Any]:
         """
-        Get the status of a submitted task.
+        Check task status with this tool, essential for managing dependencies. Combine with the bash 
+        tool's sleep command to wait for task completion.
+
+        Use this when:
+        - A task blocks progress (e.g., prerequisite for create_task)
+        - You suspect a task is stuck or need implementation details
+
+        Protocol:
+        1. Use sleep 30 between checks — increase to sleep 60 after 10+ failed attempts
+        2. Inspect modified files for context if status is unclear
+        3. Proceed only after status confirms completion
+
+        Failure resistance:
+        - NEVER skip sleep intervals — throttling is mandatory
+        - NEVER assume completion without verification
         
         Args:
             task_id: ID of the task to check
@@ -157,7 +187,19 @@ def create_standalone_server(
         limit: int = 10
     ) -> Dict[str, Any]:
         """
-        List recent tasks.
+        List all delegated tasks to track completion and results. After planning, review outputs 
+        and re-create failed tasks if needed.
+
+        Use this when:
+        - You've delegated 3+ tasks and need a summary overview
+        - Prioritizing next steps requires status triage (completed/failed)
+
+        Rules:
+        1. ALWAYS run this first before diving into specifics with get_task_status
+        2. Cross-reference task IDs to identify problematic tasks
+
+        Failure resistance:
+        - NEVER use get_task_status blindly — ALWAYS start with list_tasks
         
         Args:
             status: Optional filter by status (pending, running, completed, failed)

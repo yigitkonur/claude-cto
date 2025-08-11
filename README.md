@@ -165,15 +165,27 @@ claude mcp list  # Should show claude-worker ✓ Connected
 
 **Smart Error-Driven Optimization** 🎯
 
-Claude Worker uses strategic validation errors to train AI agents to write better prompts:
+Claude Worker uses a **dual optimization system** to train AI agents:
 
-| Validation Rule | Purpose | Example Fix |
-|-----------------|---------|-------------|
-| 150+ characters | Forces detailed context | "Fix bug" → "Fix JWT expiration bug in ./src/auth/login.js by updating token validation logic" |
-| Path requirement | Ensures concrete actions | "Add tests" → "Add unit tests in ./tests/auth.test.js for login functionality" |
-| "Minimalist" keyword* | Enforces surgical precision | Auto-adds focus on simple, direct solutions |
+| Optimization Layer | Mechanism | Example | Result |
+|-------------------|-----------|---------|---------|
+| **Validation Errors** | Strategic failures with helpful hints | "Prompt too short" → Add file paths + details | Forces detailed, actionable prompts |
+| **Tool Descriptions** | LLM behavior programming | "NEVER delegate dependent tasks" | Builds project management workflows |
+| **Dependency Logic** | Threshold-based triggers | "3+ tasks = use dashboard first" | Creates systematic thinking patterns |
+| **Throttling Protocol** | Progressive backoff rules | "Sleep 30s → 60s after 10 attempts" | Prevents system abuse, builds patience |
 
 *_The "John Carmack" requirement is just a [clever metaphor](https://x.com/mattshumer_/status/1921276852200477114) that works because LLMs associate it with minimal, elegant code. It's hardcoded prompt engineering, not philosophy worship!_ 😄
+
+**LLM-Optimized Tool Descriptions** 🧠
+
+Each tool description is carefully crafted to train Claude Code in project management workflows:
+
+| Tool | LLM Training Focus | Behavioral Impact |
+|------|-------------------|-------------------|
+| `create_task` | **"Most critical tool"** + dependency logic | Prioritizes parallel execution, prevents premature delegation |
+| `get_task_status` | **Throttling protocol** (30s → 60s) | Enforces systematic waiting, prevents system overload |
+| `list_tasks` | **"3+ tasks = dashboard"** threshold | Creates overview-first mindset, prevents tunnel vision |
+| `check_api_health` | System reliability checks | Builds diagnostic habits into workflows |
 
 **Available Tools:**
 - `create_task(prompt, dir, system_prompt)` - Delegate tasks with smart validation

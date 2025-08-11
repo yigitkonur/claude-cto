@@ -39,18 +39,55 @@ claude mcp list
 claude mcp get claude-worker
 ```
 
+## LLM Behavior Engineering Through Tool Descriptions
+
+Claude Worker uses a sophisticated **LLM training approach** where tool descriptions are specifically crafted to modify Claude Code's behavior patterns. This isn't just documentation—it's **behavioral programming**.
+
+### The Psychology Behind Tool Descriptions
+
+| Design Element | Purpose | Example | Effect on Claude Code |
+|----------------|---------|---------|----------------------|
+| **Superlative Language** | Establish priority hierarchy | "Most critical tool" | Prioritizes usage over other tools |
+| **Quantified Benefits** | Motivate adoption | "10x more effective" | Creates urgency to use the tool |
+| **NEVER/ALWAYS Commands** | Enforce critical behaviors | "NEVER delegate dependent tasks" | Hard stops on dangerous patterns |
+| **Threshold Numbers** | Trigger specific behaviors | "3+ tasks = dashboard needed" | Creates clear decision points |
+| **Protocol Steps** | Structure workflows | "Sleep 30s → 60s progression" | Enforces systematic approaches |
+| **Failure Resistance** | Prevent common mistakes | "ALWAYS validate output" | Builds reliability patterns |
+
+### Dependency Management Training
+
+The tool descriptions work together to teach **sophisticated project management**:
+
+1. **Independence Assessment** - `create_task` trains grouping by dependencies
+2. **Blocking Protocols** - `get_task_status` enforces waiting for prerequisites  
+3. **Systematic Overview** - `list_tasks` prevents tunnel vision on individual tasks
+4. **Verification Workflows** - All tools emphasize output validation
+
+### Why This Works
+
+**Traditional approach**: Tools describe *what* they do
+**Claude Worker approach**: Tools describe *when, why, and how* to use them
+
+This creates **emergent workflow intelligence** where Claude Code develops sophisticated project management behaviors simply by reading tool descriptions.
+
 ## Available MCP Tools
 
-### `create_task` - Task Delegation
+> **🧠 Each tool description below contains embedded LLM training that guides Claude Code's behavior patterns in dependency management, throttling, and verification workflows.**
 
-Submit fire-and-forget tasks to the worker pool.
+### `create_task` - The Critical Delegation Tool
+
+**LLM Instructions Built-In:**
+- **"The most critical tool in your toolkit"** - Establishes priority and importance
+- **"10x more effective assistant"** - Quantifies the productivity benefit for motivation  
+- **Dependency logic**: NEVER delegate dependent tasks prematurely
+- **Verification mandate**: ALWAYS validate output before marking complete
 
 **Parameters:**
 - `execution_prompt` (string, required): Task description (min 150 characters)
 - `working_directory` (string, optional): Execution context (default: ".")
 - `system_prompt` (string, optional): Custom system prompt (must contain minimalist keyword)
 
-**Smart Validation:**
+**Smart Validation (Error-Driven Learning):**
 ```python
 # Enforces detailed prompts
 if len(execution_prompt) < 150:
@@ -61,12 +98,28 @@ if '/' not in execution_prompt and '\\' not in execution_prompt:
     return {"error": "Execution prompt must contain a path-like string"}
 ```
 
-### `get_task_status` - Progress Monitor
+**Workflow Training**: The tool description teaches Claude Code to:
+1. **Group by independence** - Only bundle zero-dependency tasks
+2. **Block on prerequisites** - Use `get_task_status` for dependent tasks  
+3. **Require verification** - Review outputs before proceeding
+4. **Demand confirmation** - Explicit approval before next steps
 
-Check real-time task status and progress.
+### `get_task_status` - Dependency Management Engine
+
+**LLM Instructions Built-In:**
+- **"Essential for managing dependencies"** - Clarifies its critical workflow role
+- **Throttling protocol**: Sleep 30s between checks, escalate to 60s after 10+ attempts  
+- **Context inspection**: Check modified files when status is unclear
+- **Blocking behavior**: NEVER assume completion without verification
 
 **Parameters:**
 - `task_id` (number, required): Task identifier
+
+**Behavioral Training**: The tool description enforces:
+- **Mandatory throttling** - Prevents overwhelming the system
+- **Progressive backoff** - Adaptive waiting periods  
+- **File system awareness** - Inspect outputs for context
+- **Verification protocols** - Never skip confirmation steps
 
 **Returns:**
 ```json
@@ -80,13 +133,23 @@ Check real-time task status and progress.
 }
 ```
 
-### `list_tasks` - Team Dashboard
+### `list_tasks` - Strategic Overview Dashboard
 
-View recent task history and status overview.
+**LLM Instructions Built-In:**
+- **"3+ tasks"** threshold trigger - Teaches when to use overview vs. specifics
+- **"Status triage"** language - Frames it as decision-making tool
+- **Ordering mandate**: ALWAYS run this before `get_task_status` 
+- **Problem identification**: Cross-reference task IDs for debugging
 
 **Parameters:**
 - `limit` (number, optional): Maximum results (default: 10)
 - `status` (string, optional): Filter by status (standalone mode only)
+
+**Strategic Training**: The tool description creates:
+- **Systematic workflows** - Overview first, then drill-down
+- **Threshold awareness** - 3+ tasks = dashboard needed
+- **Triage mindset** - Completed vs. failed prioritization
+- **Anti-pattern prevention** - NEVER use get_task_status blindly
 
 ### `check_api_health` - System Health
 
