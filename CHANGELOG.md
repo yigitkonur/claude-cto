@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.0] - 2025-08-11
+
+- feat: enhance MCP integration with error-driven prompt optimization
+- chore: bump version to 0.1.6 [skip ci]
+- docs: improve package docstring
+- feat: add automatic PyPI publishing on main branch pushes
+- README fix
+
+
 ## [0.1.6] - 2025-08-11
 
 - docs: improve package docstring
