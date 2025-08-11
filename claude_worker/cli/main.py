@@ -297,17 +297,18 @@ def run(
     
 View detailed information about a specific task.
 
-[bold]Example:[/bold]
+[bold]Examples:[/bold]
   $ claude-worker status 1
+  $ claude-worker status     [dim]# Shows available task IDs[/dim]
   
 Shows the task's current status, progress, and any errors.
 """
 )
 def status(
-    task_id: Annotated[int, typer.Argument(
-        help="The ID of the task to check",
+    task_id: Annotated[Optional[int], typer.Argument(
+        help="The ID of the task to check (optional - shows available IDs if not provided)",
         metavar="TASK_ID"
-    )]
+    )] = None
 ):
     """Get the status of a specific task."""
     server_url = get_server_url()
@@ -328,6 +329,64 @@ def status(
         # Update server_url if it changed
         server_url = get_server_url()
     
+    # If no task_id provided, show available tasks
+    if task_id is None:
+        with httpx.Client() as client:
+            try:
+                response = client.get(
+                    f"{server_url}/api/v1/tasks",
+                    timeout=10.0
+                )
+                response.raise_for_status()
+                tasks = response.json()
+                
+                if not tasks:
+                    console.print("\n[yellow]📭 No tasks found yet![/yellow]\n")
+                    console.print("[bold]Create your first task with:[/bold]")
+                    console.print('  $ claude-worker run "your task description"\n')
+                    return
+                
+                console.print("\n[bold blue]📋 Available Tasks:[/bold blue]\n")
+                
+                # Create a simple table of tasks
+                table = Table()
+                table.add_column("ID", style="bold cyan")
+                table.add_column("Status", style="yellow")
+                table.add_column("Created", style="green")
+                table.add_column("Description", style="white")
+                
+                for task in tasks[-10:]:  # Show last 10 tasks
+                    description = task.get('last_action_cache', 'No description')
+                    if description:
+                        description = description[:60] + "..." if len(description) > 60 else description
+                    else:
+                        description = "-"
+                    
+                    table.add_row(
+                        str(task['id']),
+                        task['status'],
+                        task['created_at'][:19],
+                        description
+                    )
+                
+                console.print(table)
+                
+                # Show helpful guidance
+                console.print(f"\n[bold]💡 To check a specific task:[/bold]")
+                console.print(f"  $ claude-worker status [cyan]<TASK_ID>[/cyan]")
+                console.print(f"\n[dim]Example:[/dim]")
+                if tasks:
+                    latest_id = tasks[-1]['id']
+                    console.print(f"  $ claude-worker status [cyan]{latest_id}[/cyan]")
+                console.print()
+                
+                return
+                
+            except httpx.HTTPError as e:
+                console.print(f"[red]Error fetching tasks: {e}[/red]")
+                raise typer.Exit(1)
+    
+    # Show specific task status
     with httpx.Client() as client:
         try:
             response = client.get(
@@ -363,7 +422,13 @@ def status(
             console.print(table)
             
         except httpx.HTTPError as e:
-            console.print(f"[red]Error fetching task status: {e}[/red]")
+            if "404" in str(e):
+                console.print(f"\n[red]❌ Task ID {task_id} not found.[/red]")
+                console.print("\n[bold]💡 Check available task IDs with:[/bold]")
+                console.print("  $ claude-worker status")
+                console.print("  $ claude-worker list\n")
+            else:
+                console.print(f"[red]Error fetching task status: {e}[/red]")
             raise typer.Exit(1)
 
 

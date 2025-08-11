@@ -21,7 +21,7 @@ def create_task(
 
 This presents two primary security risks:
 
-1.  **Unauthorized Task Execution:** Anyone on the network can submit tasks, potentially consuming your Anthropic API quota and server resources.
+1.  **Unauthorized Task Execution:** Anyone on the network can submit tasks, potentially consuming your Anthropic API quota/Claude subscription usage and server resources.
 2.  **File System Access:** Because the Claude Code SDK can read and write files, a malicious actor could submit a task that reads sensitive files (`cat /etc/passwd`) or writes harmful scripts to your server's file system. The task runs with the same user permissions as the Claude Worker server process.
 
 ## Mitigation Strategies
@@ -87,3 +87,59 @@ This configuration adds a username/password prompt to all API requests.
 With this setup, any API call (e.g., from `curl` or the CLI) would require authentication, effectively securing your instance.
 
 > **Note:** Implementing proper authentication and authorization natively within the application is a high-priority item on our [Roadmap](./ROADMAP.md).
+
+## Authentication Troubleshooting
+
+### API Key Authentication Issues
+
+**Problem:** Tasks fail with authentication errors when using `ANTHROPIC_API_KEY`
+
+**Solutions:**
+```bash
+# Check if API key is set correctly
+echo $ANTHROPIC_API_KEY  # Should show your key
+
+# Test API key manually
+curl -H "Authorization: Bearer $ANTHROPIC_API_KEY" \
+     -H "Content-Type: application/json" \
+     https://api.anthropic.com/v1/messages \
+     -d '{"model": "claude-3-sonnet-20240229", "max_tokens": 1, "messages": [{"role": "user", "content": "hi"}]}'
+```
+
+### Claude CLI OAuth Issues
+
+**Problem:** Tasks fail when relying on Claude CLI authentication
+
+**Solutions:**
+```bash
+# Check if Claude CLI is installed and accessible
+claude --version
+
+# Test Claude CLI authentication  
+claude --print "hello" --output-format stream-json
+
+# Re-authenticate if needed
+claude setup-token
+
+# Check Claude CLI installation path
+which claude
+```
+
+### Mixed Authentication Scenarios
+
+**Problem:** Unclear which authentication method is being used
+
+**Solutions:**
+```bash
+# Force API key usage (set environment variable)
+export ANTHROPIC_API_KEY="your-key"
+claude-worker run "test task"
+
+# Force OAuth usage (unset API key)
+unset ANTHROPIC_API_KEY  
+claude-worker run "test task"
+
+# Check authentication priority in logs
+tail -f ~/.claude-worker/logs/*.log
+```
+

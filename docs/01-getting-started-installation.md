@@ -30,15 +30,30 @@ curl -sSL https://install.python-poetry.org | python3 -
 pip install poetry
 ```
 
-### 3. Anthropic API Key
+### 3. Authentication Setup
 
-**Required for task execution.** Set your API key as an environment variable:
+**Choose one authentication method** - Claude Worker supports both automatically:
 
+#### Option A: API Key Authentication 🔑
 ```bash
 export ANTHROPIC_API_KEY="your-api-key-here"
 ```
-
 Get your API key from the [Anthropic Console](https://console.anthropic.com/).
+
+**Best for:** Teams, CI/CD, granular billing control
+
+#### Option B: Claude Max/Pro Subscription (OAuth) 🎯
+```bash
+# Install Claude CLI if not already installed
+npm install -g @anthropic-ai/claude-code
+
+# Authenticate (one-time setup)
+claude setup-token
+```
+
+**Best for:** Individual users with Claude subscription. No API key needed!
+
+> 💡 **Smart Authentication:** Claude Worker automatically tries API key first, then falls back to your Claude subscription. You can use either method without changing any configuration!
 
 ### 4. Node.js and npm
 
@@ -117,8 +132,9 @@ After installation, verify that everything is working:
 # Check Claude Worker CLI
 claude-worker --version
 
-# Verify API key is set (should show your key)
-echo $ANTHROPIC_API_KEY
+# Check authentication setup
+echo $ANTHROPIC_API_KEY    # Should show API key (if using Option A)
+claude --version           # Should show Claude CLI (if using Option B)
 
 # Check Node.js availability 
 node --version
@@ -127,7 +143,8 @@ node --version
 **Expected Output:**
 ```
 claude-worker 0.1.0
-sk-ant-...  (your API key)
+sk-ant-...  (your API key, if using Option A)
+1.0.72 (Claude Code)    (if using Option B)
 v18.17.0    (or similar Node version)
 ```
 
@@ -137,5 +154,6 @@ v18.17.0    (or similar Node version)
 
 **Having Issues?** Common solutions:
 - **Command not found**: Make sure you're in the Poetry shell (`poetry shell`)
-- **API key missing**: Set `ANTHROPIC_API_KEY` environment variable
+- **Authentication failed**: Choose Option A (API key) or Option B (Claude CLI)
+- **Claude CLI not found**: Install with `npm install -g @anthropic-ai/claude-code`
 - **Node.js issues**: Ensure Node.js 16+ is installed and in PATH

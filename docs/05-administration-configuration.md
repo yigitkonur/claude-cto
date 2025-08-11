@@ -32,7 +32,27 @@ Server-side settings control the behavior of the worker processes, database loca
 
 ### Environment Variables
 
-*   `ANTHROPIC_API_KEY`: **(Required)** Your API key for the Anthropic API, used by the Claude Code SDK.
+#### Authentication Variables
+
+Claude Worker supports **two authentication methods** automatically:
+
+*   `ANTHROPIC_API_KEY`: **(Optional)** Your API key for the Anthropic API. If set, Claude Worker will use API key authentication first.
+    ```bash
+    export ANTHROPIC_API_KEY="sk-ant-api-key-here"
+    ```
+
+*   **Claude CLI OAuth**: **(Alternative)** If `ANTHROPIC_API_KEY` is not set or fails, Claude Worker automatically falls back to using your authenticated Claude CLI (Claude Max/Pro subscription). 
+    
+    **Setup Claude CLI OAuth:**
+    ```bash
+    npm install -g @anthropic-ai/claude-code
+    claude setup-token  # One-time authentication
+    ```
+
+> 💡 **Smart Authentication Priority**: Claude Worker automatically tries API key first, then falls back to Claude CLI OAuth. No configuration needed!
+
+#### Application Settings
+
 *   `CLAUDE_WORKER_DB`: The path to the SQLite database file. (Default: `~/.claude-worker/tasks.db`)
 *   `CLAUDE_WORKER_LOG_DIR`: The directory where task logs will be stored. (Default: `~/.claude-worker/logs`)
 
