@@ -11,13 +11,14 @@
 
 ## 🎯 Why Claude Worker?
 
-**The Problem:** Claude Code SDK tasks can take minutes or hours to complete. Running them blocks your terminal and loses progress if interrupted. Sometimes parallel task execution is possible and this enable you to run multiple tasks in parallel. You can use Claude Code as CTO and run different execution by using MCP server mode!
+**The Problem:** Claude Code tasks may take a few minutes to finish. Running them interactively in your terminal can be time-consuming. When possible, you can run tasks in parallel to save time. By using Claude Code as a CTO and running it in MCP server mode, you can execute multiple tasks simultaneously.
 
 **The Solution:** Claude Worker provides a robust task execution system that:
-- ✅ **Runs anywhere** - From lightweight MCP tools to full enterprise deployments
-- ✅ **Never loses work** - SQLite persistence survives crashes
+
+- ✅ **Runs anywhere** - From lightweight CLI tools to MCP that can be used by another Claude Code
+- ✅ **Never loses work** - SQLite persistence survives crashes (local, accessible DB)
 - ✅ **Scales flexibly** - Process isolation with configurable workers
-- ✅ **Integrates everywhere** - MCP, REST API, CLI, or programmatic
+- ✅ **Integrates everywhere** - MCP, CLI, REST API (not documented) or programmatic
 
 ## 🏗️ Architecture: Two Modes, One Codebase
 
@@ -49,27 +50,13 @@ graph TB
 
 <table>
 <tr>
-<td width="33%">
+<td width="50%">
 
-### 🪶 Lightweight (MCP Only)
-**For:** Claude Desktop users, simple automation
-
-```bash
-pip install "claude-worker[mcp]"
-fastmcp install claude-desktop \
-  claude-worker-mcp
-```
-
-[→ Installation Guide](docs/01-getting-started-installation.md)
-
-</td>
-<td width="33%">
-
-### 🏢 Full Stack
-**For:** Teams, production, complex workflows
+### 🏢 Full Mode (CLI + MCP)
+**For:** Set tasks from both CLI or MCP, flexible to add tasks by MD/TXT files or just plain text commands!
 
 ```bash
-pip install "claude-worker[full]"
+pip install "claude-worker[server]" 
 claude-worker server start
 claude-worker run "Your task"
 ```
@@ -77,18 +64,18 @@ claude-worker run "Your task"
 [→ Quick Start Guide](docs/01-getting-started-quick-start.md)
 
 </td>
-<td width="33%">
+<td width="50%">
 
-### 🔧 Development
-**For:** Contributors, customization
+### 🪶 Agent Access Mode (MCP Only)
+**For:** Use 'Claude Code' as planner (CTO) and use 'Claude Code Worker' to execute tasks (dev) in parallel
 
 ```bash
-git clone <repo>
-poetry install
-poetry run claude-worker
+pip install "claude-worker[mcp]" <- (if you want both, use claude-worker[full])
+fastmcp install claude-desktop \
+  claude-worker-mcp
 ```
 
-[→ Development Setup](docs/06-contributing-development-setup.md)
+[→ Installation Guide](docs/01-getting-started-installation.md)
 
 </td>
 </tr>
@@ -361,45 +348,3 @@ WantedBy=multi-user.target
 - **🔧 Extensible**: Clear interfaces for adding new features
 
 > 📖 **Learn more about the design:** See [Project Philosophy](docs/03-concepts-project-philosophy.md) and [Architecture Overview](docs/03-concepts-architecture.md)
-
-## 🤝 Contributing
-
-We welcome contributions! Here's how to get started:
-
-```bash
-# 1. Fork and clone
-git clone https://github.com/your-username/claude-worker
-cd claude-worker
-
-# 2. Set up development environment
-poetry install
-poetry run pre-commit install
-
-# 3. Make your changes and test
-poetry run pytest
-poetry run black .
-poetry run mypy .
-
-# 4. Submit a pull request
-```
-
-> 📖 **Detailed contribution guidelines:** See [Contributing Guide](docs/06-contributing-guide.md) and [Development Setup](docs/06-contributing-development-setup.md)
-
-## 📄 License
-
-MIT License - see [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-Built with love using:
-- **[Claude Code SDK](https://github.com/anthropics/claude-code-sdk)** - The AI execution engine
-- **[FastAPI](https://fastapi.tiangolo.com/)** - Modern, fast web framework
-- **[FastMCP](https://github.com/jlowin/fastmcp)** - MCP server framework  
-- **[Typer](https://typer.tiangolo.com/)** - Beautiful CLI interfaces
-- **[SQLModel](https://sqlmodel.tiangolo.com/)** - Modern Python ORM
-
-Special thanks to the **Anthropic team** and the **MCP community** 💜
-
----
-
-**⭐ Star this repo if Claude Worker helps you build amazing things!**
