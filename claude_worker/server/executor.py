@@ -53,7 +53,8 @@ class TaskExecutor:
         # Configure SDK options
         options = ClaudeCodeOptions(
             cwd=working_directory,
-            system_prompt=system_prompt
+            system_prompt=system_prompt,
+            permission_mode='bypassPermissions'  # Required for automated execution
         )
         
         # Execute task using SDK

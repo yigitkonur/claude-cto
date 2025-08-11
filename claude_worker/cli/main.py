@@ -165,6 +165,12 @@ def status(
 
 
 @app.command()
+def help(ctx: typer.Context):
+    """Show help information."""
+    console.print(ctx.parent.get_help())
+
+
+@app.command()
 def list():
     """List all tasks."""
     server_url = get_server_url()
