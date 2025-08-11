@@ -170,6 +170,7 @@ mcp_test_result.py
 mcp_server_*.py
 claude_worker_mcp.py
 files-to-read/
+scripts/
 
 # Ignore all markdown, text, and log files
 *.md
