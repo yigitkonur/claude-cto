@@ -4,6 +4,7 @@ handles user input, and makes HTTP requests to the server's REST API.
 """
 
 import sys
+import os
 import asyncio
 import subprocess
 import json
@@ -51,6 +52,81 @@ def main(ctx: typer.Context):
         raise typer.Exit()
 
 
+def is_server_running(server_url: str) -> bool:
+    """Check if the server is running by making a health check request."""
+    try:
+        with httpx.Client() as client:
+            response = client.get(f"{server_url}/health", timeout=1.0)
+            return response.status_code == 200
+    except (httpx.ConnectError, httpx.TimeoutException):
+        return False
+
+
+def start_server_in_background() -> bool:
+    """
+    Start the server in the background automatically.
+    Returns True if successfully started, False otherwise.
+    """
+    import socket
+    import time
+    
+    console.print("[yellow]⚠️  Server not running. Starting Claude Worker server...[/yellow]")
+    
+    # Find available port
+    def is_port_available(host: str, port: int) -> bool:
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind((host, port))
+                return True
+        except OSError:
+            return False
+    
+    host = "0.0.0.0"
+    port = 8000
+    
+    # Find available port
+    for attempt in range(10):
+        if is_port_available(host, port):
+            break
+        port += 1
+    else:
+        return False
+    
+    # Start server
+    cmd = [
+        sys.executable, "-m", "uvicorn",
+        "claude_worker.server.main:app",
+        "--host", host,
+        "--port", str(port)
+    ]
+    
+    try:
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True
+        )
+        
+        # Wait for server to start
+        time.sleep(2)
+        
+        # Check if process is still running
+        if process.poll() is None:
+            console.print(f"[green]✓ Server started on port {port} (PID: {process.pid})[/green]")
+            
+            # Update environment variable for this session if using non-default port
+            if port != 8000:
+                os.environ["CLAUDE_WORKER_SERVER_URL"] = f"http://localhost:{port}"
+            
+            return True
+        else:
+            return False
+            
+    except Exception:
+        return False
+
+
 @app.command()
 def run(
     prompt: Annotated[Optional[str], typer.Argument()] = None,
@@ -93,8 +169,20 @@ def run(
     if system_prompt:
         task_data["system_prompt"] = system_prompt
     
-    # Submit task to server
+    # Get server URL and check if server is running
     server_url = get_server_url()
+    
+    # Auto-start server if not running
+    if not is_server_running(server_url):
+        if not start_server_in_background():
+            console.print("[red]❌ Failed to start server automatically.[/red]")
+            console.print("[dim]Please start the server manually with: claude-worker server start[/dim]")
+            raise typer.Exit(1)
+        
+        # Update server_url if it changed
+        server_url = get_server_url()
+    
+    # Submit task to server
     with httpx.Client() as client:
         try:
             response = client.post(
@@ -124,6 +212,16 @@ def status(
 ):
     """Get the status of a specific task."""
     server_url = get_server_url()
+    
+    # Auto-start server if not running
+    if not is_server_running(server_url):
+        if not start_server_in_background():
+            console.print("[red]❌ Failed to start server automatically.[/red]")
+            console.print("[dim]Please start the server manually with: claude-worker server start[/dim]")
+            raise typer.Exit(1)
+        
+        # Update server_url if it changed
+        server_url = get_server_url()
     
     with httpx.Client() as client:
         try:
@@ -174,6 +272,16 @@ def help(ctx: typer.Context):
 def list():
     """List all tasks."""
     server_url = get_server_url()
+    
+    # Auto-start server if not running
+    if not is_server_running(server_url):
+        if not start_server_in_background():
+            console.print("[red]❌ Failed to start server automatically.[/red]")
+            console.print("[dim]Please start the server manually with: claude-worker server start[/dim]")
+            raise typer.Exit(1)
+        
+        # Update server_url if it changed
+        server_url = get_server_url()
     
     with httpx.Client() as client:
         try:
