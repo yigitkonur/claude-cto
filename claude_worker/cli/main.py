@@ -190,11 +190,12 @@ def list():
             table.add_column("Last Action", style="white")
             
             for task in tasks:
+                last_action = task.get('last_action_cache', '-')
                 table.add_row(
                     str(task['id']),
                     task['status'],
                     task['created_at'][:19],  # Truncate to remove microseconds
-                    task.get('last_action_cache', '-')[:50]  # Truncate long actions
+                    last_action[:50] if last_action else '-'  # Truncate long actions
                 )
             
             console.print(table)

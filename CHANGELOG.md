@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.3] - 2025-01-11
+
+### Added
+- Automatic port detection with `--auto-port` flag (enabled by default)
+- Improved CLI help display - shows help message when no command is provided
+- Better error messages when port conflicts occur
+
+### Fixed
+- Fixed module import path from `src.server.main` to `claude_worker.server.main`
+- CLI now properly handles port conflicts by trying alternative ports (8001-8009)
+
+### Improved
+- User-friendly CLI behavior for novice users
+- Clear guidance when server runs on non-default port
+- Environment variable hints for connecting to non-default ports
+
 ## [0.1.2] - 2025-01-11
 
 ### Added
