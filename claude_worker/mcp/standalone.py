@@ -62,7 +62,7 @@ def create_standalone_server(
         ]
     )
     
-    @mcp.tool
+    @mcp.tool()
     async def create_task(
         execution_prompt: str,
         working_directory: str = ".",
@@ -121,7 +121,7 @@ def create_standalone_server(
             "created_at": datetime.utcnow().isoformat()
         }
     
-    @mcp.tool
+    @mcp.tool()
     async def get_task_status(task_id: int) -> Dict[str, Any]:
         """
         Get the status of a submitted task.
@@ -151,7 +151,7 @@ def create_standalone_server(
                 "log_file": task.log_file_path
             }
     
-    @mcp.tool
+    @mcp.tool()
     async def list_tasks(
         status: Optional[str] = None,
         limit: int = 10
@@ -196,7 +196,7 @@ def create_standalone_server(
                 "count": len(tasks)
             }
     
-    @mcp.tool
+    @mcp.tool()
     async def get_task_logs(task_id: int) -> Dict[str, Any]:
         """
         Get the logs for a specific task.

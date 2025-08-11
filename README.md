@@ -106,6 +106,7 @@ Comprehensive documentation is available in the `docs/` directory:
 ### 🔌 Integrations
 - **[REST API](docs/04-integrations-rest-api.md)** - HTTP endpoints and data models
 - **[MCP for AI Agents](docs/04-integrations-mcp-for-agents.md)** - Model Context Protocol integration
+- **[MCP with Claude Code](docs/04-integrations-mcp-claude-code.md)** - Error-driven prompt optimization and task delegation
 
 ### ⚙️ Administration
 - **[Configuration](docs/05-administration-configuration.md)** - Environment variables and settings
@@ -149,15 +150,50 @@ poetry install
 
 ## 🎮 Usage Examples
 
-### MCP Mode (Claude Desktop Integration)
+### MCP Mode (Claude Code Integration) 🧠
+
+**The "CTO + Dev Team" Pattern**: Use Claude Code as the architect/planner, Claude Worker as the execution team.
 
 ```bash
-# Install MCP server
-pip install "claude-worker[mcp]"
-fastmcp install claude-desktop claude-worker-mcp
+# One-command installation
+pip install "claude-worker[mcp]" && \
+claude mcp add claude-worker -s user -- python -m claude_worker.mcp.factory
 
-# Available tools in Claude Desktop:
-# - create_task, get_task_status, list_tasks, get_task_logs
+# Verify installation
+claude mcp list  # Should show claude-worker ✓ Connected
+```
+
+**Smart Error-Driven Optimization** 🎯
+
+Claude Worker uses strategic validation errors to train AI agents to write better prompts:
+
+| Validation Rule | Purpose | Example Fix |
+|-----------------|---------|-------------|
+| 150+ characters | Forces detailed context | "Fix bug" → "Fix JWT expiration bug in ./src/auth/login.js by updating token validation logic" |
+| Path requirement | Ensures concrete actions | "Add tests" → "Add unit tests in ./tests/auth.test.js for login functionality" |
+| "Minimalist" keyword* | Enforces surgical precision | Auto-adds focus on simple, direct solutions |
+
+*_The "John Carmack" requirement is just a [clever metaphor](https://x.com/mattshumer_/status/1921276852200477114) that works because LLMs associate it with minimal, elegant code. It's hardcoded prompt engineering, not philosophy worship!_ 😄
+
+**Available Tools:**
+- `create_task(prompt, dir, system_prompt)` - Delegate tasks with smart validation
+- `get_task_status(id)` - Monitor progress with real-time updates  
+- `list_tasks(limit)` - View team dashboard
+- `check_api_health()` - System health check
+
+**Example: Error-Driven Prompt Optimization**
+```javascript
+// ❌ This fails with helpful errors:
+create_task("Add a function")
+// Error: "Execution prompt must be at least 150 characters"
+// Error: "Execution prompt must contain a path-like string"
+
+// ✅ AI learns to write this instead:
+create_task(
+  "Create calculateTotal() function in ./src/utils/math.js that takes array of numbers and returns sum. Include JSDoc comments and unit tests in ./tests/math.test.js",
+  "./my-project"
+)
+// Result: Precise, actionable task with clear deliverables
 ```
 
 ### Server Mode (CLI & API)

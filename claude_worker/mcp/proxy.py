@@ -36,7 +36,7 @@ def create_proxy_server(
         dependencies=["httpx>=0.25.0"]
     )
     
-    @mcp.tool
+    @mcp.tool()
     async def create_task(
         execution_prompt: str,
         working_directory: str = ".",
@@ -127,7 +127,7 @@ def create_proxy_server(
                     "api_url": api_url
                 }
     
-    @mcp.tool
+    @mcp.tool()
     async def get_task_status(task_id: int) -> Dict[str, Any]:
         """
         Get the status of a task from REST API.
@@ -175,7 +175,7 @@ def create_proxy_server(
                     "error": f"Failed to get task status: {str(e)}"
                 }
     
-    @mcp.tool
+    @mcp.tool()
     async def list_tasks(limit: int = 10) -> Dict[str, Any]:
         """
         List recent tasks from REST API.
@@ -226,7 +226,7 @@ def create_proxy_server(
                     "error": f"Failed to list tasks: {str(e)}"
                 }
     
-    @mcp.tool
+    @mcp.tool()
     async def check_api_health() -> Dict[str, Any]:
         """
         Check if REST API server is available.
