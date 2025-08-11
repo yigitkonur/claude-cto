@@ -32,6 +32,21 @@ def run_task_in_worker(task_id: int):
     asyncio.run(executor.run())
 
 
+# Async task runner for main process execution
+async def run_task_async(task_id: int):
+    """
+    Run task in the main process as an async task.
+    This is needed because Claude SDK OAuth authentication
+    doesn't work properly in subprocess/ProcessPoolExecutor.
+    """
+    try:
+        executor = TaskExecutor(task_id)
+        await executor.run()
+    except Exception as e:
+        # Log error but don't crash the server
+        print(f"Task {task_id} failed: {e}")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
@@ -64,7 +79,7 @@ app = FastAPI(
 # REST API Endpoints
 
 @app.post("/api/v1/tasks", response_model=models.TaskRead)
-def create_task(
+async def create_task(
     task_in: models.TaskCreate,
     session: Session = Depends(get_session)
 ):
@@ -84,7 +99,9 @@ def create_task(
     db_task = crud.create_task(session, task_in, log_dir)
     
     # Submit to process pool for execution
-    executor_pool.submit(run_task_in_worker, db_task.id)
+    # Note: Using asyncio.create_task instead of ProcessPoolExecutor
+    # because Claude SDK needs to run in the main process for OAuth auth
+    asyncio.create_task(run_task_async(db_task.id))
     
     # Return task info (fire-and-forget)
     return models.TaskRead(
@@ -143,7 +160,7 @@ def list_tasks(session: Session = Depends(get_session)):
 # MCP-compatible endpoints (using strict validation)
 
 @app.post("/api/v1/mcp/tasks", response_model=models.TaskRead)
-def create_mcp_task(
+async def create_mcp_task(
     payload: models.MCPCreateTaskPayload,
     session: Session = Depends(get_session)
 ):
@@ -163,7 +180,9 @@ def create_mcp_task(
     db_task = crud.create_task(session, task_in, log_dir)
     
     # Submit to process pool for execution
-    executor_pool.submit(run_task_in_worker, db_task.id)
+    # Note: Using asyncio.create_task instead of ProcessPoolExecutor
+    # because Claude SDK needs to run in the main process for OAuth auth
+    asyncio.create_task(run_task_async(db_task.id))
     
     # Return task info
     return models.TaskRead(

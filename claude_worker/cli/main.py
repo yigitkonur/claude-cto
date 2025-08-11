@@ -27,14 +27,41 @@ from .config import get_server_url
 # Initialize Typer app
 app = typer.Typer(
     name="claude-worker",
-    help="Fire-and-forget task execution for Claude Code SDK",
+    help="""
+🤖 [bold cyan]Claude Worker[/bold cyan] - Run Claude Code SDK tasks in the background
+
+Delegate long-running AI tasks to Claude without blocking your terminal.
+Perfect for code refactoring, analysis, and automation tasks.
+
+[bold yellow]Quick Start:[/bold yellow]
+  $ claude-worker run "analyze this codebase and suggest improvements"
+  $ claude-worker run "refactor all Python files to use type hints" --watch
+  $ echo "review this code" | claude-worker run
+
+[bold green]Examples:[/bold green]
+  • Simple task:     claude-worker run "create a README.md file"
+  • From file:       claude-worker run instructions.txt
+  • With monitoring: claude-worker run "complex task" --watch
+  • Check progress:  claude-worker status 1
+  • View all tasks:  claude-worker list
+
+[dim]The server starts automatically when needed. No setup required![/dim]
+""",
     rich_markup_mode="rich",
     no_args_is_help=True,  # Show help when no args provided
-    invoke_without_command=True  # Allow callback to run without subcommand
+    invoke_without_command=True,  # Allow callback to run without subcommand
+    epilog="[dim]For detailed help on any command: claude-worker [COMMAND] --help[/dim]"
 )
 
 # Server management sub-app
-server_app = typer.Typer(help="Server management commands")
+server_app = typer.Typer(
+    help="""[bold]Server management commands[/bold]
+    
+[dim]Note: The server starts automatically when you run tasks.
+You only need these commands for manual control.[/dim]
+""",
+    rich_markup_mode="rich"
+)
 app.add_typer(server_app, name="server")
 
 # Console for rich output
@@ -127,12 +154,49 @@ def start_server_in_background() -> bool:
         return False
 
 
-@app.command()
+@app.command(
+    help="""[bold green]Submit a task to Claude[/bold green] 🚀
+    
+Runs your task in the background using Claude Code SDK.
+The server starts automatically if not already running.
+
+[bold]Examples:[/bold]
+  [cyan]# Simple task[/cyan]
+  $ claude-worker run "write a Python hello world script"
+  
+  [cyan]# From a file with instructions[/cyan]
+  $ claude-worker run requirements.txt
+  
+  [cyan]# Watch the task progress live[/cyan]
+  $ claude-worker run "refactor this codebase" --watch
+  
+  [cyan]# Pipe input from another command[/cyan]
+  $ git diff | claude-worker run "review these changes"
+  
+  [cyan]# Specify working directory[/cyan]
+  $ claude-worker run "organize files here" --dir /path/to/project
+"""
+)
 def run(
-    prompt: Annotated[Optional[str], typer.Argument()] = None,
-    working_dir: Annotated[str, typer.Option("--dir", "-d", help="Working directory")] = ".",
-    system_prompt: Annotated[Optional[str], typer.Option("--system", "-s", help="System prompt")] = None,
-    watch: Annotated[bool, typer.Option("--watch", "-w", help="Watch task status")] = False
+    prompt: Annotated[Optional[str], typer.Argument(
+        help="Task prompt or path to file with instructions",
+        metavar="PROMPT"
+    )] = None,
+    working_dir: Annotated[str, typer.Option(
+        "--dir", "-d",
+        help="Working directory for the task",
+        rich_help_panel="Task Options"
+    )] = ".",
+    system_prompt: Annotated[Optional[str], typer.Option(
+        "--system", "-s",
+        help="Custom system prompt for Claude",
+        rich_help_panel="Task Options"
+    )] = None,
+    watch: Annotated[bool, typer.Option(
+        "--watch", "-w",
+        help="Watch task progress in real-time",
+        rich_help_panel="Display Options"
+    )] = False
 ):
     """
     Submit a new task to Claude Worker.
@@ -175,8 +239,14 @@ def run(
     # Auto-start server if not running
     if not is_server_running(server_url):
         if not start_server_in_background():
-            console.print("[red]❌ Failed to start server automatically.[/red]")
-            console.print("[dim]Please start the server manually with: claude-worker server start[/dim]")
+            console.print("\n[red]❌ Could not start the server automatically.[/red]\n")
+            console.print("[bold yellow]To fix this, try:[/bold yellow]")
+            console.print("  1. Start the server manually:")
+            console.print("     [bright_white]$ claude-worker server start[/bright_white]\n")
+            console.print("  2. Check if port 8000-8010 are available:")
+            console.print("     [bright_white]$ lsof -i :8000[/bright_white]\n")
+            console.print("  3. Kill any existing servers:")
+            console.print("     [bright_white]$ pkill -f claude_worker.server[/bright_white]\n")
             raise typer.Exit(1)
         
         # Update server_url if it changed
@@ -194,8 +264,12 @@ def run(
             result = response.json()
             
             # Display task info
-            console.print(f"[green]✓[/green] Task created with ID: [bold]{result['id']}[/bold]")
-            console.print(f"Status: {result['status']}")
+            console.print(f"\n[green]✓[/green] Task created with ID: [bold cyan]{result['id']}[/bold cyan]")
+            console.print(f"Status: [yellow]{result['status']}[/yellow]")
+            
+            if not watch:
+                console.print(f"\n[dim]💡 Tip: Check progress with:[/dim] [bright_white]claude-worker status {result['id']}[/bright_white]")
+                console.print(f"[dim]    Or watch live with:[/dim] [bright_white]claude-worker run \"your task\" --watch[/bright_white]")
             
             # Watch if requested
             if watch:
@@ -206,9 +280,22 @@ def run(
             raise typer.Exit(1)
 
 
-@app.command()
+@app.command(
+    help="""[bold yellow]Check task status[/bold yellow] 📊
+    
+View detailed information about a specific task.
+
+[bold]Example:[/bold]
+  $ claude-worker status 1
+  
+Shows the task's current status, progress, and any errors.
+"""
+)
 def status(
-    task_id: Annotated[int, typer.Argument(help="Task ID to check")]
+    task_id: Annotated[int, typer.Argument(
+        help="The ID of the task to check",
+        metavar="TASK_ID"
+    )]
 ):
     """Get the status of a specific task."""
     server_url = get_server_url()
@@ -216,8 +303,14 @@ def status(
     # Auto-start server if not running
     if not is_server_running(server_url):
         if not start_server_in_background():
-            console.print("[red]❌ Failed to start server automatically.[/red]")
-            console.print("[dim]Please start the server manually with: claude-worker server start[/dim]")
+            console.print("\n[red]❌ Could not start the server automatically.[/red]\n")
+            console.print("[bold yellow]To fix this, try:[/bold yellow]")
+            console.print("  1. Start the server manually:")
+            console.print("     [bright_white]$ claude-worker server start[/bright_white]\n")
+            console.print("  2. Check if port 8000-8010 are available:")
+            console.print("     [bright_white]$ lsof -i :8000[/bright_white]\n")
+            console.print("  3. Kill any existing servers:")
+            console.print("     [bright_white]$ pkill -f claude_worker.server[/bright_white]\n")
             raise typer.Exit(1)
         
         # Update server_url if it changed
@@ -262,13 +355,26 @@ def status(
             raise typer.Exit(1)
 
 
-@app.command()
+@app.command(
+    help="[bold]Show this help message[/bold] 📚"
+)
 def help(ctx: typer.Context):
     """Show help information."""
     console.print(ctx.parent.get_help())
 
 
-@app.command()
+@app.command(
+    name="list",
+    help="""[bold blue]View all tasks[/bold blue] 📋
+    
+Display a table of all submitted tasks with their status.
+
+[bold]Example:[/bold]
+  $ claude-worker list
+  
+Shows task IDs, status, creation time, and last actions.
+"""
+)
 def list():
     """List all tasks."""
     server_url = get_server_url()
@@ -276,8 +382,14 @@ def list():
     # Auto-start server if not running
     if not is_server_running(server_url):
         if not start_server_in_background():
-            console.print("[red]❌ Failed to start server automatically.[/red]")
-            console.print("[dim]Please start the server manually with: claude-worker server start[/dim]")
+            console.print("\n[red]❌ Could not start the server automatically.[/red]\n")
+            console.print("[bold yellow]To fix this, try:[/bold yellow]")
+            console.print("  1. Start the server manually:")
+            console.print("     [bright_white]$ claude-worker server start[/bright_white]\n")
+            console.print("  2. Check if port 8000-8010 are available:")
+            console.print("     [bright_white]$ lsof -i :8000[/bright_white]\n")
+            console.print("  3. Kill any existing servers:")
+            console.print("     [bright_white]$ pkill -f claude_worker.server[/bright_white]\n")
             raise typer.Exit(1)
         
         # Update server_url if it changed
@@ -293,7 +405,13 @@ def list():
             tasks = response.json()
             
             if not tasks:
-                console.print("No tasks found.")
+                console.print("\n[yellow]📭 No tasks found yet![/yellow]\n")
+                console.print("[bold]Get started with:[/bold]")
+                console.print('  $ claude-worker run "your first task"\n')
+                console.print("[dim]Examples:[/dim]")
+                console.print('  • claude-worker run "create a Python script that sorts files by date"')
+                console.print('  • claude-worker run "analyze this codebase and find bugs"')
+                console.print('  • claude-worker run "write unit tests for all functions"\n')
                 return
             
             # Create tasks table
@@ -379,7 +497,24 @@ async def watch_status(task_id: int):
                     break
 
 
-@server_app.command("start")
+@server_app.command(
+    "start",
+    help="""[bold green]Start the server manually[/bold green] 🚀
+    
+[dim]Note: The server starts automatically when you run tasks.
+Use this command only if you need manual control.[/dim]
+
+[bold]Examples:[/bold]
+  [cyan]# Start with default settings[/cyan]
+  $ claude-worker server start
+  
+  [cyan]# Use a specific port[/cyan]
+  $ claude-worker server start --port 9000
+  
+  [cyan]# Enable auto-reload for development[/cyan]
+  $ claude-worker server start --reload
+"""
+)
 def server_start(
     host: Annotated[str, typer.Option("--host", "-h", help="Server host")] = "0.0.0.0",
     port: Annotated[int, typer.Option("--port", "-p", help="Server port")] = 8000,
@@ -507,7 +642,16 @@ def server_start(
         raise typer.Exit(1)
 
 
-@server_app.command("health")
+@server_app.command(
+    "health",
+    help="""[bold cyan]Check server status[/bold cyan] 🏥
+    
+Verify if the Claude Worker server is running and healthy.
+
+[bold]Example:[/bold]
+  $ claude-worker server health
+"""
+)
 def server_health():
     """Check if the server is healthy."""
     server_url = get_server_url()

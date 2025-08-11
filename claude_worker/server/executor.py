@@ -31,6 +31,9 @@ class TaskExecutor:
         Main execution method for the task.
         Orchestrates SDK interaction and database updates.
         """
+        # Set SDK environment variable for subprocess
+        os.environ["CLAUDE_CODE_ENTRYPOINT"] = "sdk-py"
+        
         # Get initial task info and mark as running
         for session in get_session():
             task_record = crud.get_task(session, self.task_id)
@@ -61,14 +64,25 @@ class TaskExecutor:
         try:
             # Open log file for writing
             with open(log_file_path, 'w') as raw_log:
+                raw_log.write(f"[INFO] Starting task {self.task_id}\n")
+                raw_log.write(f"[INFO] Working directory: {working_directory}\n")
+                raw_log.write(f"[INFO] Prompt: {execution_prompt}\n")
+                raw_log.write(f"[INFO] System prompt: {system_prompt}\n")
+                raw_log.flush()
+                
                 # Use the stateless query() function for fire-and-forget execution
+                message_count = 0
                 async for message in query(prompt=execution_prompt, options=options):
+                    message_count += 1
                     # Write raw message to log
-                    raw_log.write(f"[{datetime.utcnow().isoformat()}] {message}\n")
+                    raw_log.write(f"[{datetime.utcnow().isoformat()}] Message {message_count}: {type(message).__name__}\n")
                     raw_log.flush()
                     
                     # Process message for summary and database updates
                     await self._process_message(message)
+            
+                raw_log.write(f"[INFO] Task completed with {message_count} messages\n")
+                raw_log.flush()
             
             # Task completed successfully
             for session in get_session():
@@ -76,7 +90,7 @@ class TaskExecutor:
                     session, 
                     self.task_id, 
                     models.TaskStatus.COMPLETED,
-                    'Task completed successfully'
+                    f'Task completed successfully ({message_count} messages)'
                 )
         
         except ProcessError as e:
