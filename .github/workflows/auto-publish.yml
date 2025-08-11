@@ -1,0 +1,168 @@
+name: Auto Version and Publish
+
+on:
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '*.md'
+
+permissions:
+  contents: write
+
+jobs:
+  check-changes:
+    name: Check for publishable changes
+    runs-on: ubuntu-latest
+    outputs:
+      should_publish: ${{ steps.check.outputs.should_publish }}
+      version_type: ${{ steps.check.outputs.version_type }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Check changed files
+      id: check
+      run: |
+        # Get files changed in this push
+        CHANGED_FILES=$(git diff --name-only HEAD~1..HEAD)
+        echo "Changed files: $CHANGED_FILES"
+        
+        # Check if any Python files or pyproject.toml changed
+        if echo "$CHANGED_FILES" | grep -E '\.(py|toml)$' > /dev/null; then
+          echo "should_publish=true" >> $GITHUB_OUTPUT
+          
+          # Determine version bump type based on commit message
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          if echo "$COMMIT_MSG" | grep -iE '^(feat|feature|breaking)' > /dev/null; then
+            echo "version_type=minor" >> $GITHUB_OUTPUT
+          else
+            echo "version_type=patch" >> $GITHUB_OUTPUT
+          fi
+        else
+          echo "should_publish=false" >> $GITHUB_OUTPUT
+        fi
+
+  version-and-publish:
+    name: Auto version and publish
+    needs: check-changes
+    if: needs.check-changes.outputs.should_publish == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/claude-worker
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+    
+    - name: Install Poetry
+      run: |
+        pip install --upgrade pip
+        pip install poetry
+        poetry config virtualenvs.create false
+    
+    - name: Configure git
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+    
+    - name: Bump version
+      run: |
+        VERSION_TYPE="${{ needs.check-changes.outputs.version_type }}"
+        OLD_VERSION=$(poetry version -s)
+        poetry version $VERSION_TYPE
+        NEW_VERSION=$(poetry version -s)
+        echo "OLD_VERSION=$OLD_VERSION" >> $GITHUB_ENV
+        echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+    
+    - name: Update changelog
+      run: |
+        # Get commit messages since last version
+        COMMITS=$(git log --oneline --pretty=format:"- %s" HEAD~5..HEAD)
+        
+        # Create changelog entry
+        DATE=$(date +"%Y-%m-%d")
+        TEMP_FILE=$(mktemp)
+        
+        echo "# Changelog" > $TEMP_FILE
+        echo "" >> $TEMP_FILE
+        echo "## [$NEW_VERSION] - $DATE" >> $TEMP_FILE
+        echo "" >> $TEMP_FILE
+        echo "$COMMITS" >> $TEMP_FILE
+        echo "" >> $TEMP_FILE
+        
+        # Append existing changelog if it exists
+        if [ -f CHANGELOG.md ]; then
+          tail -n +2 CHANGELOG.md >> $TEMP_FILE
+        fi
+        
+        mv $TEMP_FILE CHANGELOG.md
+    
+    - name: Commit version bump
+      run: |
+        git add pyproject.toml CHANGELOG.md
+        git commit -m "chore: bump version to $NEW_VERSION [skip ci]"
+        git push
+    
+    - name: Install dependencies
+      run: poetry install --no-interaction --no-root
+    
+    - name: Build package
+      run: poetry build
+    
+    - name: Publish to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        password: ${{ secrets.PYPI_API_TOKEN }}
+        skip-existing: true
+    
+    - name: Create GitHub tag
+      run: |
+        git tag "v$NEW_VERSION"
+        git push origin "v$NEW_VERSION"
+    
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: "v${{ env.NEW_VERSION }}"
+        release_name: "Release v${{ env.NEW_VERSION }}"
+        body: |
+          Auto-generated release for version ${{ env.NEW_VERSION }}
+          
+          Changes in this version:
+          - See CHANGELOG.md for details
+        draft: false
+        prerelease: false
+
+  verify:
+    name: Verify installation
+    needs: version-and-publish
+    runs-on: ubuntu-latest
+    if: success()
+    
+    steps:
+    - name: Wait for PyPI to update
+      run: sleep 60
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+    
+    - name: Install from PyPI
+      run: |
+        pip install claude-worker
+        claude-worker --version || echo "CLI not available without extras"
+        python -c "import claude_worker; print(f'Successfully imported claude_worker v{claude_worker.__version__}')"
