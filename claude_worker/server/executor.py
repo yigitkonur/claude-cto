@@ -34,6 +34,11 @@ class TaskExecutor:
         # Set SDK environment variable for subprocess
         os.environ["CLAUDE_CODE_ENTRYPOINT"] = "sdk-py"
         
+        # Note: Claude CLI automatically handles authentication priority:
+        # 1. Uses ANTHROPIC_API_KEY if set and valid
+        # 2. Falls back to OAuth (Claude Max subscription) if API key fails/missing
+        # No additional configuration needed - the CLI handles both methods
+        
         # Get initial task info and mark as running
         for session in get_session():
             task_record = crud.get_task(session, self.task_id)

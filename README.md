@@ -136,7 +136,9 @@ Comprehensive documentation is available in the `docs/` directory:
 ### Prerequisites
 
 - **Python 3.10+** and **Node.js 16+** (for Claude Code SDK)
-- **Anthropic API Key** ([Get yours here](https://console.anthropic.com/))
+- **Authentication** (choose one):
+  - 🔑 **Anthropic API Key** ([Get yours here](https://console.anthropic.com/))
+  - 🎯 **Claude Max/Pro Subscription** (OAuth via Claude CLI - no setup needed!)
 
 ### Installation Options
 
@@ -236,13 +238,40 @@ const task = await response.json();
 
 ## 🔧 Configuration
 
-### Essential Environment Variables
+### 🔐 Authentication Setup
+
+Claude Worker supports **two authentication methods** automatically:
+
+<table>
+<tr>
+<td width="50%">
+
+#### 🔑 API Key Method
+```bash
+export ANTHROPIC_API_KEY=your-api-key-here
+claude-worker run "your task"
+```
+**Best for:** Teams, CI/CD, granular billing control
+
+</td>
+<td width="50%">
+
+#### 🎯 Claude Max/Pro (OAuth)
+```bash
+# No setup needed! 
+claude-worker run "your task"
+```
+**Best for:** Individual users with Claude subscription
+
+</td>
+</tr>
+</table>
+
+> 💡 **Smart Authentication:** Claude Worker automatically tries API key first, then falls back to your Claude Max subscription. No configuration needed!
+
+### Optional Environment Variables
 
 ```bash
-# Required
-export ANTHROPIC_API_KEY=your-api-key-here
-
-# Optional (with defaults)
 export CLAUDE_WORKER_DB=~/.claude-worker/tasks.db
 export CLAUDE_WORKER_SERVER_URL=http://localhost:8000  # for CLI client
 export CLAUDE_WORKER_LOG_DIR=~/.claude-worker/logs
@@ -257,7 +286,8 @@ export CLAUDE_WORKER_LOG_DIR=~/.claude-worker/logs
 | Issue | Quick Fix |
 |-------|-----------|
 | **MCP not showing in Claude Desktop** | Restart Claude Desktop completely (Cmd+Q) |
-| **Tasks stuck in "running"** | Check `echo $ANTHROPIC_API_KEY` and task logs |
+| **Tasks stuck in "running"** | Check authentication: API key or Claude CLI login |
+| **Authentication failed** | Try: `claude --version` to test Claude CLI |
 | **Database lock errors** | Stop all services: `pkill -f claude-worker` |
 | **Permission denied** | Fix permissions: `chmod 755 ~/.claude-worker` |
 
@@ -266,7 +296,10 @@ export CLAUDE_WORKER_LOG_DIR=~/.claude-worker/logs
 ```bash
 # Check system status
 claude-worker server health
-echo $ANTHROPIC_API_KEY
+
+# Check authentication
+echo $ANTHROPIC_API_KEY        # Check if API key is set
+claude --version               # Test Claude CLI (for OAuth)
 
 # View logs
 tail -f ~/.claude-worker/logs/*.log

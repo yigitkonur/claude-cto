@@ -60,8 +60,20 @@ server_app = typer.Typer(
 [dim]Note: The server starts automatically when you run tasks.
 You only need these commands for manual control.[/dim]
 """,
-    rich_markup_mode="rich"
+    rich_markup_mode="rich",
+    no_args_is_help=True,
+    invoke_without_command=True
 )
+
+
+@server_app.callback()
+def server_callback(ctx: typer.Context):
+    """Show help when no server subcommand is provided."""
+    if ctx.invoked_subcommand is None:
+        console.print(ctx.get_help())
+        raise typer.Exit()
+
+
 app.add_typer(server_app, name="server")
 
 # Console for rich output
