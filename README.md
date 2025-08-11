@@ -50,7 +50,7 @@ graph TB
 
 <table>
 <tr>
-<td width="50%">
+<td width="30%">
 
 ### 🏢 Full Mode (CLI + MCP)
 **For:** Set tasks from both CLI or MCP, flexible to add tasks by MD/TXT files or just plain text commands!
@@ -64,7 +64,7 @@ claude-worker run "Your task"
 [→ Quick Start Guide](docs/01-getting-started-quick-start.md)
 
 </td>
-<td width="50%">
+<td width="30%">
 
 ### 🪶 Agent Access Mode (MCP Only)
 **For:** Use 'Claude Code' as planner (CTO) and use 'Claude Code Worker' to execute tasks (dev) in parallel
