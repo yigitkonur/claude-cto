@@ -1,7 +1,9 @@
 include README.md
 include LICENSE
 include CHANGELOG.md
-recursive-include src *.py
+include GUIDE.md
+include MCP_README.md
+recursive-include claude_worker *.py
 global-exclude __pycache__
 global-exclude *.py[co]
 global-exclude .DS_Store

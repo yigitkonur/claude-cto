@@ -13,14 +13,14 @@ from typing import Optional, Dict, Any
 from fastmcp import FastMCP
 from sqlmodel import Session
 
-from src.core import (
+from claude_worker.core import (
     init_database,
     create_session_maker,
     create_task_record,
     get_task_by_id,
     execute_task_async
 )
-from src.server.models import TaskCreate, TaskStatus
+from claude_worker.server.models import TaskCreate, TaskStatus
 
 
 # Process pool for task execution (module level for pickling)
@@ -168,7 +168,7 @@ def create_standalone_server(
         """
         with SessionLocal() as session:
             from sqlmodel import select
-            from src.server.models import TaskDB
+            from claude_worker.server.models import TaskDB
             
             statement = select(TaskDB)
             

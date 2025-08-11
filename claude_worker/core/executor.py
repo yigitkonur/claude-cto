@@ -13,7 +13,7 @@ from typing import Optional, Dict, Any
 from claude_code_sdk import query, ClaudeCodeOptions
 from sqlmodel import Session
 
-from src.server.models import TaskStatus
+from claude_worker.server.models import TaskStatus
 from .database import get_task_by_id, update_task_status
 
 

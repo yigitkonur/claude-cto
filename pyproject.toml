@@ -23,7 +23,7 @@ classifiers = [
     "Environment :: Console",
     "Framework :: FastAPI",
 ]
-packages = [{include = "src"}]
+packages = [{include = "claude_worker"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -55,9 +55,9 @@ full = ["fastapi", "uvicorn", "typer", "httpx", "fastmcp"]
 
 [tool.poetry.scripts]
 # CLI entry point (requires 'server' or 'full' extra)
-claude-worker = "src.cli.main:app"
+claude-worker = "claude_worker.cli.main:app"
 # MCP entry point (requires 'mcp' or 'full' extra)  
-claude-worker-mcp = "src.mcp.factory:run_stdio"
+claude-worker-mcp = "claude_worker.mcp.factory:run_stdio"
 
 [build-system]
 requires = ["poetry-core"]

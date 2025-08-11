@@ -1,0 +1,112 @@
+name: Publish to PyPI
+
+on:
+  release:
+    types: [published]
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      test_pypi:
+        description: 'Publish to Test PyPI instead of production'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  id-token: write  # Required for trusted publishing
+
+jobs:
+  build:
+    name: Build distribution packages
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+    
+    - name: Install Poetry
+      run: |
+        pip install --upgrade pip
+        pip install poetry
+        poetry config virtualenvs.create false
+    
+    - name: Install dependencies
+      run: poetry install --no-interaction --no-root
+    
+    - name: Build package
+      run: poetry build
+    
+    - name: Store the distribution packages
+      uses: actions/upload-artifact@v4
+      with:
+        name: python-package-distributions
+        path: dist/
+
+  test-pypi:
+    name: Publish to Test PyPI
+    if: github.event.inputs.test_pypi == 'true'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: test-pypi
+      url: https://test.pypi.org/p/claude-worker
+    
+    steps:
+    - name: Download all the dists
+      uses: actions/download-artifact@v4
+      with:
+        name: python-package-distributions
+        path: dist/
+    
+    - name: Publish to Test PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        repository-url: https://test.pypi.org/legacy/
+        skip-existing: true
+
+  publish:
+    name: Publish to PyPI
+    if: github.event_name == 'release' || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/'))
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/claude-worker
+    
+    steps:
+    - name: Download all the dists
+      uses: actions/download-artifact@v4
+      with:
+        name: python-package-distributions
+        path: dist/
+    
+    - name: Publish to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      # No username/password needed with trusted publisher!
+
+  verify:
+    name: Verify installation
+    needs: publish
+    runs-on: ubuntu-latest
+    if: success()
+    
+    steps:
+    - name: Wait for PyPI to update
+      run: sleep 60
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+    
+    - name: Install from PyPI
+      run: |
+        pip install claude-worker
+        claude-worker --version || echo "CLI not available without extras"
+        python -c "import claude_worker; print(f'Successfully imported claude_worker v{claude_worker.__version__}')"

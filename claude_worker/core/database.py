@@ -11,7 +11,7 @@ from datetime import datetime
 from sqlmodel import SQLModel, Session, create_engine, select
 from sqlalchemy.orm import sessionmaker
 
-from src.server.models import TaskDB, TaskCreate, TaskStatus
+from claude_worker.server.models import TaskDB, TaskCreate, TaskStatus
 
 
 def get_database_url(db_path: Optional[str] = None) -> str:

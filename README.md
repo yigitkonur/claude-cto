@@ -1,6 +1,5 @@
-# Claude Worker
 
-> **🔥 The most flexible fire-and-forget task execution system for Claude Code SDK**  
+> **🔥 The most flexible fire-and-forget task execution system + prod-level MCP for Claude Code SDK**  
 > Run with zero infrastructure (MCP standalone) or at scale (REST API + Workers)
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
