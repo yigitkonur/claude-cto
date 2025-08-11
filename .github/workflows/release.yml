@@ -16,7 +16,6 @@ on:
 
 permissions:
   contents: read
-  id-token: write  # Required for trusted publishing
 
 jobs:
   build:
@@ -88,7 +87,8 @@ jobs:
     
     - name: Publish to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
-      # No username/password needed with trusted publisher!
+      with:
+        password: ${{ secrets.PYPI_API_TOKEN }}
 
   verify:
     name: Verify installation
