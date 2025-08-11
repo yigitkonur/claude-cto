@@ -13,16 +13,14 @@ from . import models
 def create_task(session: Session, task_in: models.TaskCreate, log_dir: Path) -> models.TaskDB:
     """
     Create a new task in the database.
-    Sets initial status to 'queued' and generates log file paths.
+    Sets initial status to 'pending' and generates log file path.
     """
     # Create new task database object
     db_task = models.TaskDB(
-        status='queued',
+        status=models.TaskStatus.PENDING,
         working_directory=task_in.working_directory,
         system_prompt=task_in.system_prompt or "You are a helpful assistant following John Carmack's principles of simplicity.",
-        execution_prompt=task_in.execution_prompt,
-        raw_log_path="",  # Will be set after ID is generated
-        summary_log_path=""  # Will be set after ID is generated
+        execution_prompt=task_in.execution_prompt
     )
     
     # Add to session to generate ID
@@ -30,11 +28,10 @@ def create_task(session: Session, task_in: models.TaskCreate, log_dir: Path) -> 
     session.commit()
     session.refresh(db_task)
     
-    # Generate log file paths with task ID
-    db_task.raw_log_path = str(log_dir / f"task_{db_task.id}_raw.log")
-    db_task.summary_log_path = str(log_dir / f"task_{db_task.id}_summary.log")
+    # Generate log file path with task ID
+    db_task.log_file_path = str(log_dir / f"task_{db_task.id}_raw.log")
     
-    # Update with log paths
+    # Update with log path
     session.add(db_task)
     session.commit()
     session.refresh(db_task)
@@ -54,12 +51,12 @@ def get_all_tasks(session: Session) -> List[models.TaskDB]:
     return list(results)
 
 
-def update_task_status(session: Session, task_id: int, status: str) -> models.TaskDB:
+def update_task_status(session: Session, task_id: int, status: models.TaskStatus) -> models.TaskDB:
     """Update the status of a task."""
     task = session.get(models.TaskDB, task_id)
     if task:
         task.status = status
-        if status == 'running' and not task.started_at:
+        if status == models.TaskStatus.RUNNING and not task.started_at:
             task.started_at = datetime.utcnow()
         session.add(task)
         session.commit()
@@ -69,13 +66,13 @@ def update_task_status(session: Session, task_id: int, status: str) -> models.Ta
 
 def append_to_summary_log(session: Session, task_id: int, summary_line: str):
     """
-    Append a line to the task's summary log file and update last_action_cache.
+    Append a line to the task's log file and update last_action_cache.
     Transactional update operation.
     """
     task = session.get(models.TaskDB, task_id)
-    if task:
-        # Append to summary log file
-        with open(task.summary_log_path, 'a') as f:
+    if task and task.log_file_path:
+        # Append to log file
+        with open(task.log_file_path, 'a') as f:
             f.write(summary_line + '\n')
         
         # Update last action cache
@@ -84,7 +81,7 @@ def append_to_summary_log(session: Session, task_id: int, summary_line: str):
         session.commit()
 
 
-def finalize_task(session: Session, task_id: int, status: str, result_message: str):
+def finalize_task(session: Session, task_id: int, status: models.TaskStatus, result_message: str):
     """
     Finalize a task with a final status and result message.
     Sets ended_at timestamp and populates either final_summary or error_message.
@@ -94,7 +91,7 @@ def finalize_task(session: Session, task_id: int, status: str, result_message: s
         task.status = status
         task.ended_at = datetime.utcnow()
         
-        if status == 'completed':
+        if status == models.TaskStatus.COMPLETED:
             task.final_summary = result_message
         else:  # error or other failure status
             task.error_message = result_message

@@ -9,7 +9,7 @@ from datetime import datetime
 from claude_code_sdk import query, ClaudeCodeOptions
 from claude_code_sdk._errors import ProcessError, ClaudeSDKError
 from .database import get_session
-from . import crud
+from . import crud, models
 from .log_formatter import format_tool_use
 
 
@@ -38,7 +38,7 @@ class TaskExecutor:
                 return
             
             # Update status to running and set PID
-            task_record.status = 'running'
+            task_record.status = models.TaskStatus.RUNNING
             task_record.pid = os.getpid()
             task_record.started_at = datetime.utcnow()
             session.add(task_record)
@@ -48,7 +48,7 @@ class TaskExecutor:
             working_directory = task_record.working_directory
             system_prompt = task_record.system_prompt
             execution_prompt = task_record.execution_prompt
-            raw_log_path = task_record.raw_log_path
+            log_file_path = task_record.log_file_path
         
         # Configure SDK options
         options = ClaudeCodeOptions(
@@ -58,8 +58,8 @@ class TaskExecutor:
         
         # Execute task using SDK
         try:
-            # Open raw log file for writing
-            with open(raw_log_path, 'w') as raw_log:
+            # Open log file for writing
+            with open(log_file_path, 'w') as raw_log:
                 # Use the stateless query() function for fire-and-forget execution
                 async for message in query(prompt=execution_prompt, options=options):
                     # Write raw message to log
@@ -74,7 +74,7 @@ class TaskExecutor:
                 crud.finalize_task(
                     session, 
                     self.task_id, 
-                    'completed',
+                    models.TaskStatus.COMPLETED,
                     'Task completed successfully'
                 )
         
@@ -85,7 +85,7 @@ class TaskExecutor:
                 crud.finalize_task(
                     session,
                     self.task_id,
-                    'error',
+                    models.TaskStatus.FAILED,
                     error_msg
                 )
         
@@ -96,7 +96,7 @@ class TaskExecutor:
                 crud.finalize_task(
                     session,
                     self.task_id,
-                    'error',
+                    models.TaskStatus.FAILED,
                     error_msg
                 )
         
@@ -107,7 +107,7 @@ class TaskExecutor:
                 crud.finalize_task(
                     session,
                     self.task_id,
-                    'error',
+                    models.TaskStatus.FAILED,
                     error_msg
                 )
     
