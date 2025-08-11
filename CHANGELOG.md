@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.4] - 2025-01-11
+
+### Fixed
+- Fixed database schema mismatches between models and CRUD operations
+- Fixed incorrect field names (`raw_log_path`/`summary_log_path` → `log_file_path`)
+- Fixed enum usage for task status (now uses proper `TaskStatus` enum)
+- Fixed TypeError in `list` command when `last_action_cache` is None
+- Fixed 501 HTTP error when submitting tasks to the server
+
+### Improved
+- Consistent use of TaskStatus enum throughout the codebase
+- Better null handling in CLI display functions
+
 ## [0.1.3] - 2025-01-11
 
 ### Added
