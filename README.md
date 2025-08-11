@@ -52,11 +52,11 @@ graph TB
 <tr>
 <td width="30%">
 
-### 🏢 Full Mode (CLI + MCP)
-**For:** Set tasks from both CLI or MCP, flexible to add tasks by MD/TXT files or just plain text commands!
+### 🏢 CLI Mode
+**For:** Set tasks from both CLI, flexible to add tasks by MD/TXT files or just plain text commands!
 
 ```bash
-pip install "claude-worker[server]" 
+pip install "claude-worker[server]" <-  (💡 if you want both, use claude-worker[full] )
 claude-worker server start
 claude-worker run "Your task"
 ```
@@ -66,11 +66,11 @@ claude-worker run "Your task"
 </td>
 <td width="30%">
 
-### 🪶 Agent Access Mode (MCP Only)
+### 🪶 MCP Mode
 **For:** Use 'Claude Code' as planner (CTO) and use 'Claude Code Worker' to execute tasks (dev) in parallel
 
 ```bash
-pip install "claude-worker[mcp]" <- (if you want both, use claude-worker[full])
+pip install "claude-worker[mcp]" <-  (💡 if you want both, use claude-worker[full] )
 fastmcp install claude-desktop \
   claude-worker-mcp
 ```
