@@ -1,0 +1,64 @@
+[tool.poetry]
+name = "claude-worker"
+version = "0.1.0"
+description = "Fire-and-forget task execution system for Claude Code SDK with CLI and MCP interfaces"
+authors = ["Yigit Konur <yigit@thinkbuddy.ai>"]
+readme = "README.md"
+license = "MIT"
+homepage = "https://github.com/yigitkonur/claude-worker"
+repository = "https://github.com/yigitkonur/claude-worker"
+documentation = "https://github.com/yigitkonur/claude-worker/blob/main/README.md"
+keywords = ["claude", "ai", "automation", "task-queue", "cli", "mcp", "anthropic"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Operating System :: OS Independent",
+    "Environment :: Console",
+    "Framework :: FastAPI",
+]
+packages = [{include = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+# Core dependencies (always needed)
+sqlmodel = ">=0.0.14"
+claude-code-sdk = ">=0.0.19"
+
+# Optional dependencies for different installation modes
+fastapi = {version = ">=0.100.0", optional = true}
+uvicorn = {extras = ["standard"], version = ">=0.23.0", optional = true}
+typer = {extras = ["rich"], version = ">=0.12.0", optional = true}
+httpx = {version = ">=0.25.0", optional = true}
+fastmcp = {version = ">=2.0.0", optional = true}
+
+[tool.poetry.extras]
+# For MCP-only users (lightweight)
+mcp = ["fastmcp", "httpx"]
+
+# For REST API + CLI users (no MCP)
+server = ["fastapi", "uvicorn", "typer", "httpx"]
+
+# Everything - full installation
+full = ["fastapi", "uvicorn", "typer", "httpx", "fastmcp"]
+
+[tool.poetry.urls]
+"Bug Tracker" = "https://github.com/yigitkonur/claude-worker/issues"
+"Changelog" = "https://github.com/yigitkonur/claude-worker/blob/main/CHANGELOG.md"
+"MCP Documentation" = "https://github.com/yigitkonur/claude-worker/blob/main/MCP_README.md"
+
+[tool.poetry.scripts]
+# CLI entry point (requires 'server' or 'full' extra)
+claude-worker = "src.cli.main:app"
+# MCP entry point (requires 'mcp' or 'full' extra)  
+claude-worker-mcp = "src.mcp.factory:run_stdio"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
