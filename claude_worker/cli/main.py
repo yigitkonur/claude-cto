@@ -17,6 +17,8 @@ from rich.console import Console
 from rich.table import Table
 from rich.live import Live
 from rich import print as rprint
+from rich.panel import Panel
+from rich.text import Text
 
 from .config import get_server_url
 
@@ -25,7 +27,9 @@ from .config import get_server_url
 app = typer.Typer(
     name="claude-worker",
     help="Fire-and-forget task execution for Claude Code SDK",
-    rich_markup_mode="rich"
+    rich_markup_mode="rich",
+    no_args_is_help=True,  # Show help when no args provided
+    invoke_without_command=True  # Allow callback to run without subcommand
 )
 
 # Server management sub-app
@@ -34,6 +38,17 @@ app.add_typer(server_app, name="server")
 
 # Console for rich output
 console = Console()
+
+
+@app.callback()
+def main(ctx: typer.Context):
+    """
+    Show help when no command is provided.
+    """
+    if ctx.invoked_subcommand is None:
+        # No subcommand was invoked, show help
+        print(ctx.get_help())
+        raise typer.Exit()
 
 
 @app.command()
@@ -253,18 +268,52 @@ async def watch_status(task_id: int):
 def server_start(
     host: Annotated[str, typer.Option("--host", "-h", help="Server host")] = "0.0.0.0",
     port: Annotated[int, typer.Option("--port", "-p", help="Server port")] = 8000,
-    reload: Annotated[bool, typer.Option("--reload", "-r", help="Enable auto-reload")] = False
+    reload: Annotated[bool, typer.Option("--reload", "-r", help="Enable auto-reload")] = False,
+    auto_port: Annotated[bool, typer.Option("--auto-port/--no-auto-port", help="Automatically find available port if default is in use")] = True
 ):
     """
     Start the Claude Worker server in the background.
     Uses subprocess.Popen to launch Uvicorn as a daemon.
+    Automatically tries alternative ports if the specified port is occupied.
     """
-    console.print(f"[green]Starting Claude Worker server on {host}:{port}...[/green]")
+    import socket
+    
+    console.print("\n[bold cyan]🚀 Claude Worker Server[/bold cyan]")
+    console.print("[dim]Fire-and-forget task execution for Claude Code SDK[/dim]\n")
+    
+    # Function to check if port is available
+    def is_port_available(host: str, port: int) -> bool:
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind((host, port))
+                return True
+        except OSError:
+            return False
+    
+    # Find available port if auto_port is enabled
+    original_port = port
+    if auto_port:
+        max_attempts = 10
+        for attempt in range(max_attempts):
+            if is_port_available(host, port):
+                break
+            if attempt == 0:
+                console.print(f"[yellow]⚠️  Port {port} is in use, trying alternatives...[/yellow]")
+            port += 1
+        else:
+            console.print(f"[red]❌ Could not find available port in range {original_port}-{original_port + max_attempts - 1}[/red]")
+            console.print("[dim]Tip: Try specifying a different port with --port or stop the process using port 8000[/dim]")
+            raise typer.Exit(1)
+    
+    if port != original_port:
+        console.print(f"[green]✓ Found available port: {port}[/green]")
+    
+    console.print(f"[yellow]Starting server on {host}:{port}...[/yellow]")
     
     # Build uvicorn command
     cmd = [
         sys.executable, "-m", "uvicorn",
-        "src.server.main:app",
+        "claude_worker.server.main:app",
         "--host", host,
         "--port", str(port)
     ]
@@ -287,9 +336,52 @@ def server_start(
         
         # Check if process is still running
         if process.poll() is None:
-            console.print(f"[green]✓[/green] Server started successfully (PID: {process.pid})")
-            console.print(f"Server URL: http://{host}:{port}")
-            console.print("\nTo stop the server, use your system's process manager or kill the PID.")
+            console.print(f"\n[green]✓ Server started successfully![/green] (PID: {process.pid})")
+            console.print(f"[green]✓ API ready at:[/green] http://{host}:{port}\n")
+            
+            # Create informative panel about what this server does
+            info_text = Text()
+            info_text.append("🎯 Why this server?\n", style="bold yellow")
+            info_text.append("   Run long Claude Code SDK tasks without blocking your terminal.\n", style="dim")
+            info_text.append("   Tasks run in isolated processes and persist through interruptions.\n\n", style="dim")
+            
+            info_text.append("📝 How to submit tasks:\n", style="bold cyan")
+            info_text.append("   Quick task:     ", style="dim")
+            info_text.append("claude-worker run \"Your prompt here\"\n", style="bright_white")
+            info_text.append("   From file:      ", style="dim")
+            info_text.append("claude-worker run prompt.txt\n", style="bright_white")
+            info_text.append("   With watching:  ", style="dim")
+            info_text.append("claude-worker run \"Your prompt\" --watch\n", style="bright_white")
+            info_text.append("   From pipe:      ", style="dim")
+            info_text.append("git diff | claude-worker run \"Review these changes\"\n\n", style="bright_white")
+            
+            info_text.append("🔍 Monitor your tasks:\n", style="bold green")
+            info_text.append("   List all:       ", style="dim")
+            info_text.append("claude-worker list\n", style="bright_white")
+            info_text.append("   Check status:   ", style="dim")
+            info_text.append("claude-worker status <task-id>\n\n", style="bright_white")
+            
+            info_text.append("💡 When to use:\n", style="bold magenta")
+            info_text.append("   • Complex refactoring or code generation tasks\n", style="dim")
+            info_text.append("   • Running multiple tasks in parallel\n", style="dim")
+            info_text.append("   • Tasks that might take 5+ minutes\n", style="dim")
+            info_text.append("   • When you need to preserve work through interruptions\n", style="dim")
+            
+            console.print(Panel(
+                info_text,
+                title="[bold]🚀 Claude Worker Ready![/bold]",
+                border_style="green",
+                padding=(1, 2)
+            ))
+            
+            console.print(f"\n[dim]To stop server: kill {process.pid} or Ctrl+C in the terminal[/dim]")
+            console.print(f"[dim]Server logs: Check your terminal or ~/.claude-worker/logs/[/dim]")
+            
+            # If using a non-default port, suggest setting environment variable
+            if port != 8000:
+                console.print(f"\n[yellow]⚠️  Note: Server running on non-default port {port}[/yellow]")
+                console.print(f"[dim]Set CLAUDE_WORKER_SERVER_URL=http://localhost:{port} to use this server with the CLI[/dim]")
+            console.print()
         else:
             stderr = process.stderr.read().decode() if process.stderr else "Unknown error"
             console.print(f"[red]Failed to start server: {stderr}[/red]")
