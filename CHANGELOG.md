@@ -5,6 +5,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.5] - 2025-08-11
+
+### 🎯 Major User Experience Improvements
+
+- **✅ Auto-start server** — No manual server management needed! Claude Worker automatically starts the server when you run tasks
+- **✅ Rich help text** — Clear examples and guidance everywhere with beautiful formatting
+- **✅ Smart defaults** — Commands work intuitively without flags (`claude-worker status` shows available tasks)
+- **✅ Helpful errors** — Guide users instead of confusing them with actionable solutions
+- **✅ No missing arguments** — Status command shows available IDs when none provided
+- **✅ Visual feedback** — Colors, emojis, and clear formatting throughout the CLI
+
+### 🔐 Dual Authentication Support
+
+- **Claude Max/Pro Subscription (OAuth)** — Now works with your Claude subscription without requiring an API key!
+- **Smart Authentication Priority** — Automatically tries API key first, then falls back to Claude CLI OAuth
+- **Zero Configuration** — No setup needed, works with whatever authentication you have available
+- **Updated Documentation** — Comprehensive guides for both authentication methods
+
+### Added
+- Auto-start server functionality for all CLI commands
+- Rich help text with examples and emojis throughout CLI
+- Smart defaults for commands (status without ID shows available tasks)
+- Comprehensive authentication troubleshooting guide
+- OAuth authentication support via Claude CLI
+- Beginner-friendly error messages with actionable solutions
+- Visual improvements with colors and formatting
+
+### Fixed
+- Claude Worker now works with Claude Max/Pro subscriptions (OAuth)
+- Server starts automatically when needed (no manual intervention)
+- Status command is beginner-friendly (shows available tasks when no ID provided)
+- Authentication priority handling (API key → OAuth fallback)
+- ProcessPoolExecutor issues with OAuth authentication
+- Task execution with automated permission handling
+
+### Improved
+- Complete CLI user experience overhaul
+- Documentation updated for dual authentication methods
+- Error messages are now helpful and actionable
+- All commands provide guidance and examples
+- Server management is now invisible to users
+
 ## [0.1.4] - 2025-01-11
 
 ### Fixed
