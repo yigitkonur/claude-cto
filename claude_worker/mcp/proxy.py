@@ -238,13 +238,16 @@ def create_proxy_server(
                 
                 if response.status_code == 200:
                     tasks = response.json()
+                    # Handle None or non-list responses
+                    if not tasks or not isinstance(tasks, list):
+                        tasks = []
                     return {
                         "tasks": [
                             {
                                 "id": task["id"],
                                 "status": task["status"],
                                 "created_at": task.get("created_at"),
-                                "last_action": task.get("last_action_cache", "")[:100]
+                                "last_action": (task.get("last_action_cache") or "")[:100]
                             }
                             for task in tasks[:limit]
                         ],

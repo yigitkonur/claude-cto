@@ -9,7 +9,6 @@ from typing import Optional
 from datetime import datetime
 
 from sqlmodel import SQLModel, Session, create_engine, select
-from sqlalchemy.orm import sessionmaker
 
 from claude_worker.server.models import TaskDB, TaskCreate, TaskStatus
 
@@ -46,7 +45,8 @@ def create_engine_for_db(db_url: str):
 
 def create_session_maker(engine):
     """Create session maker for database operations."""
-    return sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    # Return a lambda that creates SQLModel sessions
+    return lambda: Session(engine)
 
 
 def init_database(db_path: Optional[str] = None):
