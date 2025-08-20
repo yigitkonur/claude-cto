@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.2.1] - 2025-08-11
+
+- Merge branch 'main' of https://github.com/yigitkonur/claude-worker
+- feat: optimize MCP tool descriptions for advanced LLM behavior training
+- chore: bump version to 0.2.0 [skip ci]
+- feat: enhance MCP integration with error-driven prompt optimization
+- chore: bump version to 0.1.6 [skip ci]
+- docs: improve package docstring
+
+
 ## [0.2.0] - 2025-08-11
 
 - feat: enhance MCP integration with error-driven prompt optimization
