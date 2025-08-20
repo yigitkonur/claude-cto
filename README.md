@@ -154,10 +154,19 @@ poetry install
 
 **The "CTO + Dev Team" Pattern**: Use Claude Code as the architect/planner, Claude Worker as the execution team.
 
+**🚀 Zero-Configuration Auto-Start**: 
+- **No server needed!** MCP automatically detects and adapts
+- **REST API available?** → Uses proxy mode for centralized task management
+- **No REST API?** → Seamlessly switches to standalone mode with embedded database
+- **Database auto-initialization** → SQLite database created on first use
+
 ```bash
-# One-command installation
+# Option 1: Install from PyPI
 pip install "claude-worker[mcp]" && \
 claude mcp add claude-worker -s user -- python -m claude_worker.mcp.factory
+
+# Option 2: Install from Smithery (coming soon)
+# npx @smithery/cli install @yigitkonur/claude-worker
 
 # Verify installation
 claude mcp list  # Should show claude-worker ✓ Connected

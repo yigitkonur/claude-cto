@@ -67,10 +67,10 @@ def create_mcp_server(
         # Check if REST API is available
         if is_rest_api_available(api_url):
             mode = "proxy"
-            print("Auto-detected proxy mode (REST API available)")
+            # Silent mode - MCP servers should not print to stdout
         else:
             mode = "standalone"
-            print("Auto-detected standalone mode (REST API not available)")
+            # Silent mode - MCP servers should not print to stdout
     
     # Create appropriate server
     if mode == "proxy":
