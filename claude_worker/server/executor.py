@@ -4,7 +4,6 @@ for running a single agentic task using the Claude Code SDK's query() function.
 """
 
 import os
-import asyncio
 from datetime import datetime
 from claude_code_sdk import query, ClaudeCodeOptions
 from claude_code_sdk._errors import (
@@ -15,9 +14,14 @@ from claude_code_sdk._errors import (
     CLIJSONDecodeError,
     MessageParseError
 )
+from claude_code_sdk.types import (
+    Message,
+    AssistantMessage
+)
 from .database import get_session
 from . import crud, models
-from .log_formatter import format_tool_use
+from .log_formatter import format_content_block
+from .error_handler import ErrorHandler
 
 
 class TaskExecutor:
@@ -33,7 +37,7 @@ class TaskExecutor:
         """
         self.task_id = task_id
     
-    async def run(self):
+    async def run(self) -> None:
         """
         Main execution method for the task.
         Orchestrates SDK interaction and database updates.
@@ -107,111 +111,17 @@ class TaskExecutor:
                     f'Task completed successfully ({message_count} messages)'
                 )
         
-        except ProcessError as e:
-            # Handle SDK process errors with detailed information
-            # ProcessError has: exit_code, stderr attributes from SDK
-            error_details = []
-            error_details.append(f"Process error: {str(e)}")
+        except (ProcessError, CLINotFoundError, CLIConnectionError, CLIJSONDecodeError, MessageParseError, ClaudeSDKError) as e:
+            # Handle all SDK errors with the comprehensive error handler
+            error_info = ErrorHandler.handle_error(e, self.task_id, log_file_path)
             
-            # Use actual ProcessError attributes from SDK
-            if e.exit_code is not None:
-                error_details.append(f"exit_code: {e.exit_code}")
+            # Log detailed error information
+            ErrorHandler.log_error(error_info, log_file_path)
             
-            if e.stderr:
-                error_details.append(f"stderr: {e.stderr}")
+            # Format error message for database
+            error_msg = ErrorHandler.format_error_message(error_info)
             
-            error_msg = " | ".join(error_details)
-            
-            # Also write to raw log
-            with open(log_file_path, 'a') as f:
-                f.write(f"[ERROR] ProcessError - exit_code: {e.exit_code}, stderr: {e.stderr}\n")
-                f.write(f"[ERROR] Full message: {error_msg}\n")
-            
-            for session in get_session():
-                crud.finalize_task(
-                    session,
-                    self.task_id,
-                    models.TaskStatus.FAILED,
-                    error_msg
-                )
-        
-        except CLINotFoundError as e:
-            # Handle CLI not found - critical error that needs user action
-            error_msg = f"Claude CLI not found: {str(e)}. Please install Claude CLI and ensure it's in your PATH."
-            
-            with open(log_file_path, 'a') as f:
-                f.write(f"[ERROR] CLINotFoundError: {error_msg}\n")
-                f.write("[ERROR] Installation guide: https://docs.anthropic.com/en/docs/claude-cli\n")
-                
-            for session in get_session():
-                crud.finalize_task(
-                    session,
-                    self.task_id,
-                    models.TaskStatus.FAILED,
-                    error_msg
-                )
-        
-        except CLIConnectionError as e:
-            # Handle CLI connection errors - might be transient, attempt brief retry
-            error_msg = f"Failed to connect to Claude CLI: {str(e)}. Check if Claude CLI is working with 'claude --version'."
-            
-            # Log the attempt
-            with open(log_file_path, 'a') as f:
-                f.write(f"[ERROR] CLIConnectionError: {error_msg}\n")
-                f.write("[INFO] Connection errors can be transient - this is a critical failure\n")
-                
-            # For connection errors, fail immediately as they usually indicate CLI issues
-            for session in get_session():
-                crud.finalize_task(
-                    session,
-                    self.task_id,
-                    models.TaskStatus.FAILED,
-                    error_msg + " | Suggestion: Run 'claude --version' to verify CLI installation"
-                )
-        
-        except CLIJSONDecodeError as e:
-            # Handle JSON decode errors from CLI output
-            error_msg = f"Failed to parse CLI JSON output: {str(e)}. Line: '{e.line[:100]}...'"
-            
-            with open(log_file_path, 'a') as f:
-                f.write(f"[ERROR] CLIJSONDecodeError: {error_msg}\n")
-                f.write(f"[ERROR] Original error: {e.original_error}\n")
-                f.write(f"[ERROR] Problematic line: {e.line}\n")
-                
-            for session in get_session():
-                crud.finalize_task(
-                    session,
-                    self.task_id,
-                    models.TaskStatus.FAILED,
-                    error_msg
-                )
-        
-        except MessageParseError as e:
-            # Handle message parsing errors
-            error_msg = f"Failed to parse CLI message: {str(e)}"
-            if e.data:
-                error_msg += f" | Data: {e.data}"
-            
-            with open(log_file_path, 'a') as f:
-                f.write(f"[ERROR] MessageParseError: {error_msg}\n")
-                f.write(f"[ERROR] Raw data: {e.data}\n")
-                
-            for session in get_session():
-                crud.finalize_task(
-                    session,
-                    self.task_id,
-                    models.TaskStatus.FAILED,
-                    error_msg
-                )
-        
-        except ClaudeSDKError as e:
-            # Handle other SDK errors with details
-            error_msg = f"SDK error: {str(e)} | Type: {type(e).__name__}"
-            
-            # Also write to raw log
-            with open(log_file_path, 'a') as f:
-                f.write(f"[ERROR] {error_msg}\n")
-                
+            # Finalize task with error
             for session in get_session():
                 crud.finalize_task(
                     session,
@@ -221,15 +131,16 @@ class TaskExecutor:
                 )
         
         except Exception as e:
-            # Handle unexpected errors with stack trace
-            import traceback
-            error_msg = f"Unexpected error: {str(e)} | Type: {type(e).__name__} | Traceback: {traceback.format_exc()}"
+            # Handle unexpected errors with error handler
+            error_info = ErrorHandler.handle_error(e, self.task_id, log_file_path)
             
-            # Also write to raw log
-            with open(log_file_path, 'a') as f:
-                f.write(f"[ERROR] {error_msg}\n")
-                f.write(f"[ERROR] Full traceback:\n{traceback.format_exc()}\n")
-                
+            # Log detailed error information
+            ErrorHandler.log_error(error_info, log_file_path)
+            
+            # Format error message for database
+            error_msg = ErrorHandler.format_error_message(error_info)
+            
+            # Finalize task with error
             for session in get_session():
                 crud.finalize_task(
                     session,
@@ -238,19 +149,20 @@ class TaskExecutor:
                     error_msg
                 )
     
-    async def _process_message(self, message):
+    async def _process_message(self, message: Message) -> None:
         """
         Process individual messages from the SDK stream.
         Extracts relevant information and updates summary log.
         """
         summary_line = None
         
-        # Check if message has tool use blocks
-        if hasattr(message, 'content') and message.content:
+        # Process AssistantMessage with content blocks
+        if isinstance(message, AssistantMessage) and message.content:
             for block in message.content:
-                if hasattr(block, 'name'):  # ToolUseBlock
-                    summary_line = format_tool_use(block)
-                    break
+                formatted = format_content_block(block)
+                if formatted:
+                    summary_line = formatted
+                    break  # Log the first significant block
         
         # If we have something to log, update the database
         if summary_line:
