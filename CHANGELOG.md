@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.4.0] - 2025-08-20
+
+- feat: enhance error handling with detailed debugging information
+- docs: add comprehensive manual QA test plan with 67 test cases
+- chore: bump version to 0.3.2 [skip ci]
+- chore: bump version to 0.2.4 for model selection feature
+- feat: add Claude model selection support across all interfaces
+
+
 ## [0.3.2] - 2025-08-20
 
 - chore: bump version to 0.2.4 for model selection feature
