@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "claude-worker"
-version = "0.2.2"
+version = "0.2.3"
 description = "Fire-and-forget task execution system for Claude Code SDK with CLI and MCP interfaces"
 authors = ["Yigit Konur <yigit@thinkbuddy.ai>"]
 readme = "README.md"

@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.3] - 2025-08-20
+
+- Merge branch 'main' of https://github.com/yigitkonur/claude-worker
+- docs: document zero-configuration auto-start behavior for MCP
+- chore: bump version to 0.2.2 [skip ci]
+- Merge branch 'main' of https://github.com/yigitkonur/claude-worker
+- fix: resolve list_tasks database query errors in MCP integration
+- chore: bump version to 0.2.1 [skip ci]
+- Merge branch 'main' of https://github.com/yigitkonur/claude-worker
+- chore: bump version to 0.2.0 [skip ci]
+
+
 ## [0.2.2] - 2025-08-20
 
 - Merge branch 'main' of https://github.com/yigitkonur/claude-worker
