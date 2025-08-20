@@ -52,6 +52,7 @@ full = ["fastapi", "uvicorn", "typer", "httpx", "fastmcp"]
 "Bug Tracker" = "https://github.com/yigitkonur/claude-worker/issues"
 "Changelog" = "https://github.com/yigitkonur/claude-worker/blob/main/CHANGELOG.md"
 "MCP Documentation" = "https://github.com/yigitkonur/claude-worker/blob/main/MCP_README.md"
+"Smithery" = "https://smithery.ai/@yigitkonur/claude-worker"
 
 [tool.poetry.scripts]
 # CLI entry point (requires 'server' or 'full' extra)

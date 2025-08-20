@@ -1,0 +1,35 @@
+# Smithery configuration for Claude Worker MCP Server
+# This enables deployment on smithery.ai for easy installation
+
+runtime: "container"
+
+# Environment variables for the MCP server
+env:
+  # Database and log paths for standalone mode
+  CLAUDE_WORKER_DB: "/data/claude-worker/tasks.db"
+  CLAUDE_WORKER_LOG_DIR: "/data/claude-worker/logs"
+  # Default to standalone mode (no REST API dependency)
+  CLAUDE_WORKER_MODE: "standalone"
+
+# Docker build configuration
+build:
+  dockerfile: "Dockerfile"
+  dockerBuildPath: "."
+
+# MCP server metadata
+name: "claude-worker"
+description: "Fire-and-forget task delegation system for Claude Code SDK with intelligent LLM-optimized tool descriptions"
+version: "0.2.3"
+author: "Yigit Konur"
+license: "MIT"
+homepage: "https://github.com/yigitkonur/claude-worker"
+
+# MCP-specific configuration for stdio communication
+mcp:
+  protocol: "stdio"
+  tools:
+    - create_task: "Delegate tasks to skilled developers for parallel execution"
+    - get_task_status: "Check task status with dependency management"
+    - list_tasks: "View all delegated tasks with strategic overview"
+    - get_task_logs: "Retrieve detailed execution logs (standalone mode)"
+    - check_api_health: "Verify system health (proxy mode)"

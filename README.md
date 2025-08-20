@@ -69,6 +69,13 @@ claude-worker run "Your task"
 ### 🪶 MCP Mode
 **For:** Use 'Claude Code' as planner (CTO) and use 'Claude Code Worker' to execute tasks (dev) in parallel
 
+#### Option A: Install via Smithery (Recommended)
+```bash
+# Install from Smithery.ai registry
+npx -y @smithery/cli install @yigitkonur/claude-worker --client claude-desktop
+```
+
+#### Option B: Install via pip
 ```bash
 pip install "claude-worker[mcp]" <-  (💡 if you want both, use claude-worker[full] )
 fastmcp install claude-desktop \
@@ -147,6 +154,41 @@ poetry install
 ```
 
 > 📖 **Need detailed setup instructions?** See the [Installation Guide](docs/01-getting-started-installation.md)
+
+## 🌐 Smithery Deployment
+
+Claude Worker is available on [Smithery.ai](https://smithery.ai/@yigitkonur/claude-worker) for easy MCP server deployment:
+
+### Installing via Smithery
+
+```bash
+# One-command installation for Claude Desktop
+npx -y @smithery/cli install @yigitkonur/claude-worker --client claude-desktop
+
+# Or for other clients (e.g., Claude Code)
+npx -y @smithery/cli install @yigitkonur/claude-worker --client code
+```
+
+### Features in Smithery Mode
+
+- **Zero Configuration**: Runs in standalone mode with embedded SQLite
+- **Containerized**: Isolated Alpine Linux environment with all dependencies
+- **Persistent Storage**: Tasks and logs preserved in `/data/claude-worker/`
+- **Error-Driven Optimization**: Advanced LLM behavior training through strategic tool descriptions
+- **MCP Protocol**: Full stdio communication for seamless Claude integration
+
+### Publishing Updates to Smithery
+
+Maintainers can deploy updates:
+
+```bash
+# Build and test locally
+docker build -t claude-worker-mcp:latest .
+docker run --rm claude-worker-mcp:latest python -c "import claude_worker; print('OK')"
+
+# Push to Smithery registry
+npx -y @smithery/cli publish
+```
 
 ## 🎮 Usage Examples
 

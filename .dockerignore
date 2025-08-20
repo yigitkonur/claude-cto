@@ -1,0 +1,94 @@
+# Git files
+.git/
+.gitignore
+.github/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+.poetry/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+.DS_Store
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Documentation (except required files)
+docs/
+*.md
+!README.md
+!CHANGELOG.md
+
+# Local development files
+*.log
+*.sqlite
+*.db
+.env
+.env.*
+
+# Build artifacts
+*.whl
+*.tar.gz
+
+# Claude Worker specific
+~/.claude-worker/
+logs/
+*.raw.log
+task_*.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Scripts (not needed in container)
+scripts/
+*.sh
+
+# CI/CD
+.travis.yml
+.gitlab-ci.yml
+azure-pipelines.yml
+
+# Node modules (if any)
+node_modules/
+
+# Docker files (not needed in build context)
+docker-compose*.yml
+Dockerfile.*
