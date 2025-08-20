@@ -101,8 +101,32 @@ class TaskExecutor:
                 )
         
         except ProcessError as e:
-            # Handle SDK process errors
-            error_msg = f"Process error: {e.stderr if e.stderr else str(e)}"
+            # Handle SDK process errors with detailed information
+            error_details = []
+            error_details.append(f"Process error: {str(e)}")
+            
+            # Include stderr if available
+            if hasattr(e, 'stderr') and e.stderr:
+                error_details.append(f"stderr: {e.stderr}")
+            
+            # Include stdout if available  
+            if hasattr(e, 'stdout') and e.stdout:
+                error_details.append(f"stdout: {e.stdout}")
+                
+            # Include exit code if available
+            if hasattr(e, 'returncode'):
+                error_details.append(f"exit_code: {e.returncode}")
+                
+            # Include command if available
+            if hasattr(e, 'cmd'):
+                error_details.append(f"command: {e.cmd}")
+            
+            error_msg = " | ".join(error_details)
+            
+            # Also write to raw log
+            with open(log_file_path, 'a') as f:
+                f.write(f"[ERROR] {error_msg}\n")
+            
             for session in get_session():
                 crud.finalize_task(
                     session,
@@ -112,8 +136,13 @@ class TaskExecutor:
                 )
         
         except ClaudeSDKError as e:
-            # Handle other SDK errors
-            error_msg = f"SDK error: {str(e)}"
+            # Handle other SDK errors with details
+            error_msg = f"SDK error: {str(e)} | Type: {type(e).__name__}"
+            
+            # Also write to raw log
+            with open(log_file_path, 'a') as f:
+                f.write(f"[ERROR] {error_msg}\n")
+                
             for session in get_session():
                 crud.finalize_task(
                     session,
@@ -123,8 +152,15 @@ class TaskExecutor:
                 )
         
         except Exception as e:
-            # Handle unexpected errors
-            error_msg = f"Unexpected error: {str(e)}"
+            # Handle unexpected errors with stack trace
+            import traceback
+            error_msg = f"Unexpected error: {str(e)} | Type: {type(e).__name__} | Traceback: {traceback.format_exc()}"
+            
+            # Also write to raw log
+            with open(log_file_path, 'a') as f:
+                f.write(f"[ERROR] {error_msg}\n")
+                f.write(f"[ERROR] Full traceback:\n{traceback.format_exc()}\n")
+                
             for session in get_session():
                 crud.finalize_task(
                     session,
