@@ -19,7 +19,7 @@ build:
 # MCP server metadata
 name: "claude-worker"
 description: "Fire-and-forget task delegation system for Claude Code SDK with intelligent LLM-optimized tool descriptions"
-version: "0.2.3"
+version: "0.3.1"
 author: "Yigit Konur"
 license: "MIT"
 homepage: "https://github.com/yigitkonur/claude-worker"

@@ -1,15 +1,31 @@
 # Changelog
 
+## [0.3.1] - 2025-08-20
+
+### Added
+- Claude model selection support across all interfaces (CLI, MCP, API)
+- New `--model` parameter for CLI with sonnet/opus/haiku options
+- Model field in database schema with proper enum validation
+- Intelligent model descriptions to guide usage:
+  - sonnet: Default, balanced intelligence for most tasks
+  - opus: Highest intelligence for complex planning/architecture
+  - haiku: Fastest execution for simple repetitive tasks
+
+### Changed
+- TaskDB model now includes model field (default: sonnet)
+- Task executors pass model selection to Claude Code SDK
+- MCP tools validate and accept model parameter
+
 ## [0.3.0] - 2025-08-20
 
-- feat: add Smithery.ai deployment configuration for MCP server
-- chore: bump version to 0.2.3 [skip ci]
-- Merge branch 'main' of https://github.com/yigitkonur/claude-worker
-- docs: document zero-configuration auto-start behavior for MCP
-- chore: bump version to 0.2.2 [skip ci]
-- Merge branch 'main' of https://github.com/yigitkonur/claude-worker
-- chore: bump version to 0.2.1 [skip ci]
+### Added
+- Smithery.ai deployment configuration for MCP server
+- Docker container support with Alpine Linux
+- One-command installation via `npx @smithery/cli install`
+- Smithery URL in package metadata
 
+### Changed
+- Documentation updated with Smithery installation instructions
 
 ## [0.2.3] - 2025-08-20
 
