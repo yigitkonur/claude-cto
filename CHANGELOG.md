@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.3.2] - 2025-08-20
+
+- chore: bump version to 0.2.4 for model selection feature
+- feat: add Claude model selection support across all interfaces
+- chore: bump version to 0.3.0 [skip ci]
+- feat: add Smithery.ai deployment configuration for MCP server
+- chore: bump version to 0.2.3 [skip ci]
+
+
 ## [0.3.1] - 2025-08-20
 
 ### Added
