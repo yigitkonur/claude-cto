@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.2.2] - 2025-08-20
+
+- Merge branch 'main' of https://github.com/yigitkonur/claude-worker
+- fix: resolve list_tasks database query errors in MCP integration
+- chore: bump version to 0.2.1 [skip ci]
+- Merge branch 'main' of https://github.com/yigitkonur/claude-worker
+- feat: optimize MCP tool descriptions for advanced LLM behavior training
+- chore: bump version to 0.2.0 [skip ci]
+- feat: enhance MCP integration with error-driven prompt optimization
+
+
 ## [0.2.1] - 2025-08-11
 
 - Merge branch 'main' of https://github.com/yigitkonur/claude-worker
