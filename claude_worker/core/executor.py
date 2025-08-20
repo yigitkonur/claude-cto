@@ -112,7 +112,20 @@ class TaskExecutor:
             }
             
         except Exception as e:
-            error_msg = f"Task failed: {str(e)}"
+            # Enhanced error handling with specific SDK error types
+            error_type = type(e).__name__
+            error_msg = f"Task failed [{error_type}]: {str(e)}"
+            
+            # Log specific details based on error type
+            if hasattr(e, 'exit_code'):
+                error_msg += f" | exit_code: {e.exit_code}"
+            if hasattr(e, 'stderr') and e.stderr:
+                error_msg += f" | stderr: {e.stderr}"
+            if hasattr(e, 'line'):  # CLIJSONDecodeError
+                error_msg += f" | problematic_line: {e.line[:100]}"
+            if hasattr(e, 'data'):  # MessageParseError
+                error_msg += f" | parse_data: {e.data}"
+                
             task_logger.error(error_msg, exc_info=True)
             
             update_task_status(

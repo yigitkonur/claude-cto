@@ -7,7 +7,14 @@ import os
 import asyncio
 from datetime import datetime
 from claude_code_sdk import query, ClaudeCodeOptions
-from claude_code_sdk._errors import ProcessError, ClaudeSDKError
+from claude_code_sdk._errors import (
+    ProcessError, 
+    ClaudeSDKError, 
+    CLIConnectionError, 
+    CLINotFoundError,
+    CLIJSONDecodeError,
+    MessageParseError
+)
 from .database import get_session
 from . import crud, models
 from .log_formatter import format_tool_use
@@ -102,31 +109,93 @@ class TaskExecutor:
         
         except ProcessError as e:
             # Handle SDK process errors with detailed information
+            # ProcessError has: exit_code, stderr attributes from SDK
             error_details = []
             error_details.append(f"Process error: {str(e)}")
             
-            # Include stderr if available
-            if hasattr(e, 'stderr') and e.stderr:
-                error_details.append(f"stderr: {e.stderr}")
+            # Use actual ProcessError attributes from SDK
+            if e.exit_code is not None:
+                error_details.append(f"exit_code: {e.exit_code}")
             
-            # Include stdout if available  
-            if hasattr(e, 'stdout') and e.stdout:
-                error_details.append(f"stdout: {e.stdout}")
-                
-            # Include exit code if available
-            if hasattr(e, 'returncode'):
-                error_details.append(f"exit_code: {e.returncode}")
-                
-            # Include command if available
-            if hasattr(e, 'cmd'):
-                error_details.append(f"command: {e.cmd}")
+            if e.stderr:
+                error_details.append(f"stderr: {e.stderr}")
             
             error_msg = " | ".join(error_details)
             
             # Also write to raw log
             with open(log_file_path, 'a') as f:
-                f.write(f"[ERROR] {error_msg}\n")
+                f.write(f"[ERROR] ProcessError - exit_code: {e.exit_code}, stderr: {e.stderr}\n")
+                f.write(f"[ERROR] Full message: {error_msg}\n")
             
+            for session in get_session():
+                crud.finalize_task(
+                    session,
+                    self.task_id,
+                    models.TaskStatus.FAILED,
+                    error_msg
+                )
+        
+        except CLINotFoundError as e:
+            # Handle CLI not found - critical error that needs user action
+            error_msg = f"Claude CLI not found: {str(e)}. Please install Claude CLI and ensure it's in your PATH."
+            
+            with open(log_file_path, 'a') as f:
+                f.write(f"[ERROR] CLINotFoundError: {error_msg}\n")
+                f.write("[ERROR] Installation guide: https://docs.anthropic.com/en/docs/claude-cli\n")
+                
+            for session in get_session():
+                crud.finalize_task(
+                    session,
+                    self.task_id,
+                    models.TaskStatus.FAILED,
+                    error_msg
+                )
+        
+        except CLIConnectionError as e:
+            # Handle CLI connection errors - might be transient, attempt brief retry
+            error_msg = f"Failed to connect to Claude CLI: {str(e)}. Check if Claude CLI is working with 'claude --version'."
+            
+            # Log the attempt
+            with open(log_file_path, 'a') as f:
+                f.write(f"[ERROR] CLIConnectionError: {error_msg}\n")
+                f.write("[INFO] Connection errors can be transient - this is a critical failure\n")
+                
+            # For connection errors, fail immediately as they usually indicate CLI issues
+            for session in get_session():
+                crud.finalize_task(
+                    session,
+                    self.task_id,
+                    models.TaskStatus.FAILED,
+                    error_msg + " | Suggestion: Run 'claude --version' to verify CLI installation"
+                )
+        
+        except CLIJSONDecodeError as e:
+            # Handle JSON decode errors from CLI output
+            error_msg = f"Failed to parse CLI JSON output: {str(e)}. Line: '{e.line[:100]}...'"
+            
+            with open(log_file_path, 'a') as f:
+                f.write(f"[ERROR] CLIJSONDecodeError: {error_msg}\n")
+                f.write(f"[ERROR] Original error: {e.original_error}\n")
+                f.write(f"[ERROR] Problematic line: {e.line}\n")
+                
+            for session in get_session():
+                crud.finalize_task(
+                    session,
+                    self.task_id,
+                    models.TaskStatus.FAILED,
+                    error_msg
+                )
+        
+        except MessageParseError as e:
+            # Handle message parsing errors
+            error_msg = f"Failed to parse CLI message: {str(e)}"
+            if e.data:
+                error_msg += f" | Data: {e.data}"
+            
+            with open(log_file_path, 'a') as f:
+                f.write(f"[ERROR] MessageParseError: {error_msg}\n")
+                f.write(f"[ERROR] Raw data: {e.data}\n")
+                
             for session in get_session():
                 crud.finalize_task(
                     session,
