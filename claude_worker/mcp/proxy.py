@@ -40,7 +40,8 @@ def create_proxy_server(
     async def create_task(
         execution_prompt: str,
         working_directory: str = ".",
-        system_prompt: Optional[str] = None
+        system_prompt: Optional[str] = None,
+        model: str = "sonnet"
     ) -> Dict[str, Any]:
         """
         The most critical tool in your toolkit — use it to delegate tasks to skilled developers for 
@@ -65,6 +66,7 @@ def create_proxy_server(
             execution_prompt: Detailed task description (min 150 chars, must include file paths)
             working_directory: Directory to execute the task in
             system_prompt: Optional system prompt (auto-adds minimalist focus if empty)
+            model: Claude model selection - 'sonnet' (default, balanced for most tasks), 'opus' (highest intelligence for complex planning/architecture), 'haiku' (fastest for simple repetitive tasks)
         
         Returns:
             Task information with ID and status for monitoring
@@ -104,6 +106,14 @@ def create_proxy_server(
                 "hint": "Mention a file path or directory in your prompt"
             }
         
+        # Validate model selection
+        model_lower = model.lower()
+        if model_lower not in ["sonnet", "opus", "haiku"]:
+            return {
+                "error": f"Invalid model: {model}. Must be one of: sonnet, opus, haiku",
+                "hint": "Use 'sonnet' for most tasks, 'opus' for complex planning, 'haiku' for simple tasks"
+            }
+        
         # Submit to REST API (using MCP endpoint for strict validation)
         async with httpx.AsyncClient() as client:
             try:
@@ -112,7 +122,8 @@ def create_proxy_server(
                     json={
                         "execution_prompt": execution_prompt,
                         "working_directory": working_directory,
-                        "system_prompt": system_prompt
+                        "system_prompt": system_prompt,
+                        "model": model_lower
                     },
                     timeout=30.0
                 )

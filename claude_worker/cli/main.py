@@ -204,6 +204,11 @@ def run(
         help="Custom system prompt for Claude",
         rich_help_panel="Task Options"
     )] = None,
+    model: Annotated[str, typer.Option(
+        "--model", "-m",
+        help="Claude model to use: sonnet (default - balanced intelligence for most tasks), opus (highest intelligence for complex planning), haiku (fastest for simple tasks)",
+        rich_help_panel="Task Options"
+    )] = "sonnet",
     watch: Annotated[bool, typer.Option(
         "--watch", "-w",
         help="Watch task progress in real-time",
@@ -244,6 +249,13 @@ def run(
     }
     if system_prompt:
         task_data["system_prompt"] = system_prompt
+    
+    # Validate and add model
+    model_lower = model.lower()
+    if model_lower not in ["sonnet", "opus", "haiku"]:
+        console.print(f"[red]❌ Invalid model: {model}. Must be one of: sonnet, opus, haiku[/red]")
+        raise typer.Exit(1)
+    task_data["model"] = model_lower
     
     # Get server URL and check if server is running
     server_url = get_server_url()

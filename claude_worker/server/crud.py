@@ -20,7 +20,8 @@ def create_task(session: Session, task_in: models.TaskCreate, log_dir: Path) -> 
         status=models.TaskStatus.PENDING,
         working_directory=task_in.working_directory,
         system_prompt=task_in.system_prompt or "You are a helpful assistant following John Carmack's principles of simplicity.",
-        execution_prompt=task_in.execution_prompt
+        execution_prompt=task_in.execution_prompt,
+        model=task_in.model or models.ClaudeModel.SONNET
     )
     
     # Add to session to generate ID

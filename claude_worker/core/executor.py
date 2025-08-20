@@ -60,11 +60,13 @@ class TaskExecutor:
             task_logger.info(f"Working directory: {task.working_directory}")
             task_logger.info(f"System prompt: {task.system_prompt}")
             task_logger.info(f"Execution prompt: {task.execution_prompt}")
+            task_logger.info(f"Model: {task.model}")
             
             # Configure Claude Code SDK
             options = ClaudeCodeOptions(
                 cwd=task.working_directory,
-                system_prompt=task.system_prompt
+                system_prompt=task.system_prompt,
+                model=task.model  # Pass the model to Claude SDK
             )
             
             # Execute with Claude Code SDK

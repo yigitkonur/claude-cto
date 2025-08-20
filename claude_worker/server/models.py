@@ -18,6 +18,13 @@ class TaskStatus(str, Enum):
     FAILED = "failed"
 
 
+class ClaudeModel(str, Enum):
+    """Claude model selection for task execution."""
+    SONNET = "sonnet"
+    OPUS = "opus"
+    HAIKU = "haiku"
+
+
 class TaskDB(SQLModel, table=True):
     """Database model representing the tasks table schema."""
     __tablename__ = "tasks"
@@ -28,6 +35,7 @@ class TaskDB(SQLModel, table=True):
     working_directory: str
     system_prompt: str
     execution_prompt: str
+    model: ClaudeModel = Field(default=ClaudeModel.SONNET)
     log_file_path: Optional[str] = None  # Combined log path
     last_action_cache: Optional[str] = None
     final_summary: Optional[str] = None
@@ -42,6 +50,7 @@ class TaskCreate(BaseModel):
     execution_prompt: str
     working_directory: str
     system_prompt: Optional[str] = None
+    model: Optional[ClaudeModel] = ClaudeModel.SONNET
 
 
 class MCPCreateTaskPayload(BaseModel):
@@ -49,6 +58,7 @@ class MCPCreateTaskPayload(BaseModel):
     system_prompt: str = Field(..., min_length=75, max_length=500)
     execution_prompt: str = Field(..., min_length=150)
     working_directory: str
+    model: Optional[ClaudeModel] = ClaudeModel.SONNET
     
     @field_validator('system_prompt')
     @classmethod

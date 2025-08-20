@@ -57,11 +57,13 @@ class TaskExecutor:
             system_prompt = task_record.system_prompt
             execution_prompt = task_record.execution_prompt
             log_file_path = task_record.log_file_path
+            model = task_record.model  # Get the model from task record
         
         # Configure SDK options
         options = ClaudeCodeOptions(
             cwd=working_directory,
             system_prompt=system_prompt,
+            model=model,  # Pass the model to Claude SDK
             permission_mode='bypassPermissions'  # Required for automated execution
         )
         
