@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.3.0] - 2025-08-20
+
+- feat: add Smithery.ai deployment configuration for MCP server
+- chore: bump version to 0.2.3 [skip ci]
+- Merge branch 'main' of https://github.com/yigitkonur/claude-worker
+- docs: document zero-configuration auto-start behavior for MCP
+- chore: bump version to 0.2.2 [skip ci]
+- Merge branch 'main' of https://github.com/yigitkonur/claude-worker
+- chore: bump version to 0.2.1 [skip ci]
+
+
 ## [0.2.3] - 2025-08-20
 
 - Merge branch 'main' of https://github.com/yigitkonur/claude-worker
