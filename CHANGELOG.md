@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.5.1] - 2025-08-21
+
+- rename: claude-cto
+- Pre-refactor commit: Save current state before renaming claude-worker to claude-cto
+- chore: bump version to 0.5.0 [skip ci]
+- fix: enforce CRUD layer compliance in TaskOrchestrator
+- docs: add comprehensive error handling guide
+
+
 ## [0.5.0] - 2025-08-21
 
 - fix: enforce CRUD layer compliance in TaskOrchestrator
