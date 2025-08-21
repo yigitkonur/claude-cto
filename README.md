@@ -1,449 +1,477 @@
+# Claude Worker 🚀
 
-> **🔥 The most flexible fire-and-forget task execution system + prod-level MCP for Claude Code SDK**  
-> Run with zero infrastructure (MCP standalone) or at scale (REST API + Workers)
+**Fire-and-forget task execution for Claude Code SDK with dependency orchestration.**  
+Run complex AI-powered workflows without blocking your terminal. Define task dependencies, run in parallel, and get instant audio feedback.
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
-[![MCP Compatible](https://img.shields.io/badge/MCP-Compatible-green.svg)](https://modelcontextprotocol.io)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-009688.svg)](https://fastapi.tiangolo.com)
-[![MIT License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![PyPI Version](https://img.shields.io/badge/PyPI-v0.1.0%20(beta)-orange.svg)](https://pypi.org/project/claude-worker/)
-[![Documentation](https://img.shields.io/badge/docs-comprehensive-success.svg)](docs/00-overview.md)
+[![PyPI](https://img.shields.io/pypi/v/claude-worker.svg)](https://pypi.org/project/claude-worker/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## 🎯 Why Claude Worker?
+## 🎯 Key Features
 
-**The Problem:** Claude Code tasks may take a few minutes to finish. Running them interactively in your terminal can be time-consuming. When possible, you can run tasks in parallel to save time. By using Claude Code as a CTO and running it in MCP server mode, you can execute multiple tasks simultaneously.
+- **🔗 Task Orchestration** - Define complex workflows with dependencies, automatic parallel execution, and failure propagation
+- **🚀 Fire & Forget** - Submit tasks and continue working while Claude handles them in the background
+- **💾 Persistent** - SQLite storage survives crashes and restarts
+- **🔊 Audio Feedback** - Get notified with sounds when tasks start, complete, or fail
+- **📊 Rich Logging** - Structured, emoji-enhanced logs with multiple verbosity levels
+- **🔄 Auto-Retry** - Intelligent retry logic with exponential backoff for transient failures
+- **🎛️ Multiple Interfaces** - CLI, REST API, and MCP (Claude Desktop) support
 
-**The Solution:** Claude Worker provides a robust task execution system that:
-
-- ✅ **Runs anywhere** - From lightweight CLI tools to MCP that can be used by another Claude Code
-- ✅ **Never loses work** - SQLite persistence survives crashes (local, accessible DB)
-- ✅ **Scales flexibly** - Process isolation with configurable workers
-- ✅ **Integrates everywhere** - MCP, CLI, REST API (not documented) or programmatic
-
-## 🏗️ Architecture: Two Modes, One Codebase
-
-```mermaid
-graph TB
-    subgraph "Lightweight Mode (MCP Only)"
-        User1[Claude Desktop/Code] -->|stdio| MCP1[MCP Server]
-        MCP1 --> DB1[(Embedded SQLite)]
-        MCP1 --> Executor1[Direct Execution]
-    end
-    
-    subgraph "Full Stack Mode (REST + MCP)"
-        User2[CLI/API Client] -->|HTTP| REST[REST API]
-        User3[Claude Desktop] -->|stdio| MCP2[MCP Proxy]
-        MCP2 -->|HTTP| REST
-        REST --> DB2[(Shared Database)]
-        REST --> Pool[Process Pool]
-        Pool --> Workers[Worker Processes]
-    end
-    
-    style MCP1 fill:#90EE90
-    style MCP2 fill:#87CEEB
-    style REST fill:#FFB6C1
-```
-
-## ⚡ Quick Start
-
-### Choose Your Path:
-
-<table>
-<tr>
-<td width="30%">
-
-### 🏢 CLI Mode
-**For:** Set tasks from both CLI, flexible to add tasks by MD/TXT files or just plain text commands!
+## 📦 Installation
 
 ```bash
-pip install "claude-worker[server]" <-  (💡 if you want both, use claude-worker[full] )
-claude-worker server start
-claude-worker run "Your task"
-```
-
-[→ Quick Start Guide](docs/01-getting-started-quick-start.md)
-
-</td>
-<td width="30%">
-
-### 🪶 MCP Mode
-**For:** Use 'Claude Code' as planner (CTO) and use 'Claude Code Worker' to execute tasks (dev) in parallel
-
-#### Option A: Install via Smithery (Recommended)
-```bash
-# Install from Smithery.ai registry
-npx -y @smithery/cli install @yigitkonur/claude-worker --client claude-desktop
-```
-
-#### Option B: Install via pip
-```bash
-pip install "claude-worker[mcp]" <-  (💡 if you want both, use claude-worker[full] )
-fastmcp install claude-desktop \
-  claude-worker-mcp
-```
-
-[→ Installation Guide](docs/01-getting-started-installation.md)
-
-</td>
-</tr>
-</table>
-
----
-
-## 📚 Documentation
-
-Comprehensive documentation is available in the `docs/` directory:
-
-### 🚀 Getting Started
-- **[Overview](docs/00-overview.md)** - Project introduction and feature overview
-- **[Installation](docs/01-getting-started-installation.md)** - Complete setup guide for all platforms
-- **[Quick Start](docs/01-getting-started-quick-start.md)** - Get running in 5 minutes
-
-### 📖 User Guides  
-- **[CLI Reference](docs/02-user-guide-cli-reference.md)** - Complete command reference
-- **[Task Submission](docs/02-user-guide-task-submission.md)** - Advanced submission methods (files, stdin, automation)
-- **[Monitoring & Logs](docs/02-user-guide-monitoring-and-logs.md)** - Status checking and debugging
-
-### 🏗️ Core Concepts
-- **[Architecture](docs/03-concepts-architecture.md)** - System design and component overview
-- **[Database Schema](docs/03-concepts-database-schema.md)** - Data model and persistence
-- **[Process Model](docs/03-concepts-process-model.md)** - Task execution lifecycle
-- **[Project Philosophy](docs/03-concepts-project-philosophy.md)** - Design principles and SOLE responsibility
-
-### 🔌 Integrations
-- **[REST API](docs/04-integrations-rest-api.md)** - HTTP endpoints and data models
-- **[MCP for AI Agents](docs/04-integrations-mcp-for-agents.md)** - Model Context Protocol integration
-- **[MCP with Claude Code](docs/04-integrations-mcp-claude-code.md)** - Error-driven prompt optimization and task delegation
-
-### ⚙️ Administration
-- **[Configuration](docs/05-administration-configuration.md)** - Environment variables and settings
-- **[Deployment](docs/05-administration-deployment.md)** - Production deployment strategies
-- **[Security](docs/05-administration-security.md)** - Security considerations and best practices
-
-### 🤝 Contributing
-- **[Development Setup](docs/06-contributing-development-setup.md)** - Local development environment
-- **[Contribution Guide](docs/06-contributing-guide.md)** - How to contribute to the project
-
----
-
-## 🚀 Installation
-
-### Prerequisites
-
-- **Python 3.10+** and **Node.js 16+** (for Claude Code SDK)
-- **Authentication** (choose one):
-  - 🔑 **Anthropic API Key** ([Get yours here](https://console.anthropic.com/))
-  - 🎯 **Claude Max/Pro Subscription** (OAuth via Claude CLI - no setup needed!)
-
-### Installation Options
-
-```bash
-# 1. MCP Tools Only (Lightweight)
-pip install "claude-worker[mcp]"
-
-# 2. REST API + CLI (No MCP) 
-pip install "claude-worker[server]"
-
-# 3. Everything (Recommended)
+# Everything (recommended)
 pip install "claude-worker[full]"
 
-# 4. From Source (Development)
-git clone https://github.com/yigitkonur/claude-worker
-cd claude-worker
-poetry install
+# Just CLI and REST API
+pip install "claude-worker[server]"
+
+# Just MCP for Claude Desktop
+pip install "claude-worker[mcp]"
 ```
 
-> 📖 **Need detailed setup instructions?** See the [Installation Guide](docs/01-getting-started-installation.md)
+**Prerequisites:** 
+- Python 3.10+
+- Node.js 16+ (for Claude CLI)
+- `ANTHROPIC_API_KEY` or Claude CLI OAuth
 
-## 🌐 Smithery Deployment
+## 🚀 Quick Start
 
-Claude Worker is available on [Smithery.ai](https://smithery.ai/@yigitkonur/claude-worker) for easy MCP server deployment:
-
-### Installing via Smithery
+### 1. Basic Task Execution
 
 ```bash
-# One-command installation for Claude Desktop
-npx -y @smithery/cli install @yigitkonur/claude-worker --client claude-desktop
+# Single task - server auto-starts
+claude-worker run "Create a Python web scraper for news articles"
 
-# Or for other clients (e.g., Claude Code)
-npx -y @smithery/cli install @yigitkonur/claude-worker --client code
-```
+# With options
+claude-worker run "Refactor auth.py" --dir ./src --model opus --watch
 
-### Features in Smithery Mode
-
-- **Zero Configuration**: Runs in standalone mode with embedded SQLite
-- **Containerized**: Isolated Alpine Linux environment with all dependencies
-- **Persistent Storage**: Tasks and logs preserved in `/data/claude-worker/`
-- **Error-Driven Optimization**: Advanced LLM behavior training through strategic tool descriptions
-- **MCP Protocol**: Full stdio communication for seamless Claude integration
-
-### Publishing Updates to Smithery
-
-Maintainers can deploy updates:
-
-```bash
-# Build and test locally
-docker build -t claude-worker-mcp:latest .
-docker run --rm claude-worker-mcp:latest python -c "import claude_worker; print('OK')"
-
-# Push to Smithery registry
-npx -y @smithery/cli publish
-```
-
-## 🎮 Usage Examples
-
-### MCP Mode (Claude Code Integration) 🧠
-
-**The "CTO + Dev Team" Pattern**: Use Claude Code as the architect/planner, Claude Worker as the execution team.
-
-**🚀 Zero-Configuration Auto-Start**: 
-- **No server needed!** MCP automatically detects and adapts
-- **REST API available?** → Uses proxy mode for centralized task management
-- **No REST API?** → Seamlessly switches to standalone mode with embedded database
-- **Database auto-initialization** → SQLite database created on first use
-
-```bash
-# Option 1: Install from PyPI
-pip install "claude-worker[mcp]" && \
-claude mcp add claude-worker -s user -- python -m claude_worker.mcp.factory
-
-# Option 2: Install from Smithery (coming soon)
-# npx @smithery/cli install @yigitkonur/claude-worker
-
-# Verify installation
-claude mcp list  # Should show claude-worker ✓ Connected
-```
-
-**Smart Error-Driven Optimization** 🎯
-
-Claude Worker uses a **dual optimization system** to train AI agents:
-
-| Optimization Layer | Mechanism | Example | Result |
-|-------------------|-----------|---------|---------|
-| **Validation Errors** | Strategic failures with helpful hints | "Prompt too short" → Add file paths + details | Forces detailed, actionable prompts |
-| **Tool Descriptions** | LLM behavior programming | "NEVER delegate dependent tasks" | Builds project management workflows |
-| **Dependency Logic** | Threshold-based triggers | "3+ tasks = use dashboard first" | Creates systematic thinking patterns |
-| **Throttling Protocol** | Progressive backoff rules | "Sleep 30s → 60s after 10 attempts" | Prevents system abuse, builds patience |
-
-*_The "John Carmack" requirement is just a [clever metaphor](https://x.com/mattshumer_/status/1921276852200477114) that works because LLMs associate it with minimal, elegant code. It's hardcoded prompt engineering, not philosophy worship!_ 😄
-
-**LLM-Optimized Tool Descriptions** 🧠
-
-Each tool description is carefully crafted to train Claude Code in project management workflows:
-
-| Tool | LLM Training Focus | Behavioral Impact |
-|------|-------------------|-------------------|
-| `create_task` | **"Most critical tool"** + dependency logic | Prioritizes parallel execution, prevents premature delegation |
-| `get_task_status` | **Throttling protocol** (30s → 60s) | Enforces systematic waiting, prevents system overload |
-| `list_tasks` | **"3+ tasks = dashboard"** threshold | Creates overview-first mindset, prevents tunnel vision |
-| `check_api_health` | System reliability checks | Builds diagnostic habits into workflows |
-
-**Available Tools:**
-- `create_task(prompt, dir, system_prompt)` - Delegate tasks with smart validation
-- `get_task_status(id)` - Monitor progress with real-time updates  
-- `list_tasks(limit)` - View team dashboard
-- `check_api_health()` - System health check
-
-**Example: Error-Driven Prompt Optimization**
-```javascript
-// ❌ This fails with helpful errors:
-create_task("Add a function")
-// Error: "Execution prompt must be at least 150 characters"
-// Error: "Execution prompt must contain a path-like string"
-
-// ✅ AI learns to write this instead:
-create_task(
-  "Create calculateTotal() function in ./src/utils/math.js that takes array of numbers and returns sum. Include JSDoc comments and unit tests in ./tests/math.test.js",
-  "./my-project"
-)
-// Result: Precise, actionable task with clear deliverables
-```
-
-### Server Mode (CLI & API)
-
-```bash
-# Start server
-claude-worker server start
-
-# Submit tasks
-claude-worker run "Create a README for my project"
-claude-worker run "Refactor this code" --dir ./src --watch
-
-# Monitor tasks
-claude-worker list
-claude-worker status 1
-```
-
-### Advanced Task Submission
-
-```bash
-# From files
-claude-worker run prompt-template.txt --dir ./project
-
-# From stdin (great for automation)
+# From file or stdin
+claude-worker run instructions.txt
 git diff | claude-worker run "Review these changes"
-find . -name "*.py" | xargs -I {} claude-worker run "Document {}"
 ```
 
-> 📖 **For comprehensive usage examples:** See [Task Submission Guide](docs/02-user-guide-task-submission.md) and [CLI Reference](docs/02-user-guide-cli-reference.md)
+### 2. Task Orchestration (NEW!)
 
-### REST API Usage
+Create `workflow.json`:
+```json
+{
+  "tasks": [
+    {
+      "identifier": "fetch_data",
+      "execution_prompt": "Download dataset from S3 to /data/raw/"
+    },
+    {
+      "identifier": "process_data",
+      "execution_prompt": "Clean and transform data in /data/raw/",
+      "depends_on": ["fetch_data"],
+      "initial_delay": 2.0
+    },
+    {
+      "identifier": "train_model",
+      "execution_prompt": "Train ML model on processed data",
+      "depends_on": ["process_data"],
+      "model": "opus"
+    }
+  ]
+}
+```
+
+Execute workflow:
+```bash
+# Submit and continue
+claude-worker orchestrate workflow.json
+
+# Submit and wait for completion
+claude-worker orchestrate workflow.json --wait
+
+# Check progress
+claude-worker orchestration-status 1
+```
+
+### 3. MCP Integration (Claude Desktop)
+
+Setup once:
+```bash
+pip install "claude-worker[mcp]"
+claude mcp add claude-worker -s user -- python -m claude_worker.mcp.factory
+```
+
+Now Claude can create dependent tasks:
+```python
+# Claude automatically manages orchestrations
+await create_task(
+    task_identifier="setup_db",
+    execution_prompt="Initialize PostgreSQL database"
+)
+
+await create_task(
+    task_identifier="migrate_schema",
+    execution_prompt="Run database migrations",
+    depends_on=["setup_db"],
+    wait_after_dependencies=2.0
+)
+
+await create_task(
+    task_identifier="seed_data",
+    execution_prompt="Populate test data",
+    depends_on=["migrate_schema"]
+)
+```
+
+## 📊 Real-World Examples
+
+### Example 1: Full-Stack App Development
+
+```json
+{
+  "tasks": [
+    {
+      "identifier": "design_api",
+      "execution_prompt": "Design REST API specification for todo app",
+      "model": "opus"
+    },
+    {
+      "identifier": "create_backend",
+      "execution_prompt": "Implement FastAPI backend based on API spec",
+      "depends_on": ["design_api"],
+      "working_directory": "./backend"
+    },
+    {
+      "identifier": "create_frontend",
+      "execution_prompt": "Build React frontend with TypeScript",
+      "depends_on": ["design_api"],
+      "working_directory": "./frontend"
+    },
+    {
+      "identifier": "add_tests",
+      "execution_prompt": "Write comprehensive test suites",
+      "depends_on": ["create_backend", "create_frontend"]
+    },
+    {
+      "identifier": "create_docker",
+      "execution_prompt": "Create Docker Compose configuration",
+      "depends_on": ["add_tests"]
+    }
+  ]
+}
+```
+
+### Example 2: Codebase Refactoring
+
+```bash
+# Create refactoring pipeline
+cat > refactor.json << EOF
+{
+  "tasks": [
+    {
+      "identifier": "analyze",
+      "execution_prompt": "Analyze codebase for code smells and technical debt",
+      "model": "opus"
+    },
+    {
+      "identifier": "plan_refactor",
+      "execution_prompt": "Create detailed refactoring plan",
+      "depends_on": ["analyze"],
+      "model": "opus"
+    },
+    {
+      "identifier": "refactor_auth",
+      "execution_prompt": "Refactor authentication module",
+      "depends_on": ["plan_refactor"]
+    },
+    {
+      "identifier": "refactor_api",
+      "execution_prompt": "Refactor API endpoints",
+      "depends_on": ["plan_refactor"]
+    },
+    {
+      "identifier": "refactor_db",
+      "execution_prompt": "Refactor database layer",
+      "depends_on": ["plan_refactor"]
+    },
+    {
+      "identifier": "run_tests",
+      "execution_prompt": "Run all tests and fix any issues",
+      "depends_on": ["refactor_auth", "refactor_api", "refactor_db"]
+    }
+  ]
+}
+EOF
+
+# Execute with progress monitoring
+claude-worker orchestrate refactor.json --wait
+```
+
+### Example 3: Data Pipeline
 
 ```python
-# Python example
+# Programmatic orchestration via REST API
 import httpx
 
 client = httpx.Client(base_url="http://localhost:8000")
 
-# Create task
-task = client.post("/api/v1/tasks", json={
-    "execution_prompt": "Build a todo app with FastAPI",
-    "working_directory": "./project",
-    "system_prompt": "You are a Python expert"
-}).json()
+# Define ETL pipeline
+pipeline = {
+    "tasks": [
+        # Extract (parallel)
+        {"identifier": "extract_sales", "execution_prompt": "Extract sales data from PostgreSQL"},
+        {"identifier": "extract_inventory", "execution_prompt": "Extract inventory from MongoDB"},
+        {"identifier": "extract_customers", "execution_prompt": "Extract customer data from API"},
+        
+        # Transform (depends on all extracts)
+        {
+            "identifier": "transform",
+            "execution_prompt": "Clean, normalize, and join all datasets",
+            "depends_on": ["extract_sales", "extract_inventory", "extract_customers"],
+            "initial_delay": 2.0
+        },
+        
+        # Load
+        {
+            "identifier": "load_warehouse",
+            "execution_prompt": "Load transformed data into Snowflake",
+            "depends_on": ["transform"]
+        },
+        
+        # Report
+        {
+            "identifier": "generate_report",
+            "execution_prompt": "Create executive dashboard",
+            "depends_on": ["load_warehouse"],
+            "model": "opus"
+        }
+    ]
+}
 
-# Check status
-status = client.get(f"/api/v1/tasks/{task['id']}").json()
-print(f"Task {task['id']}: {status['status']}")
+# Submit pipeline
+response = client.post("/api/v1/orchestrations", json=pipeline)
+orch_id = response.json()["orchestration_id"]
+
+# Monitor progress
+import time
+while True:
+    status = client.get(f"/api/v1/orchestrations/{orch_id}").json()
+    print(f"Progress: {status['completed_tasks']}/{status['total_tasks']}")
+    if status['status'] in ['completed', 'failed']:
+        break
+    time.sleep(5)
 ```
 
-```javascript
-// JavaScript example
-const response = await fetch('http://localhost:8000/api/v1/tasks', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    execution_prompt: 'Build a todo app with FastAPI',
-    working_directory: './project'
-  })
-});
-const task = await response.json();
+## 🎯 Model Selection Strategy
+
+```bash
+# Fast, simple tasks (file operations, basic analysis)
+--model haiku    # ~$0.001 per task
+
+# Balanced performance (default)
+--model sonnet   # ~$0.01 per task
+
+# Complex reasoning (architecture, refactoring)
+--model opus     # ~$0.05 per task
 ```
 
-> 📖 **For complete API documentation:** See [REST API Reference](docs/04-integrations-rest-api.md)
+## 🔊 Sound Notifications
+
+Get audio feedback for task events:
+
+```bash
+# Customize sounds
+export CLAUDE_WORKER_START_SOUND=/path/to/start.wav
+export CLAUDE_WORKER_SUCCESS_SOUND=/path/to/success.wav
+export CLAUDE_WORKER_FAILURE_SOUND=/path/to/failure.wav
+
+# Disable if needed
+export CLAUDE_WORKER_ENABLE_SOUNDS=false
+```
+
+**Platform Support:**
+- **macOS**: Native `afplay`
+- **Linux**: PulseAudio or ALSA
+- **Windows**: PowerShell SoundPlayer
+- **Universal**: `mpv` or `ffplay`
+
+## 📁 Logging & Monitoring
+
+```bash
+# View all tasks
+claude-worker list
+
+# Check specific task
+claude-worker status 42
+
+# Monitor logs
+tail -f ~/.claude-worker/claude-worker.log         # Global
+tail -f ~/.claude-worker/tasks/task_*_summary.log  # Task summary
+tail -f ~/.claude-worker/tasks/task_*_detailed.log # Full details
+
+# List orchestrations
+claude-worker list-orchestrations --status running
+```
 
 ## 🔧 Configuration
 
-### 🔐 Authentication Setup
-
-Claude Worker supports **two authentication methods** automatically:
-
-<table>
-<tr>
-<td width="50%">
-
-#### 🔑 API Key Method
-```bash
-export ANTHROPIC_API_KEY=your-api-key-here
-claude-worker run "your task"
-```
-**Best for:** Teams, CI/CD, granular billing control
-
-</td>
-<td width="50%">
-
-#### 🎯 Claude Max/Pro (OAuth)
-```bash
-# No setup needed! 
-claude-worker run "your task"
-```
-**Best for:** Individual users with Claude subscription
-
-</td>
-</tr>
-</table>
-
-> 💡 **Smart Authentication:** Claude Worker automatically tries API key first, then falls back to your Claude Max subscription. No configuration needed!
-
-### Optional Environment Variables
+### Environment Variables
 
 ```bash
-export CLAUDE_WORKER_DB=~/.claude-worker/tasks.db
-export CLAUDE_WORKER_SERVER_URL=http://localhost:8000  # for CLI client
-export CLAUDE_WORKER_LOG_DIR=~/.claude-worker/logs
+# Authentication
+export ANTHROPIC_API_KEY="sk-ant-..."
+
+# Server
+export CLAUDE_WORKER_HOST="0.0.0.0"
+export CLAUDE_WORKER_PORT="8000"
+
+# Storage
+export CLAUDE_WORKER_DB="~/.claude-worker/tasks.db"
+export CLAUDE_WORKER_LOG_DIR="~/.claude-worker/logs"
+
+# Orchestration limits
+export MAX_TASKS_PER_ORCHESTRATION="100"
+export ORCHESTRATION_TIMEOUT="3600"
+
+# Sound notifications
+export CLAUDE_WORKER_ENABLE_SOUNDS="true"
 ```
 
-> 📖 **For complete configuration options:** See [Configuration Guide](docs/05-administration-configuration.md)
+## 🚀 Production Deployment
 
-## 🐛 Troubleshooting
+### Docker Compose
 
-### Quick Fixes for Common Issues
-
-| Issue | Quick Fix |
-|-------|-----------|
-| **MCP not showing in Claude Desktop** | Restart Claude Desktop completely (Cmd+Q) |
-| **Tasks stuck in "running"** | Check authentication: API key or Claude CLI login |
-| **Authentication failed** | Try: `claude --version` to test Claude CLI |
-| **Database lock errors** | Stop all services: `pkill -f claude-worker` |
-| **Permission denied** | Fix permissions: `chmod 755 ~/.claude-worker` |
-
-### Debug Commands
-
-```bash
-# Check system status
-claude-worker server health
-
-# Check authentication
-echo $ANTHROPIC_API_KEY        # Check if API key is set
-claude --version               # Test Claude CLI (for OAuth)
-
-# View logs
-tail -f ~/.claude-worker/logs/*.log
-
-# List processes
-ps aux | grep claude-worker
-```
-
-> 📖 **For detailed troubleshooting:** See [Security Guide](docs/05-administration-security.md) and check the issues on GitHub
-
-## 🚢 Production Deployment
-
-### Docker (Recommended)
-
-```bash
-# Quick start with Docker Compose
-curl -O https://raw.githubusercontent.com/yigitkonur/claude-worker/main/docker-compose.yml
-echo "ANTHROPIC_API_KEY=your-key" > .env
-docker-compose up -d
-```
-
-```dockerfile
-# Custom Dockerfile
-FROM python:3.11-slim
-WORKDIR /app
-RUN pip install "claude-worker[full]"
-ENV CLAUDE_WORKER_DB=/data/tasks.db
-EXPOSE 8000
-CMD ["claude-worker", "server", "start", "--host", "0.0.0.0"]
+```yaml
+version: '3.8'
+services:
+  claude-worker:
+    image: claude-worker:latest
+    ports:
+      - "8000:8000"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
 ```
 
 ### Systemd Service
 
-```ini
+```bash
 # /etc/systemd/system/claude-worker.service
 [Unit]
 Description=Claude Worker Server
 After=network.target
 
 [Service]
-Type=exec
+Type=simple
 User=claude
-WorkingDirectory=/opt/claude-worker
-Environment="ANTHROPIC_API_KEY=your-key-here"
-ExecStart=/usr/local/bin/claude-worker server start --host 0.0.0.0
+ExecStart=/usr/local/bin/claude-worker server start
 Restart=on-failure
+Environment="ANTHROPIC_API_KEY=sk-ant-..."
 
 [Install]
 WantedBy=multi-user.target
 ```
 
-> 📖 **For comprehensive deployment guides:** See [Deployment Guide](docs/05-administration-deployment.md)
+## 🆙 Upgrading
 
-## 🏗️ Architecture Principles
+### From Pre-Orchestration Versions
 
-- **🎯 SOLE Responsibility**: Each module has Single, Overarching, Lucidly-stated Expertise
-- **🔒 Process Isolation**: Every task runs in its own process for safety
-- **💾 Fail-Safe**: SQLite persistence ensures no work is lost
-- **🔧 Extensible**: Clear interfaces for adding new features
+```bash
+# 1. Upgrade package
+pip install --upgrade "claude-worker[full]"
 
-> 📖 **Learn more about the design:** See [Project Philosophy](docs/03-concepts-project-philosophy.md) and [Architecture Overview](docs/03-concepts-architecture.md)
+# 2. Backup database
+cp ~/.claude-worker/tasks.db ~/.claude-worker/tasks.db.backup
+
+# 3. Run migration
+python -m claude_worker.scripts.migrate_db --migrate
+
+# 4. Verify
+python -m claude_worker.scripts.migrate_db
+# Should show: ✓ Orchestration support: Yes
+```
+
+## 🐛 Troubleshooting
+
+### Quick Fixes
+
+```bash
+# Check health
+curl http://localhost:8000/health
+
+# Reset stuck orchestration
+claude-worker cancel-orchestration <id>
+
+# Fix "database locked"
+pkill -f claude-worker
+rm ~/.claude-worker/tasks.db-journal
+
+# Test sounds
+python -c "from claude_worker.server.notification import test_sounds; test_sounds()"
+
+# Full reset
+pkill -f claude-worker
+rm -rf ~/.claude-worker
+claude-worker server start
+```
+
+### Common Issues
+
+| Issue | Solution |
+|-------|----------|
+| Circular dependency | Review task dependencies, ensure DAG |
+| Tasks not parallel | Remove unnecessary `depends_on` |
+| Database locked | Kill stuck processes, remove lock files |
+| No orchestration support | Run migration script |
+| Sound not working | Check platform tools (afplay/paplay/mpv) |
+
+## 🛠️ Development
+
+```bash
+# Setup
+git clone https://github.com/yigitkonur/claude-worker
+cd claude-worker
+poetry install
+poetry shell
+
+# Run with auto-reload
+claude-worker server start --reload
+
+# Tests
+pytest
+black claude_worker/
+ruff check claude_worker/
+
+# Build
+poetry build
+```
+
+## 📚 Documentation
+
+- [Orchestration Guide](HANDOFF_DOCS_TO_NEXT_DEVELOPER/DOC_PACK_02-TASK_ORCHESTRATION_AND_DEPENDENCIES/01_ORCHESTRATION_OVERVIEW.md)
+- [CLI Reference](HANDOFF_DOCS_TO_NEXT_DEVELOPER/DOC_PACK_02-TASK_ORCHESTRATION_AND_DEPENDENCIES/03_CLI_USAGE_GUIDE.md)
+- [MCP Integration](HANDOFF_DOCS_TO_NEXT_DEVELOPER/DOC_PACK_02-TASK_ORCHESTRATION_AND_DEPENDENCIES/04_MCP_INTEGRATION.md)
+- [API Documentation](docs/api.md)
+- [Architecture](HANDOFF_DOCS_TO_NEXT_DEVELOPER/DOC_PACK_02-TASK_ORCHESTRATION_AND_DEPENDENCIES/02_IMPLEMENTATION_ARCHITECTURE.md)
+
+## 🤝 Contributing
+
+Contributions welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) and follow the SOLE principle:
+- Each module has Single, Overarching, Lucidly-stated Expertise
+- Maintain backward compatibility
+- Add tests for new features
+- Update documentation
+
+## 📄 License
+
+MIT - see [LICENSE](LICENSE) file.
+
+## 🔗 Links
+
+- [PyPI Package](https://pypi.org/project/claude-worker/)
+- [GitHub Repository](https://github.com/yigitkonur/claude-worker)
+- [Issue Tracker](https://github.com/yigitkonur/claude-worker/issues)
+- [Discussions](https://github.com/yigitkonur/claude-worker/discussions)
+
+---
+
+**Built with ❤️ for developers who value their time.**  
+Stop waiting for Claude. Start orchestrating.

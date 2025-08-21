@@ -1,0 +1,68 @@
+{
+  "tasks": [
+    {
+      "identifier": "backup",
+      "execution_prompt": "Create a complete backup of the current codebase in backup/ directory with timestamp",
+      "working_directory": "/path/to/project",
+      "model": "haiku"
+    },
+    {
+      "identifier": "analyze_structure",
+      "execution_prompt": "Analyze the current code structure and identify refactoring opportunities. Create a detailed plan in refactor_plan.md",
+      "working_directory": "/path/to/project",
+      "depends_on": ["backup"],
+      "model": "opus"
+    },
+    {
+      "identifier": "update_imports",
+      "execution_prompt": "Update all import statements to use absolute imports instead of relative imports",
+      "working_directory": "/path/to/project",
+      "depends_on": ["analyze_structure"],
+      "model": "sonnet"
+    },
+    {
+      "identifier": "extract_constants",
+      "execution_prompt": "Extract all magic numbers and hardcoded strings into a constants.py file",
+      "working_directory": "/path/to/project",
+      "depends_on": ["analyze_structure"],
+      "model": "sonnet"
+    },
+    {
+      "identifier": "add_type_hints",
+      "execution_prompt": "Add comprehensive type hints to all Python functions and methods",
+      "working_directory": "/path/to/project",
+      "depends_on": ["update_imports", "extract_constants"],
+      "initial_delay": 1.0,
+      "model": "sonnet"
+    },
+    {
+      "identifier": "update_docs",
+      "execution_prompt": "Update all docstrings to follow Google style guide and ensure they match the new type hints",
+      "working_directory": "/path/to/project",
+      "depends_on": ["add_type_hints"],
+      "model": "sonnet"
+    },
+    {
+      "identifier": "run_tests",
+      "execution_prompt": "Run all tests to ensure refactoring didn't break anything. Fix any failing tests.",
+      "working_directory": "/path/to/project",
+      "depends_on": ["update_docs"],
+      "initial_delay": 2.0,
+      "model": "sonnet"
+    },
+    {
+      "identifier": "final_lint",
+      "execution_prompt": "Run comprehensive linting with black, ruff, and mypy. Fix all issues.",
+      "working_directory": "/path/to/project",
+      "depends_on": ["run_tests"],
+      "model": "haiku"
+    },
+    {
+      "identifier": "create_summary",
+      "execution_prompt": "Create a detailed summary of all changes made during refactoring in REFACTOR_SUMMARY.md",
+      "working_directory": "/path/to/project",
+      "depends_on": ["final_lint"],
+      "model": "sonnet"
+    }
+  ]
+}

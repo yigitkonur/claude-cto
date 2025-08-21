@@ -1,0 +1,36 @@
+{
+  "tasks": [
+    {
+      "identifier": "analyze_python",
+      "execution_prompt": "Analyze all Python files in the project. Count lines of code, identify complexity hotspots, and create a detailed report in reports/python_analysis.md",
+      "working_directory": "/path/to/project",
+      "model": "sonnet"
+    },
+    {
+      "identifier": "analyze_javascript",
+      "execution_prompt": "Analyze all JavaScript and TypeScript files. Check for common issues, count lines, and create a report in reports/js_analysis.md",
+      "working_directory": "/path/to/project",
+      "model": "sonnet"
+    },
+    {
+      "identifier": "analyze_tests",
+      "execution_prompt": "Analyze test coverage across all test files. Identify untested code paths and create a coverage report in reports/test_coverage.md",
+      "working_directory": "/path/to/project",
+      "model": "sonnet"
+    },
+    {
+      "identifier": "security_scan",
+      "execution_prompt": "Perform a security analysis looking for common vulnerabilities, hardcoded secrets, and insecure patterns. Create report in reports/security.md",
+      "working_directory": "/path/to/project",
+      "model": "opus"
+    },
+    {
+      "identifier": "combine_reports",
+      "execution_prompt": "Combine all analysis reports into a comprehensive executive summary. Include key findings, metrics, and actionable recommendations in reports/summary.md",
+      "working_directory": "/path/to/project",
+      "depends_on": ["analyze_python", "analyze_javascript", "analyze_tests", "security_scan"],
+      "initial_delay": 2.0,
+      "model": "opus"
+    }
+  ]
+}

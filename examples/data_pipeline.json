@@ -1,0 +1,54 @@
+{
+  "tasks": [
+    {
+      "identifier": "fetch_data",
+      "execution_prompt": "Create a Python script to fetch sample data from a public API (like JSONPlaceholder) and save it to data/raw/",
+      "working_directory": "/tmp/data-pipeline",
+      "model": "haiku"
+    },
+    {
+      "identifier": "validate_data",
+      "execution_prompt": "Validate the fetched data for completeness and correctness. Log any issues found to data/validation_report.txt",
+      "working_directory": "/tmp/data-pipeline",
+      "depends_on": ["fetch_data"],
+      "initial_delay": 1.0,
+      "model": "sonnet"
+    },
+    {
+      "identifier": "clean_data",
+      "execution_prompt": "Clean and normalize the data. Remove duplicates, handle missing values, and standardize formats. Save to data/cleaned/",
+      "working_directory": "/tmp/data-pipeline",
+      "depends_on": ["validate_data"],
+      "model": "sonnet"
+    },
+    {
+      "identifier": "transform_data",
+      "execution_prompt": "Transform the cleaned data into analysis-ready format. Create aggregations and derived fields. Save to data/transformed/",
+      "working_directory": "/tmp/data-pipeline",
+      "depends_on": ["clean_data"],
+      "model": "sonnet"
+    },
+    {
+      "identifier": "generate_statistics",
+      "execution_prompt": "Calculate descriptive statistics and create a statistical summary report in reports/statistics.md",
+      "working_directory": "/tmp/data-pipeline",
+      "depends_on": ["transform_data"],
+      "model": "sonnet"
+    },
+    {
+      "identifier": "create_visualizations",
+      "execution_prompt": "Create Python scripts that generate data visualizations using matplotlib. Save scripts in visualizations/",
+      "working_directory": "/tmp/data-pipeline",
+      "depends_on": ["transform_data"],
+      "model": "sonnet"
+    },
+    {
+      "identifier": "generate_report",
+      "execution_prompt": "Create a comprehensive data analysis report combining statistics and visualization descriptions in reports/final_report.md",
+      "working_directory": "/tmp/data-pipeline",
+      "depends_on": ["generate_statistics", "create_visualizations"],
+      "initial_delay": 2.0,
+      "model": "opus"
+    }
+  ]
+}

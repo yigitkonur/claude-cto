@@ -1,72 +1,162 @@
-## 🚀 High Priority / Short-Term
+# Claude Worker Roadmap
 
-These are foundational features to improve usability and reliability.
+## ✅ Completed Features (v0.4.0)
 
-### 1. Core CLI Enhancements
+### Core Functionality
+- ✅ **Fire-and-forget task execution** - Tasks run independently in background
+- ✅ **Multi-model support** - Sonnet, Opus, Haiku models
+- ✅ **SQLite database** - Persistent task storage
+- ✅ **REST API** - Full HTTP API for task management
+- ✅ **MCP integration** - Model Context Protocol server modes (proxy/standalone)
+- ✅ **CLI interface** - Comprehensive command-line tools
 
-*   **`claude-worker server stop` Command**
-    *   **Description:** Implement a reliable command to stop the background server process started with `server start`.
-    *   **User Benefit:** Provides a complete, managed lifecycle for the server directly from the command line, avoiding manual process killing.
-    *   **Implementation:** The `server start` command could write the Process ID (PID) to a file (e.g., `~/.claude-worker/server.pid`), which `server stop` would then read and use to terminate the process.
+### Error Handling & Resilience
+- ✅ **Comprehensive error handling** - All 6 Claude SDK errors handled
+- ✅ **Automatic retry logic** - 3 attempts with exponential backoff
+- ✅ **Rate limit handling** - Special 60s wait for rate limits
+- ✅ **Transient error detection** - Smart classification for retryable errors
+- ✅ **Recovery suggestions** - Actionable guidance for each error type
+- ✅ **Exit code analysis** - ProcessError exit codes mapped to meanings
 
-*   **`claude-worker logs` Command**
-    *   **Description:** Add a command to easily view the logs for a specific task without needing to know the full file path.
-    *   **User Benefit:** Massively improves debugging and monitoring by making task-specific logs instantly accessible.
-    *   **Implementation:** `claude-worker logs <task_id>` would fetch the log file path from the database and stream its contents to the console.
+### Advanced Features (Implemented, Not Integrated)
+- ✅ **Circuit breaker pattern** - In `retry_handler.py`
+- ✅ **Memory monitoring** - In `memory_monitor.py`
+- ✅ **Error metrics tracking** - In `error_codes.py`
+- ✅ **Advanced retry strategies** - Exponential, linear, fibonacci
+- ✅ **Correlation IDs** - Request tracing support
 
-### 2. Full Configuration via CLI & Environment
+### Logging & Monitoring
+- ✅ **Multi-level logging** - Summary, detailed, global logs
+- ✅ **Structured logging** - TaskLogger with rich formatting
+- ✅ **Directory context** - Meaningful filenames with path context
+- ✅ **Sound notifications** - Cross-platform audio alerts
+- ✅ **Path sanitization** - Safe cross-platform filename generation
 
-*   **Description:** Remove all hardcoded settings (like `max_workers`) and make them configurable via environment variables and CLI flags.
-*   **User Benefit:** Gives users complete control over their worker's performance and resource usage, directly addressing a major inaccuracy in the current documentation.
-*   **Implementation:** Create a unified, server-side configuration loader that respects environment variables (e.g., `CLAUDE_WORKER_MAX_WORKERS`) and CLI options (`--workers`) to set runtime parameters.
+### Developer Experience
+- ✅ **Auto-start server** - Server starts automatically when needed
+- ✅ **Port conflict resolution** - Finds available ports automatically
+- ✅ **Watch mode** - Real-time task progress monitoring
+- ✅ **Comprehensive tests** - Error handler test suite
 
-### 3. Comprehensive Test Suite
+## 🚧 In Progress
 
-*   **Description:** This is the **highest impact** area for contributions. Create a full test suite using `pytest` to ensure the reliability of all CLI and MCP functions.
-*   **User Benefit:** A well-tested tool is a reliable tool. This increases user trust and stability.
-*   **Implementation:** Add unit tests for core logic and integration tests for CLI commands and MCP tool interactions.
+### Integration Work
+- 🔄 **Advanced retry integration** - Connect RetryHandler to executor
+- 🔄 **Memory monitor integration** - Add to server lifespan
+- 🔄 **Circuit breaker activation** - Enable in production
+- 🔄 **Logging consolidation** - Remove dual logging system
+
+## 📅 Short Term (Next Release)
+
+### CLI Enhancements
+- [ ] `claude-worker server stop` - Graceful server shutdown
+- [ ] `claude-worker logs <task_id>` - Direct log access
+- [ ] `claude-worker cancel <task_id>` - Task cancellation
+
+### Configuration
+- [ ] Environment variable configuration for all settings
+- [ ] Configuration file support (YAML/JSON)
+- [ ] Per-project settings override
+
+### API Enhancements
+- [ ] `/metrics` endpoint - System and error metrics
+- [ ] `/health/detailed` - Comprehensive health check
+- [ ] WebSocket support for real-time updates
+
+## 🎯 Medium Term (Q1 2025)
+
+### Performance & Scale
+- [ ] PostgreSQL support - Production database
+- [ ] Task prioritization - Queue management
+- [ ] Worker pool configuration - Dynamic scaling
+- [ ] Batch task submission - Multiple tasks at once
+
+### Observability
+- [ ] OpenTelemetry integration - Distributed tracing
+- [ ] Prometheus metrics export - Monitoring integration
+- [ ] Grafana dashboard templates - Visualization
+- [ ] Structured JSON logging - Log aggregation ready
+
+### Security
+- [ ] API authentication - Token-based auth
+- [ ] Rate limiting per client - Prevent abuse
+- [ ] Task isolation improvements - Enhanced security
+- [ ] Audit logging - Compliance support
+
+## 🚀 Long Term (2025+)
+
+### Advanced Features
+- [ ] Plugin system - Custom MCP tools
+- [ ] Workflow orchestration - Complex task chains
+- [ ] Conditional execution - If/then logic
+- [ ] Task templates - Reusable configurations
+
+### Integration Ecosystem
+- [ ] GitHub Actions integration
+- [ ] GitLab CI/CD integration
+- [ ] Slack/Discord notifications
+- [ ] Webhook support
+
+### Machine Learning
+- [ ] Task duration prediction
+- [ ] Resource usage optimization
+- [ ] Anomaly detection
+- [ ] Auto-scaling recommendations
+
+### Enterprise Features
+- [ ] Multi-tenancy support
+- [ ] RBAC (Role-Based Access Control)
+- [ ] SSO integration (SAML/OIDC)
+- [ ] Compliance reporting (SOC2, HIPAA)
+
+## 💡 Ideas & Experiments
+
+### Research Areas
+- 🔬 **Distributed execution** - Multi-node task distribution
+- 🔬 **Task checkpointing** - Resume interrupted tasks
+- 🔬 **Intelligent retry** - ML-based retry decisions
+- 🔬 **Cost optimization** - Model selection based on task complexity
+
+### Community Requests
+- 💬 **VS Code extension** - Direct IDE integration
+- 💬 **Web UI** - Browser-based task management
+- 💬 **Mobile app** - Task monitoring on the go
+- 💬 **AI task suggestions** - Predictive task creation
+
+## Version History
+
+### v0.4.0 (Current)
+- Enhanced error handling system
+- All 6 SDK errors properly handled
+- Retry logic with exponential backoff
+- Advanced features implemented (not integrated)
+
+### v0.3.0
+- Model selection support
+- MCP server implementation
+- Sound notifications
+
+### v0.2.0
+- REST API implementation
+- Database persistence
+- Basic retry logic
+
+### v0.1.0
+- Initial release
+- Basic task execution
+- CLI interface
 
 ---
 
-## 🌱 Medium Priority / Mid-Term
+*Last Updated: 2025-08-21*
+*Maintainer: Claude Worker Team*
 
-Features to add more powerful control and extensibility.
+## Contributing
 
-### 1. Advanced Task Control (CLI & MCP)
+We welcome contributions! Priority areas:
+1. Test coverage improvements
+2. Documentation updates
+3. Integration of existing advanced features
+4. CLI command enhancements
 
-*   **Task Cancellation**
-    *   **Description:** Implement a `claude-worker cancel <task_id>` command and a corresponding `cancel_task` MCP tool to gracefully terminate a running task.
-    *   **User Benefit:** Allows users and agents to stop long-running or incorrect tasks without shutting down the entire worker.
-
-*   **Task Prioritization**
-    *   **Description:** Allow tasks to be submitted with a priority level (e.g., `claude-worker run "..." --priority high`) and have the worker pool execute higher-priority tasks first.
-    *   **User Benefit:** Enables more sophisticated workflows where urgent tasks can jump the queue.
-
-### 2. Plugin System for Custom MCP Tools
-
-*   **Description:** Allow users to define their own Python functions and expose them as new tools to the Claude agent through MCP.
-*   **User Benefit:** This is the ultimate extensibility feature, transforming Claude Worker from a generic executor into a specialized assistant that can use the user's own codebase as its toolset.
-*   **Implementation:** Develop a mechanism for the server to discover and register "plugin" files or modules from a user-defined directory.
-
-### 3. Production-Ready Database Support
-
-*   **Description:** Abstract the database logic to allow for backends other than SQLite, such as PostgreSQL.
-*   **User Benefit:** Enables scaling Claude Worker for team-wide or production use cases that require a more robust, concurrent database.
-
----
-
-## 💡 Low Priority / Long-Term Ideas
-
-"Nice-to-have" features for added robustness and security.
-
-### 1. Task Resiliency Features
-
-*   **Task Retries:** Automatically retry failed tasks a configurable number of times.
-*   **Task Timeouts:** Automatically fail tasks that run longer than a specified duration.
-*   **User Benefit:** Makes the worker system more robust against transient failures and runaway processes.
-
-### 2. Optional Secure Access for Remote Servers
-
-*   **Description:** Implement a simple, optional token-based security mechanism for users who run the worker server on a publicly accessible machine.
-*   **User Benefit:** Provides a basic layer of security to prevent unauthorized task submission on remote deployments.
-*   **Implementation:** An optional `CLAUDE_WORKER_ACCESS_TOKEN` could be configured. If set, the server would require a matching `X-API-Token` header on incoming requests.
+See [CONTRIBUTING.md](../CONTRIBUTING.md) for guidelines.

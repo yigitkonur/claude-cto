@@ -22,11 +22,11 @@ def get_database_url(db_path: Optional[str] = None) -> str:
     """
     if db_path:
         return f"sqlite:///{db_path}"
-    
+
     env_db = os.getenv("CLAUDE_WORKER_DB")
     if env_db:
         return f"sqlite:///{env_db}"
-    
+
     # Default location
     default_dir = Path.home() / ".claude-worker"
     default_dir.mkdir(parents=True, exist_ok=True)
@@ -37,9 +37,7 @@ def get_database_url(db_path: Optional[str] = None) -> str:
 def create_engine_for_db(db_url: str):
     """Create SQLAlchemy engine for database."""
     return create_engine(
-        db_url,
-        echo=False,
-        connect_args={"check_same_thread": False}  # SQLite specific
+        db_url, echo=False, connect_args={"check_same_thread": False}  # SQLite specific
     )
 
 
@@ -64,9 +62,7 @@ def get_task_by_id(session: Session, task_id: int) -> Optional[TaskDB]:
 
 
 def create_task_record(
-    session: Session, 
-    task_data: TaskCreate,
-    log_file_path: Optional[Path] = None
+    session: Session, task_data: TaskCreate, log_file_path: Optional[Path] = None
 ) -> TaskDB:
     """Create a new task record in database."""
     db_task = TaskDB(
@@ -75,7 +71,7 @@ def create_task_record(
         system_prompt=task_data.system_prompt or "You are a helpful assistant.",
         status=TaskStatus.PENDING,
         log_file_path=str(log_file_path) if log_file_path else None,
-        created_at=datetime.utcnow()
+        created_at=datetime.utcnow(),
     )
     session.add(db_task)
     session.commit()
@@ -84,23 +80,20 @@ def create_task_record(
 
 
 def update_task_status(
-    session: Session,
-    task_id: int,
-    status: TaskStatus,
-    **kwargs
+    session: Session, task_id: int, status: TaskStatus, **kwargs
 ) -> Optional[TaskDB]:
     """Update task status and optional fields."""
     task = get_task_by_id(session, task_id)
     if not task:
         return None
-    
+
     task.status = status
-    
+
     # Update optional fields if provided
     for key, value in kwargs.items():
         if hasattr(task, key):
             setattr(task, key, value)
-    
+
     session.add(task)
     session.commit()
     session.refresh(task)

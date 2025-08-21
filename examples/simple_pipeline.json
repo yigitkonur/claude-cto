@@ -1,0 +1,39 @@
+{
+  "tasks": [
+    {
+      "identifier": "setup",
+      "execution_prompt": "Create a new Python project structure with src/, tests/, and README.md. Include a basic .gitignore file for Python projects.",
+      "working_directory": "/tmp/test-project",
+      "model": "haiku"
+    },
+    {
+      "identifier": "add_dependencies",
+      "execution_prompt": "Add a requirements.txt with pytest, black, ruff, and mypy as development dependencies",
+      "working_directory": "/tmp/test-project",
+      "depends_on": ["setup"],
+      "model": "haiku"
+    },
+    {
+      "identifier": "write_code",
+      "execution_prompt": "Write a simple calculator module in src/calculator.py with add, subtract, multiply, and divide functions. Include proper type hints and docstrings.",
+      "working_directory": "/tmp/test-project",
+      "depends_on": ["setup"],
+      "model": "sonnet"
+    },
+    {
+      "identifier": "write_tests",
+      "execution_prompt": "Write comprehensive pytest tests for the calculator module in tests/test_calculator.py. Include edge cases and error handling tests.",
+      "working_directory": "/tmp/test-project",
+      "depends_on": ["write_code"],
+      "initial_delay": 1.0,
+      "model": "sonnet"
+    },
+    {
+      "identifier": "format_code",
+      "execution_prompt": "Run black and ruff to format and lint all Python files. Fix any issues found.",
+      "working_directory": "/tmp/test-project",
+      "depends_on": ["write_code", "write_tests"],
+      "model": "haiku"
+    }
+  ]
+}
