@@ -9,7 +9,7 @@ Run complex AI-powered workflows without blocking your terminal. Define task dep
 
 ## 🎯 Key Features
 
-- **🔗 Task Orchestration** - Define complex workflows with dependencies, automatic parallel execution, and failure propagation
+- **🔗 Task Orchestration** - Define complex workflows with dependencies, automatic parallel execution, and intelligent failure handling
 - **🚀 Fire & Forget** - Submit tasks and continue working while Claude handles them in the background
 - **💾 Persistent** - SQLite storage survives crashes and restarts
 - **🔊 Audio Feedback** - Get notified with sounds when tasks start, complete, or fail
@@ -448,7 +448,8 @@ poetry build
 
 - [Orchestration Guide](HANDOFF_DOCS_TO_NEXT_DEVELOPER/DOC_PACK_02-TASK_ORCHESTRATION_AND_DEPENDENCIES/01_ORCHESTRATION_OVERVIEW.md)
 - [CLI Reference](HANDOFF_DOCS_TO_NEXT_DEVELOPER/DOC_PACK_02-TASK_ORCHESTRATION_AND_DEPENDENCIES/03_CLI_USAGE_GUIDE.md)
-- [MCP Integration](HANDOFF_DOCS_TO_NEXT_DEVELOPER/DOC_PACK_02-TASK_ORCHESTRATION_AND_DEPENDENCIES/04_MCP_INTEGRATION.md)
+- [MCP Orchestration Guide](docs/MCP_ORCHESTRATION.md)
+- [Failure Model Architecture](docs/FAILURE_MODEL.md)
 - [API Documentation](docs/api.md)
 - [Architecture](HANDOFF_DOCS_TO_NEXT_DEVELOPER/DOC_PACK_02-TASK_ORCHESTRATION_AND_DEPENDENCIES/02_IMPLEMENTATION_ARCHITECTURE.md)
 

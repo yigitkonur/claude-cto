@@ -2,10 +2,17 @@
 
 ## Test Plan Overview
 
-**Version:** 0.3.1  
-**Date:** 2025-08-20  
-**Product:** Claude Worker - Fire-and-forget task execution system  
+**Version:** 0.4.0  
+**Date:** 2025-01-27  
+**Product:** Claude Worker - Fire-and-forget task execution system with orchestration  
 **Test Approach:** Manual Testing with Result Tracking
+
+**Major Updates in v0.4.0:**
+- ✅ Task orchestration with dependencies and delays
+- ✅ Enhanced MCP interface with mandatory task identifiers  
+- ✅ Comprehensive error handling with 80% test coverage
+- ✅ Three-layer failure model (tool vs cognitive vs SDK failures)
+- ✅ Structured logging with TaskLogger
 
 ## Testable Features Inventory
 
@@ -44,31 +51,52 @@
    - Proxy (connects to REST API)
    - Auto-detection based on server availability
 
-7. **MCP Tools**
-   - create_task (with validation rules)
-   - get_task_status
+7. **MCP Tools (Enhanced for Orchestration)**
+   - create_task (with MANDATORY task_identifier)
+   - create_task with depends_on and wait_after_dependencies
+   - get_task_status (by identifier)
    - list_tasks
+   - submit_orchestration (for orchestration groups)
    - get_task_logs (standalone only)
    - check_api_health (proxy only)
 
-8. **Authentication**
-   - Anthropic API Key
-   - Claude Max/Pro OAuth
-   - Fallback mechanism
+8. **Task Orchestration (NEW)**
+   - Task dependencies with depends_on
+   - Initial delays after dependencies
+   - DAG validation and cycle detection  
+   - Failure propagation (failed tasks skip dependents)
+   - Orchestration groups for batch submission
+   - Non-polling dependency resolution (asyncio.Event)
 
-9. **System Behaviors**
-   - Auto-start server when not running
-   - Port conflict resolution
-   - Database persistence
-   - Process isolation
-   - Concurrent task execution
-   - Crash recovery
+9. **Error Handling & Failure Model (NEW)**
+   - Three-layer failure model (tool vs cognitive vs SDK)
+   - Comprehensive error classification (6 SDK error types)
+   - Transient vs permanent error detection
+   - Automatic retry with exponential backoff
+   - Recovery suggestions and debugging information
+   - Structured error logging
 
-10. **Configuration**
+10. **Authentication**
+    - Anthropic API Key
+    - Claude Max/Pro OAuth
+    - Fallback mechanism
+
+11. **System Behaviors**
+    - Auto-start server when not running
+    - Port conflict resolution
+    - Database persistence
+    - Process isolation
+    - Concurrent task execution
+    - Crash recovery
+    - Memory monitoring (background)
+    - Audio notifications (cross-platform)
+
+12. **Configuration**
     - Environment variables
     - Default paths
     - Custom database location
     - Log directory configuration
+    - Structured logging with TaskLogger
 
 ## Test Environment Setup
 
@@ -229,7 +257,48 @@ unset CLAUDE_WORKER_DB
 | DKR-04 | Docker volume | Mount /data → create task | Data persists | ⬜ | |
 | DKR-05 | Smithery build | Check Dockerfile + smithery.yaml | Valid configuration | ⬜ | |
 
-### Section 12: Documentation Tests
+### Section 12: Task Orchestration Tests (NEW)
+
+| ID | Test Case | Steps | Expected Result | Pass/Fail | Notes |
+|----|-----------|-------|-----------------|-----------|-------|
+| ORCH-01 | Simple dependency | Task A → Task B with `depends_on=["A"]` | B waits for A completion | ⬜ | |
+| ORCH-02 | Multiple dependencies | Task C with `depends_on=["A", "B"]` | C waits for BOTH A and B | ⬜ | |
+| ORCH-03 | Parallel + merge | A,B,C → D with `depends_on=["A","B","C"]` | A,B,C run parallel, D waits | ⬜ | |
+| ORCH-04 | Initial delay | Task with `wait_after_dependencies=5.0` | Waits 5s after dependencies | ⬜ | |
+| ORCH-05 | DAG cycle detection | Create circular A→B→A dependency | Error: "Circular dependency detected" | ⬜ | |
+| ORCH-06 | Invalid dependency | Task depends on non-existent identifier | Error: "non-existent task" | ⬜ | |
+| ORCH-07 | Failure propagation | Task A fails SDK-level → dependent Task B | B automatically marked SKIPPED | ⬜ | |
+| ORCH-08 | Tool failure non-propagation | Task A `exit 1` → Claude handles → Task B | B starts normally (not skipped) | ⬜ | |
+| ORCH-09 | Orchestration status | Create orchestration → check stats | Shows completed/failed/skipped counts | ⬜ | |
+| ORCH-10 | Orchestration groups | Submit batch with `orchestration_group` | All tasks tracked under group | ⬜ | |
+
+### Section 13: Error Handling Tests (NEW)
+
+| ID | Test Case | Steps | Expected Result | Pass/Fail | Notes |
+|----|-----------|-------|-----------------|-----------|-------|
+| ERR-01 | Tool failure handling | Task runs `exit 1` command | Task COMPLETED (Claude processes error) | ⬜ | |
+| ERR-02 | SDK failure handling | Invalid API key → run task | Task FAILED (authentication error) | ⬜ | |
+| ERR-03 | Transient error retry | Simulate CLIConnectionError | Retries 3x with exponential backoff | ⬜ | |
+| ERR-04 | Permanent error no-retry | Simulate CLINotFoundError | Immediate failure, no retry | ⬜ | |
+| ERR-05 | ProcessError exit codes | Test exit codes 1, 2, 126, 127, 130 | Correct exit code meanings logged | ⬜ | |
+| ERR-06 | Error recovery suggestions | Trigger CLINotFoundError | Suggests "npm install -g @anthropic-ai/claude-code" | ⬜ | |
+| ERR-07 | Error debugging info | Trigger various errors | Includes Node.js status, PATH, auth info | ⬜ | |
+| ERR-08 | Structured error logging | Any error occurs | Error logged to both summary and detailed logs | ⬜ | |
+| ERR-09 | Rate limit detection | Simulate rate limit error | Identified as transient, 60s wait | ⬜ | |
+| ERR-10 | Timeout by model | Test haiku (10m), sonnet (30m), opus (60m) | Correct timeouts applied | ⬜ | |
+
+### Section 14: MCP Orchestration Tests (NEW)
+
+| ID | Test Case | Steps | Expected Result | Pass/Fail | Notes |
+|----|-----------|-------|-----------------|-----------|-------|
+| MCPO-01 | Mandatory task_identifier | create_task without task_identifier | Error: task_identifier required | ⬜ | |
+| MCPO-02 | Task with dependencies | create_task with depends_on parameter | Task waits for dependencies | ⬜ | |
+| MCPO-03 | Task identifier validation | Use duplicate identifier in same group | Error or warning about duplicates | ⬜ | |
+| MCPO-04 | get_task_status by ID | get_task_status(task_identifier="test") | Returns task details by identifier | ⬜ | |
+| MCPO-05 | Orchestration auto-submit | Create multiple tasks in session | Auto-submits as orchestration group | ⬜ | |
+| MCPO-06 | Enhanced proxy mode | MCP proxy with orchestration features | All dependency features work | ⬜ | |
+
+### Section 15: Documentation Tests
 
 | ID | Test Case | Steps | Expected Result | Pass/Fail | Notes |
 |----|-----------|-------|-----------------|-----------|-------|
@@ -238,6 +307,66 @@ unset CLAUDE_WORKER_DB
 | DOC-03 | Example accuracy | Run all code examples | Work as documented | ⬜ | |
 | DOC-04 | Troubleshooting | Follow debug steps | Produce useful output | ⬜ | |
 | DOC-05 | Changelog | Check version consistency | Matches pyproject.toml | ⬜ | |
+| DOC-06 | Orchestration docs | Follow MCP_ORCHESTRATION.md examples | All examples work as documented | ⬜ | |
+| DOC-07 | Error handling docs | Follow ERROR_HANDLING.md guide | Error scenarios match documentation | ⬜ | |
+| DOC-08 | Failure model docs | Review FAILURE_MODEL.md examples | Tool vs SDK failures behave as documented | ⬜ | |
+
+---
+
+## Special Testing Notes for v0.4.0
+
+### Understanding the Three-Layer Failure Model
+
+**CRITICAL CONCEPT:** Claude Worker distinguishes between tool failures and task failures. This affects how you interpret test results:
+
+#### ✅ Tool Failures = Task SUCCESS 
+These do NOT fail the task and do NOT trigger dependency skipping:
+- `bash` command returns exit code 1, 2, 126, etc.
+- File write to non-existent directory
+- HTTP request returns 4xx/5xx status  
+- Permission denied errors
+- Any tool-level error that Claude can process
+
+**Test implication:** A task that runs `exit 1` where Claude acknowledges the error should be marked COMPLETED, not FAILED.
+
+#### ❌ SDK Failures = Task FAILURE
+These DO fail the task and DO trigger dependency skipping:
+- Invalid `ANTHROPIC_API_KEY` (authentication)
+- Claude CLI not found (`CLINotFoundError`)
+- Network connection lost (`CLIConnectionError`)
+- Task timeout exceeded (model-specific limits)
+- Process crashes (`ProcessError` with specific conditions)
+
+**Test implication:** Only these types of failures should skip dependent tasks in orchestration tests.
+
+### Testing Failure Propagation Correctly
+
+To test real failure propagation in orchestration (ORCH-07), you must trigger SDK-level failures:
+
+```bash
+# Method 1: Authentication failure  
+ANTHROPIC_API_KEY="invalid" claude-worker run "test task"
+
+# Method 2: Timeout (for haiku model)
+claude-worker run "Use bash to run: sleep 700" --model haiku
+
+# Method 3: Force CLI not found (rename temporarily)
+mv /usr/local/bin/claude /usr/local/bin/claude.bak
+claude-worker run "test task"
+mv /usr/local/bin/claude.bak /usr/local/bin/claude
+```
+
+### Orchestration Test Environment
+
+For orchestration tests, create a separate test workspace:
+
+```bash
+mkdir -p ~/cw-orch-test/project
+cd ~/cw-orch-test/project
+echo "print('Task A')" > task_a.py
+echo "print('Task B')" > task_b.py
+echo "print('Task C')" > task_c.py
+```
 
 ---
 
@@ -254,9 +383,12 @@ unset CLAUDE_WORKER_DB
 2. Server tests (Section 2)
 3. Core functionality (Sections 3-5)
 4. API and MCP (Sections 6-8)
-5. System behaviors (Sections 9-10)
+5. System behaviors (Sections 9-11)
 6. Deployment (Section 11)
-7. Documentation (Section 12)
+7. **NEW: Orchestration (Section 12)**
+8. **NEW: Error Handling (Section 13)**
+9. **NEW: MCP Orchestration (Section 14)**
+10. Documentation (Section 15)
 
 ### 3. Result Recording
 - ✅ Pass: Feature works as expected
@@ -275,9 +407,16 @@ For each failure:
 
 ## Test Summary
 
-**Total Test Cases:** 67  
-**Critical Tests:** Model selection, Authentication, MCP validation  
-**Test Coverage:** All documented features + edge cases
+**Total Test Cases:** 105 (38 new tests added)  
+**Critical Tests:** Model selection, Authentication, MCP validation, **Task Orchestration, Error Handling, Failure Model**  
+**Test Coverage:** All documented features + edge cases + orchestration + comprehensive error handling
+
+### Test Breakdown by Section
+- **Existing Features:** 67 tests (Sections 1-11, 15)
+- **Orchestration:** 10 tests (Section 12) 
+- **Error Handling:** 10 tests (Section 13)
+- **MCP Orchestration:** 6 tests (Section 14)
+- **Enhanced Documentation:** 3 additional tests
 
 ### Sign-off Criteria
 - All critical tests pass
@@ -289,5 +428,20 @@ For each failure:
 
 **QA Tester:** _________________  
 **Date Executed:** _________________  
-**Version Tested:** 0.3.1  
+**Version Tested:** 0.4.0  
 **Overall Result:** ⬜ Pass / ⬜ Fail
+
+---
+
+## Validation Summary
+
+**Date Updated:** 2025-01-27  
+**Updated By:** Claude Code  
+**Changes Made:**
+- ✅ Added 38 new test cases for v0.4.0 features
+- ✅ Updated feature inventory with orchestration and error handling
+- ✅ Added special testing notes for three-layer failure model  
+- ✅ Enhanced documentation test coverage
+- ✅ Updated test execution order and critical test criteria
+- ✅ Aligned test scenarios with actual implementation in tests/ directory
+- ✅ Reflected architectural discoveries about tool vs SDK failures

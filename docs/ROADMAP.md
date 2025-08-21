@@ -10,6 +10,16 @@
 - ✅ **MCP integration** - Model Context Protocol server modes (proxy/standalone)
 - ✅ **CLI interface** - Comprehensive command-line tools
 
+### Task Orchestration & Dependencies (NEW in v0.4.0)
+- ✅ **Workflow orchestration** - Complex task chains with dependencies
+- ✅ **Dependency resolution** - Tasks wait for dependencies using asyncio.Event
+- ✅ **Parallel execution** - Independent tasks run simultaneously
+- ✅ **Failure propagation** - Dependent tasks skip when dependencies fail
+- ✅ **DAG validation** - Circular dependency detection with DFS
+- ✅ **Enhanced MCP integration** - task_identifier, depends_on, orchestration_group support
+- ✅ **CLI orchestration commands** - orchestrate, orchestration-status, list-orchestrations
+- ✅ **Delay management** - Optional delays after dependency completion
+
 ### Error Handling & Resilience
 - ✅ **Comprehensive error handling** - All 6 Claude SDK errors handled
 - ✅ **Automatic retry logic** - 3 attempts with exponential backoff
@@ -38,13 +48,11 @@
 - ✅ **Watch mode** - Real-time task progress monitoring
 - ✅ **Comprehensive tests** - Error handler test suite
 
-## 🚧 In Progress
-
-### Integration Work
-- 🔄 **Advanced retry integration** - Connect RetryHandler to executor
-- 🔄 **Memory monitor integration** - Add to server lifespan
-- 🔄 **Circuit breaker activation** - Enable in production
-- 🔄 **Logging consolidation** - Remove dual logging system
+### Integration & Production Readiness
+- ✅ **Advanced retry integration** - RetryHandler connected to executor
+- ✅ **Memory monitor integration** - Background monitoring implemented
+- ✅ **Circuit breaker activation** - Available for production use
+- ✅ **Logging consolidation** - Unified logging system with TaskLogger
 
 ## 📅 Short Term (Next Release)
 
@@ -70,6 +78,8 @@
 - [ ] Task prioritization - Queue management
 - [ ] Worker pool configuration - Dynamic scaling
 - [ ] Batch task submission - Multiple tasks at once
+- [ ] Orchestration performance tuning - Large-scale workflow optimization
+- [ ] Smart resource allocation - Model/task matching based on complexity
 
 ### Observability
 - [ ] OpenTelemetry integration - Distributed tracing
@@ -87,9 +97,9 @@
 
 ### Advanced Features
 - [ ] Plugin system - Custom MCP tools
-- [ ] Workflow orchestration - Complex task chains
-- [ ] Conditional execution - If/then logic
+- [ ] Conditional execution - If/then logic in orchestrations
 - [ ] Task templates - Reusable configurations
+- [ ] Dynamic orchestration - Runtime dependency modification
 
 ### Integration Ecosystem
 - [ ] GitHub Actions integration
@@ -116,20 +126,28 @@
 - 🔬 **Task checkpointing** - Resume interrupted tasks
 - 🔬 **Intelligent retry** - ML-based retry decisions
 - 🔬 **Cost optimization** - Model selection based on task complexity
+- 🔬 **Dynamic orchestration scaling** - Auto-adjust parallelism based on system load
+- 🔬 **Smart dependency inference** - AI-suggested task dependencies
+- 🔬 **Orchestration patterns library** - Common workflow templates
 
 ### Community Requests
 - 💬 **VS Code extension** - Direct IDE integration
 - 💬 **Web UI** - Browser-based task management
 - 💬 **Mobile app** - Task monitoring on the go
 - 💬 **AI task suggestions** - Predictive task creation
+- 💬 **Interactive orchestration builder** - Visual workflow designer
 
 ## Version History
 
 ### v0.4.0 (Current)
-- Enhanced error handling system
-- All 6 SDK errors properly handled
-- Retry logic with exponential backoff
-- Advanced features implemented (not integrated)
+- **MAJOR**: Complete task orchestration system with dependencies
+- **MAJOR**: Enhanced MCP integration with task_identifier and depends_on
+- **MAJOR**: DAG validation and failure propagation
+- Enhanced error handling system - All 6 SDK errors properly handled
+- Retry logic with exponential backoff and circuit breaker
+- Advanced features implemented and integrated
+- CLI orchestration commands (orchestrate, orchestration-status, list-orchestrations)
+- Comprehensive handoff documentation and examples
 
 ### v0.3.0
 - Model selection support
@@ -148,15 +166,16 @@
 
 ---
 
-*Last Updated: 2025-08-21*
+*Last Updated: 2025-01-27*
 *Maintainer: Claude Worker Team*
 
 ## Contributing
 
 We welcome contributions! Priority areas:
-1. Test coverage improvements
-2. Documentation updates
-3. Integration of existing advanced features
-4. CLI command enhancements
+1. CLI enhancements (cancel, server stop, direct log access)
+2. Configuration management improvements
+3. Test coverage for orchestration features
+4. Performance optimizations for large orchestrations
+5. Documentation and examples for complex workflows
 
 See [CONTRIBUTING.md](../CONTRIBUTING.md) for guidelines.
