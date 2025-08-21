@@ -128,112 +128,200 @@ once installed, claude gets these shiny new toys to whip your ai team into shape
 | **`list_tasks`** | 📋 **mission control**: shows what the whole squad's cooking |
 | **`check_api_health`** | ❤️ **pulse check**: makes sure the engine's purring |
 
-### real talk: modernizing some crusty old app
+# 📸 real case: building a calorie counter in minutes w/claude-cto
 
-watch how claude handles a gnarly project like a seasoned tech lead.
+watch how claude architects a photo-to-calories app like a 10x engineer on red bull.
 
-#### you drop the mic:
-> "yo, our e-comm platform's looking like myspace. needs full security audit, perf analysis, then refactor auth/payments based on findings. oh and update tests after."
+## you drop the mic:
+> "yo, need a mobile app that identifies food from photos and tracks calories. full AI integration, slick UI, the works. make it happen."
 
-#### claude's game plan (internal monologue):
-> "got it. this ain't linear - we're doing this in waves:
+## claude's game plan (internal monologue):
+> "aight bet. this is a classic waterfall-but-make-it-parallel situation:
 >
-> 1. **phase 1 (recon)**: security audit + perf analysis go brrr simultaneously  
-> 2. **phase 2 (surgery)**: auth & payments refactors run parallel but only after phase 1 clears  
-> 3. **phase 3 (qa)**: tests update last - needs both refactors done  
+> 1. **phase 1 (laying groundwork)**: app scaffold + database + AI research all go brrr at once
+> 2. **phase 2 (the magic)**: camera + food recognition + nutrition math run parallel where deps allow
+> 3. **phase 3 (make it pretty)**: UI + manual entry + analytics dashboard spawn when ready
+> 4. **phase 4 (ship it)**: tests then optimization - can't polish what ain't built
 >
-> tagging all this under `ecommerce_modernization` crew."
+> tagging this whole circus as `calorie_counter` crew."
 
-#### claude starts delegating (`create_task` calls):
-
-**phase 1: recon (parallel ops)**
-```python
-# Claude's Tool Call:
-create_task(
-    task_identifier="security_audit",
-    orchestration_group="ecommerce_modernization",
-    execution_prompt="Perform a deep security audit on the entire codebase. Identify all potential vulnerabilities like XSS, SQLi, and insecure dependencies. Generate a detailed report in `reports/security_audit.md`.",
-    model="opus"
-)
-# Claude's Tool Call:
-create_task(
-    task_identifier="performance_analysis",
-    orchestration_group="ecommerce_modernization",
-    execution_prompt="Analyze the application for performance bottlenecks, focusing on database queries and API response times. Create a report in `reports/performance_analysis.md` with optimization suggestions.",
-    model="opus"
-)
-```
-
-**phase 2: refactor wave (needs phase 1)**
-```python
-# Claude's Tool Call:
-create_task(
-    task_identifier="refactor_auth",
-    orchestration_group="ecommerce_modernization",
-    execution_prompt="Based on the findings in the reports, refactor the entire authentication module (`/src/auth`) to address all identified security and performance issues.",
-    depends_on=["security_audit", "performance_analysis"]
-)
-# Claude's Tool Call:
-create_task(
-    task_identifier="refactor_payments",
-    orchestration_group="ecommerce_modernization",
-    execution_prompt="Based on the findings in the reports, refactor the payment processing module (`/src/payments`) for improved security and performance.",
-    depends_on=["security_audit", "performance_analysis"]
-)
-```
-
-**phase 3: final exam**
-```python
-# Claude's Tool Call:
-create_task(
-    task_identifier="update_tests",
-    orchestration_group="ecommerce_modernization",
-    execution_prompt="Update the integration test suite in `/tests` to validate all the changes made during the auth and payment refactors. Ensure 100% of new code is covered.",
-    depends_on=["refactor_auth", "refactor_payments"]
-)
-```
-
-#### claude hits go (`submit_orchestration`):
-> "plan's locked. firing up the `ecommerce_modernization` squad now."
-```python
-submit_orchestration(orchestration_group="ecommerce_modernization")
-```
-**boom:** claude just cto'd your project into existence while you were grabbing coffee. `claude-cto` handles all the boring sync shit behind the scenes.
-
-here's the dependency flow:
 ```mermaid
 graph TD
-    subgraph "phase 1: recon (parallel)"
-        A[🕵️‍♀️ security_audit]:::phase1
-        B[📈 performance_analysis]:::phase1
+    subgraph "🌱 Phase 1: Foundation (parallel)"
+        A[📱 setup_mobile_app]:::phase1
+        B[🗄️ design_database]:::phase1
+        C[🔍 research_ai_apis]:::phase1
     end
-
-    subgraph "phase 2: refactor (parallel)"
-        C[🧑‍💻 refactor_auth]:::phase2
-        D[💳 refactor_payments]:::phase2
+    subgraph "🏗️ Phase 2: Core Features (parallel)"
+        D[📷 camera_module]:::phase2
+        E[🤖 food_recognition]:::phase2
+        F[🧮 nutrition_engine]:::phase2
     end
-
-    subgraph "phase 3: qa"
-        E[🧪 update_tests]:::phase3
+    subgraph "✨ Phase 3: User Experience (parallel)"
+        G[🎨 ui_screens]:::phase3
+        H[✏️ manual_entry]:::phase3
+        I[📊 analytics_dashboard]:::phase3
     end
-
-    A --> C
-    B --> C
+    subgraph "🚀 Phase 4: Launch Ready"
+        J[🧪 testing_suite]:::phase4
+        K[⚡ app_optimization]:::phase4
+    end
     A --> D
-    B --> D
+    A --> G
+    B --> F
+    B --> I
     C --> E
     D --> E
-
-    classDef phase1 fill:#845EC2,stroke:#4B4453,color:#fff
-    classDef phase2 fill:#2C73D2,stroke:#0081CF,color:#fff
-    classDef phase3 fill:#008F7A,stroke:#0089BA,color:#fff
+    E --> F
+    F --> G
+    F --> H
+    G --> J
+    H --> J
+    I --> J
+    J --> K
+    classDef phase1 fill:#FF6B6B,stroke:#C92A2A,color:#fff
+    classDef phase2 fill:#4ECDC4,stroke:#15AAA0,color:#fff
+    classDef phase3 fill:#45B7D1,stroke:#2196F3,color:#fff
+    classDef phase4 fill:#96CEB4,stroke:#4CAF50,color:#fff
 ```
 
-```markdown
+## claude starts delegating (`create_task` calls):
+
+### **phase 1: foundation (parallel ops)**
+```python
+# Claude's Tool Call:
+create_task(
+    task_identifier="foundation_setup",
+    orchestration_group="calorie_counter",
+    execution_prompt="""
+    Task A: React Native TypeScript Initialize → [1]Run npx react-native init SnapCalories --template react-native-template-typescript, create /src with subdirs: /screens, /components, /services, /db, /utils, /store, /navigation, /types → [2]Install core: yarn add @react-navigation/native @react-navigation/bottom-tabs @reduxjs/toolkit react-redux redux-persist @react-native-async-storage/async-storage react-native-screens react-native-safe-area-context → [3]Configure tsconfig.json with "strict": true, paths: {"@screens/*": ["src/screens/*"], "@components/*": ["src/components/*"]}, setup .prettierrc with singleQuote, no semicolons → (Review: yarn start launches Metro, TypeScript compiles without errors|Retest: Import @screens/Home works|Fail→[2])
+    Task B: Navigation Redux Store Setup → [1]Create /src/navigation/AppNavigator.tsx with createBottomTabNavigator containing 5 tabs: HomeScreen, SearchScreen, CameraScreen, HistoryScreen, ProfileScreen with icons from react-native-vector-icons/Ionicons → [2]Setup Redux in /src/store/index.ts: configureStore with userSlice (name, goals, preferences), mealsSlice (recent, favorites), persistConfig whitelist: ['user', 'preferences'] → [3]Wrap App.tsx with Provider and PersistGate, create placeholder screens that display their name, verify tab navigation works → (Review: All 5 tabs navigate correctly, Redux DevTools shows state|Retest: Kill app, reopen, user preferences persist|Fail→[2]) [Req: Task A]
+    """,
+    model="sonnet"
+)
+
+# Claude's Tool Call:
+create_task(
+    task_identifier="database_schema",
+    orchestration_group="calorie_counter",
+    execution_prompt="""
+    Task C: SQLite Database Schema Implementation → [1]Install react-native-sqlite-storage, create /src/db/schema.ts with tables: users(id TEXT PRIMARY KEY, email TEXT UNIQUE, goals_json TEXT, created_at INTEGER), meals(id TEXT, user_id TEXT, type TEXT, logged_at INTEGER, total_calories REAL, photo_path TEXT) → [2]Add food_items(id TEXT, meal_id TEXT, name TEXT, quantity REAL, unit TEXT, calories REAL, protein REAL, carbs REAL, fat REAL), food_database(id TEXT, name TEXT, brand TEXT, barcode TEXT UNIQUE, calories REAL, protein REAL, carbs REAL, fat REAL) → [3]Create DatabaseService class with init(), executeSql(), methods for createTables(), dropTables(), verify tables exist with SELECT name FROM sqlite_master → (Review: All 4 tables created successfully|Retest: Insert and retrieve test meal|Fail→[1]) [Req: Task A]
+    Task D: Database Seed Indexes Migrations → [1]Create /src/db/seeds/foods.json with 5000 USDA foods: each having name, calories, protein, carbs, fat, serving_size, import with transaction INSERT OR IGNORE → [2]Add indexes: CREATE INDEX idx_meals_date ON meals(user_id, logged_at DESC); CREATE INDEX idx_food_name ON food_database(name); CREATE INDEX idx_barcode ON food_database(barcode) → [3]Implement migration system: migrations table tracking version, up/down functions, test by adding test column then rolling back → (Review: SELECT * FROM food_database WHERE name LIKE '%chicken%' returns in <50ms|Retest: 1000 meal inserts complete <2s|Fail→[2]) [Req: Task C]
+    Task E: API Keys Service Configuration → [1]Setup Clarifai: create account at clarifai.com, get API key, install @clarifai/nodejs-grpc, create /src/services/ClarifaiService.ts with class containing apiKey from env → [2]Setup OpenFoodFacts: no key needed, install node-fetch, create /src/services/BarcodeService.ts with lookupBarcode(code) method calling https://world.openfoodfacts.org/api/v0/product/{code}.json → [3]Create unified FoodAPIService that wraps both, with methods recognizeImage(base64) and scanBarcode(code), add mock mode for testing without API calls → (Review: Mock mode returns fake data, API mode requires keys|Retest: Invalid API key throws clear error|Fail→[1]) [Req: Task D]
+    """,
+    depends_on=["foundation_setup"],
+    model="sonnet"
+)
+```
+
+
+### **phase 2: core features (needs phase 1 stuff)**
+```python
+# Claude's Tool Call:
+create_task(
+    task_identifier="camera_recognition",
+    orchestration_group="calorie_counter",
+    execution_prompt="""
+    Task F: Camera Module Photo Capture → [1]Install react-native-vision-camera, add iOS Info.plist camera usage description, Android manifest CAMERA permission, create /src/components/Camera/CameraView.tsx with useCameraDevices() hook → [2]Implement capture: const photo = await camera.current.takePhoto({qualityPrioritization: 'balanced'}), resize with react-native-image-resizer to max 1024px maintaining aspect, convert to base64 → [3]Add controls: TouchableOpacity capture button 70x70 center bottom, flash toggle iconButton top-left, flip camera icon top-right, show captured photo preview for 2s → (Review: Photo captures and shows preview|Retest: Deny permission shows instructions|Fail→[1]) [Req: Task B]
+    Task G: Food Recognition AI Integration → [1]Create /src/services/FoodRecognition.ts with recognizeFood(imageBase64) using Clarifai: stub.PostModelOutputs with model_id: 'food-item-recognition', filter outputs.data.concepts where value > 0.7 → [2]Process response: map concepts to {name: string, confidence: number}, enrich each with nutrition from local DB: SELECT calories, protein FROM food_database WHERE name LIKE concept → [3]Add caching: MD5 hash image, store results in AsyncStorage for 24h with key food_recognition_{hash}, check cache before API call → (Review: Test burger.jpg returns 'burger' with confidence >0.7|Retest: Same image uses cache, no API call|Fail→[1]) [Req: Task F, Task G]
+    Task H: Nutrition Calculator Engine Service → [1]Create /src/services/NutritionEngine.ts with calculateCalories(protein_g, carbs_g, fat_g): return protein*4 + carbs*4 + fat*9, calculateBMR(weight_kg, height_cm, age, isMale) using Mifflin-St Jeor → [2]Add meal tracking: saveMeal(userId, foods[], mealType) inserts into meals table, then food_items for each food, updates daily_summaries with trigger → [3]Create getDailySummary(userId, date) aggregating: SELECT SUM(calories), SUM(protein) FROM meals JOIN food_items WHERE DATE(logged_at) = date → (Review: Calculate 25g protein, 30g carbs, 10g fat = 350 calories|Retest: Save meal and verify in daily summary|Fail→[2]) [Req: Task E]
+    """,
+    depends_on=["database_schema"],
+    model="opus"
+)
+
+# Claude's Tool Call:
+create_task(
+    task_identifier="advanced_features",
+    orchestration_group="calorie_counter",
+    execution_prompt="""
+    Task J: Barcode Scanner Food Lookup → [1]Install react-native-camera-kit for barcode scanning, create BarcodeScannerScreen with <CameraKitCameraScreen scanBarcode={true} onReadCode={(event) => handleBarcode(event.nativeEvent.codeStringValue)} /> → [2]On scan: call OpenFoodFacts API, parse response.product.nutriments for calories_100g, proteins_100g, carbohydrates_100g, fat_100g, convert to per serving → [3]If found: show product name, image_url, nutrition facts in modal with "Add to meal" button, if not found: prompt manual entry with barcode pre-filled → (Review: Scan Coke barcode shows 42cal/100ml|Retest: Unknown barcode opens manual entry|Fail→[1]) [Req: Task F]
+    Task K: Manual Food Entry Search → [1]Create SearchFoodScreen with TextInput, implement fuzzy search using Fuse.js on food_database with keys: ['name', 'brand'], threshold: 0.3, show results in FlatList → [2]Each result item shows: food name, brand, calories per serving, (+) button to add, implement recent searches in AsyncStorage (last 10), show below search bar → [3]Add filters: meal type (breakfast/lunch/dinner/snack), calorie range slider 0-1000, dietary tags (vegan, gluten-free), sort by: relevance/calories/name → (Review: Search "chken" returns "chicken" results|Retest: Filter vegan excludes meat|Fail→[1]) [Req: Task E]
+    """,
+    depends_on=["camera_recognition"],
+    model="sonnet"
+)
+```
+
+### **phase 3: make it sexy (all done, lets jump to the UI part)**
+```python
+# Claude's Tool Call:
+create_task(
+    task_identifier="core_screens",
+    orchestration_group="calorie_counter",
+    execution_prompt="""
+    Task M: Home Dashboard Screen UI → [1]Create HomeScreen with header showing date picker (default today), circular progress ring using react-native-svg showing calories (current/goal) with animated fill on mount → [2]Add macro bars: horizontal stacked bar with protein(red) carbs(blue) fat(yellow) showing grams and percentages, below add water tracker with 8 glasses icons filling on tap → [3]Recent meals section: FlatList showing last 3 meals with thumbnail, name, calories, time ago using date-fns, swipe left to delete with confirmation → (Review: Progress ring animates to 1200/2000 calories|Retest: Delete meal updates totals immediately|Fail→[1]) [Req: Task I]
+    Task N: History Calendar Food Diary → [1]Create HistoryScreen with react-native-calendars Calendar component, mark dates with meals using markedDates prop: green=under goal, red=over goal, yellow=at goal → [2]On date tap: show modal with that day's meals grouped by type (Breakfast/Lunch/Dinner/Snacks), each meal shows foods list, total calories, edit button → [3]Add week view: ScrollView with 7 cards showing daily totals, mini macro pie chart using victory-native, tap to expand day details → (Review: Calendar shows last 30 days colored correctly|Retest: Edit past meal updates that day's color|Fail→[2]) [Req: Task M]
+    """,
+    depends_on=["advanced_features"],
+    model="sonnet"
+)
+
+# Claude's Tool Call:
+create_task(
+    task_identifier="meal_flow_screens",
+    orchestration_group="calorie_counter",
+    execution_prompt="""
+    Task P: Meal Detail Edit Screen → [1]Create MealDetailScreen receiving meal from navigation, show hero image at top with parallax scroll effect, list recognized foods with confidence badges (green >80%, yellow >60%, red <60%) → [2]Each food item: editable name TextInput, quantity with +/- buttons, unit dropdown, calories auto-updating based on quantity, swipe to delete, "Not right?" button to search alternatives → [3]Bottom section: add more foods button opening search modal, nutrition totals updating real-time, save button with loading state, share button generating image with meal photo and macros → (Review: Changing quantity from 100g to 150g updates calories by 1.5x|Retest: Delete item updates totals|Fail→[2]) [Req: Task H]
+    """,
+    depends_on=["core_screens"],
+    model="sonnet"
+)
+```
+
+### **phase 4: ship it (final boss)**
+```python
+# Claude's Tool Call:
+create_task(
+    task_identifier="testing_suite",
+    orchestration_group="calorie_counter",
+    execution_prompt="""
+    Task S: Unit Integration Test Suite → [1]Setup Jest with React Native Testing Library, create __tests__ folders, write unit tests: NutritionEngine.test.ts testing calculateCalories(25,30,10)===350, macro validation, BMR calculation → [2]Integration tests: photo-to-meal flow mocking camera and API, test saves correctly to DB, offline queue when no network, sync when reconnected → [3]Component tests: render all screens without crashing, test navigation between tabs, Redux actions update store correctly, AsyncStorage persists → (Review: All tests pass with >70% coverage|Retest: Run on CI, all green|Fail→[1]) [Req: Task R]
+    """,
+    depends_on=["meal_flow_screens"],
+    model="sonnet"
+)
+
+# Claude's Tool Call:
+create_task(
+    task_identifier="production_deploy",
+    orchestration_group="calorie_counter",
+    execution_prompt="""
+    Task V: Security Privacy Compliance Setup → [1]Implement API key encryption using react-native-keychain, add certificate pinning for API calls, obfuscate sensitive strings with react-native-obfuscating-transformer → [2]Privacy: add GDPR consent screen for EU users, data deletion option in settings, export user data as JSON, analytics opt-out toggle, clear privacy policy link → [3]Security audit: no hardcoded secrets in code, all user data encrypted at rest, HTTPS only, SQL injection prevention with parameterized queries, input validation on all forms → (Review: Security scanner finds no vulnerabilities|Retest: Man-in-middle attack fails|Fail→[1]) [Req: Task U
+    Task W: Production Build Release Prep → [1]iOS: generate certificates in Apple Developer, configure Xcode with provisioning profiles, set bundle ID com.snapcalories.app, archive and validate with App Store Connect → [2]Android: generate signed keystore, configure gradle with release signing, enable minification and R8, build AAB format for Play Store, test on multiple devices → [3]Create store listings: write descriptions emphasizing AI food recognition, take 5 screenshots per platform, app icon 1024x1024, privacy policy URL, age rating 4+ → (Review: Both builds install and run on real devices|Retest: Upload to TestFlight/Internal testing works|Fail→[2]) [Req: Task V]
+    """,
+    depends_on=["testing_suite"],
+    model="opus"
+)
+
+# Claude's Tool Call:
+create_task(
+    task_identifier="launch_features",
+    orchestration_group="calorie_counter",
+    execution_prompt="""
+    Task Y: Beta Testing Feedback Loop → [1]Setup TestFlight for 100 iOS beta testers, Google Play Internal Testing for Android, create feedback form in-app with screenshot capability, discord/slack community for testers → [2]Track metrics: daily active users, meal logging rate, photo vs manual entry ratio, feature usage heatmap, crash reports, average session time, user retention day 1/7/30 → [3]Iterate based on feedback: fix top 3 crashes, improve food recognition accuracy on reported failures, add most requested foods to database, optimize slow screens → (Review: 50+ beta testers active, <0.5% crash rate|Retest: User feedback form submits successfully|Fail→[1]) [Req: Task X]
+    """,
+    depends_on=["production_deploy", "launch_features"],
+    model="sonnet"
+)
+```
+
+## claude hits go (`submit_orchestration`):
+> "locked and loaded. spinning up the `calorie_counter` squad. grab a coffee, this is gonna be lit."
+
+```python
+submit_orchestration(orchestration_group="calorie_counter")
+```
+
+**boom:** claude just architected your entire app while you were doom-scrolling twitter. 11 parallel claude instances working in perfect harmony. `claude-cto` handles all the dependency management and handoffs automagically.
+
+**endgame:** production-ready app with AI food recognition, butter-smooth UI, offline support, and 85% test coverage. shipped before lunch. 🚀
+
 ---
+
 ## 💻 your mission control: the cli dashboard
 
-while your ai cto's running the show, the cli is your ops center - monitor progress, debug issues, or drop manual tasks like a boss.
+while your AI cto's running the show, the CLI is your ops center - monitor progress, debug issues, or drop manual tasks like a boss.
 
 <p align="center">
   <img src="https://i.imgur.com/your-cli-in-action.gif" alt="claude cto cli go brrr">
@@ -384,8 +472,6 @@ this api's your golden ticket - automate all the things without touching the cli
 
 ---
 
-```markdown
----
 ## ✨ feature breakdown: the tech sauce
 
 | feature | what it does | why you care |
@@ -429,7 +515,7 @@ fire it up: `docker-compose up -d`
 
 | variable | purpose | default |
 | :--- | :--- | :--- |
-| `ANTHROPIC_API_KEY` | your claude api key | none (uses oauth) |
+| `ANTHROPIC_API_KEY` | your claude api key | no need - optional for key-based usage |
 | `CLAUDE_CTO_SERVER_URL` | where the cli connects | `http://localhost:8000` |
 | `CLAUDE_CTO_DB` | task database location | `~/.claude-cto/tasks.db` |
 | `CLAUDE_CTO_ENABLE_SOUNDS` | ping when tasks complete | `true` |
@@ -449,4 +535,3 @@ fire it up: `docker-compose up -d`
 1. **🛡️ bulletproof** - your work never gets lost, period  
 2. **🎯 laser focus** - each component does one thing perfectly  
 3. **🧩 future-proof** - built for easy expansion without breaking shit  
-```
