@@ -1,22 +1,18 @@
-<p align="center">
-  **your AI squad on crack. tasks go brrr in parallel, smart waits for dependent tasks, workflows auto-pilot. ship code at ludicrous speed while optimizing model costs.**
-
-  > you wanna sleep, but wanna use your Opus limit? yeah, just queue up more tasks before your Opus limit resets at 3AM 😉
-</p>
-<h1 align="center">claude-cto 🗿 your ai coding agents' cto that gets shit done 10x faster</h1>
-
+<h3 align="center">claude-cto 🗿 your ai coding agents' cto that gets shit done 10x faster</h3>
 
 <p align="center">
-  <strong>
-    <em>“stop babysitting your ai. let claude-cto run the show — it’ll plan like a pro and gangbang tasks in parallel so you’re done in minutes, not hours.”</em>
+ <strong>
+    <em>your AI squad on crack: tasks run in parallel, smart waits handle dependent tasks, workflows fly on autopilot. ship code at ludicrous speed while making the vibe coding more enjoyable</em>
   </strong>
+
+  > wanna get some sleep but still not used your Opus limit? just queue more tasks before the 5 AM reset 🐉
 </p>
 
 <p align="center">
   <a href="#"><img alt="pypi" src="https://img.shields.io/pypi/v/claude-cto.svg?style=flat-square&color=4D87E6"></a>
   <a href="#"><img alt="python" src="https://img.shields.io/badge/python-3.10+-4D87E6.svg?style=flat-square"></a>
-  <a href="#"><img alt="mcp compatible" src="https://img.shields.io/badge/MCP-Compatible-2ED573.svg?style=flat-square"></a>
-  <a href="#"><img alt="license" src="https://img.shields.io/badge/License-MIT-F9A825.svg?style=flat-square"></a>
+ <a href="#"><img alt="license" src="https://img.shields.io/badge/License-MIT-F9A825.svg?style=flat-square"></a> 
+ <a href="#"><img alt="mcp compatible" src="https://img.shields.io/badge/MCP-Compatible-2ED573.svg?style=flat-square"></a>
 </p>
 
 <p align="center">
@@ -24,7 +20,7 @@
   <img alt="zero config" src="https://img.shields.io/badge/⚙️_zero_config-plug_&_play-2ED573.svg?style=for-the-badge">
 </p>
 
-**`claude-cto`** is your ai dream team on steroids. stop doing that one-task-at-a-time boomer shit — now you’ve got a whole squad of ai devs (opus for the heavy stuff, sonnet for mid-tier, haiku for the easy wins) cracking code simultaneously while you sip your coffee.  
+**`claude-cto`** is your AI dream team on steroids. stop doing that one-task-at-a-time workflow — now you’ve got a whole squad of ai devs (opus for the heavy stuff, sonnet for mid-tier, haiku for the easy wins) cracking code simultaneously while you sip your coffee ☕
 
 how it slaps:  
 -  you’re the big-picture boss  
@@ -40,61 +36,84 @@ we’ve hacked the claude code sdk with that spicy `--dangerously-skip-permissio
 2. delegates like a machine  
 3. handles task dependencies so smooth you’ll think it’s cheating  
 
+
+### claude-cto: advantage of parallel execution
+
 ```mermaid
-graph TB
-    subgraph "🐌 old school ai (slow af)"
-        direction LR
-        A1[task 1<br/>5 min]:::traditional --> A2[task 2<br/>5 min]:::traditional
-        A2 --> A3[task 3<br/>5 min]:::traditional
-        A3 --> A4[task 4<br/>5 min]:::traditional
-        A4 --> A5[task 5<br/>5 min]:::traditional
-        A5 --> A6[task 6<br/>5 min]:::traditional
-        A6 --> A7[task 7<br/>5 min]:::traditional
-        A7 --> A8[task 8<br/>5 min]:::traditional
-        A8 --> A9[task 9<br/>5 min]:::traditional
-        A9 --> A10[task 10<br/>5 min]:::traditional
-        
-        TotalA[⏱️ total time: 50 mins]:::timeSlow
+graph LR
+    Start[🎯 kickoff]:::start
+    
+    subgraph SG1["STAGE 1<br/>⏰ 4m (auth_system)"]
+        S1A[setup_database<br/>3m]:::stage1
+        S1B[auth_system<br/>4m]:::stage1
     end
     
-    subgraph "🚀 claude-cto (goes hard)"
-        direction TB
-        Start[🎯 launch all]:::start
-        Start --> B1[task 1]:::parallel
-        Start --> B2[task 2]:::parallel
-        Start --> B3[task 3]:::parallel
-        Start --> B4[task 4]:::parallel
-        Start --> B5[task 5]:::parallel
-        Start --> B6[task 6]:::parallel
-        Start --> B7[task 7]:::parallel
-        Start --> B8[task 8]:::parallel
-        Start --> B9[task 9]:::parallel
-        Start --> B10[task 10]:::parallel
-        
-        B1 --> Complete[✅ all done]:::complete
-        B2 --> Complete
-        B3 --> Complete
-        B4 --> Complete
-        B5 --> Complete
-        B6 --> Complete
-        B7 --> Complete
-        B8 --> Complete
-        B9 --> Complete
-        B10 --> Complete
-        
-        TotalB[⏱️ total time: ~5 mins]:::timeFast
+    subgraph SG2["STAGE 2<br/>⏰ 5m (api_endpoints)"]
+        S2A[api_endpoints<br/>5m]:::stage2
+        S2B[payment_integration<br/>3m]:::stage2
+        S2C[frontend_app<br/>4m]:::stage2
     end
     
-    classDef traditional fill:#ff6b6b,stroke:#c92a2a,stroke-width:2px,color:#fff
-    classDef parallel fill:#51cf66,stroke:#2f9e44,stroke-width:2px,color:#fff
-    classDef start fill:#339af0,stroke:#1864ab,stroke-width:3px,color:#fff
-    classDef complete fill:#ffd43b,stroke:#fab005,stroke-width:3px,color:#000
-    classDef timeSlow fill:#ff8787,stroke:#fa5252,stroke-width:2px,color:#fff
-    classDef timeFast fill:#69db7c,stroke:#40c057,stroke-width:2px,color:#fff
+    subgraph SG3["STAGE 3<br/>⏰ 2m (deploy_production)"]
+        S3A[deploy_production<br/>2m]:::stage3
+    end
+    
+    Final[🎉 launched]:::final
+    Total[⏱️ 11m total<br/>4m + 5m + 2m]:::timeFast
+    
+    Start ==> S1A
+    Start ==> S1B
+    S1A ==> S2A
+    S1B ==> S2A
+    S1A ==> S2B
+    S1B ==> S2B
+    S1A ==> S2C
+    S1B ==> S2C
+    S2A ==> S3A
+    S2B ==> S3A
+    S2C ==> S3A
+    S3A ==> Final
+    
+    classDef start fill:#7950f2,stroke:#6741d9,stroke-width:3px,color:#fff
+    classDef stage1 fill:#ffd43b,stroke:#fab005,stroke-width:2px,color:#000
+    classDef stage2 fill:#4dabf7,stroke:#339af0,stroke-width:2px,color:#fff
+    classDef stage3 fill:#51cf66,stroke:#2f9e44,stroke-width:2px,color:#fff
+    classDef final fill:#ff6b6b,stroke:#f03e3e,stroke-width:3px,color:#fff
+    classDef timeFast fill:#20c997,stroke:#12b886,stroke-width:2px,color:#fff
+    
+    linkStyle default stroke:#51cf66,stroke-width:3px
 ```
+
+### classic claude code approach: sequential execution
+
+```mermaid
+graph LR
+    Start[🎯 kickoff]:::start
+    S1[setup_database<br/>3m]:::stage1
+    S2[auth_system<br/>4m]:::stage1
+    S3[api_endpoints<br/>5m]:::stage2
+    S4[payment_integration<br/>3m]:::stage2
+    S5[frontend_app<br/>4m]:::stage2
+    S6[deploy_production<br/>2m]:::stage3
+    Final[🎉 launched]:::final
+    
+    Start ==> S1 ==> S2 ==> S3 ==> S4 ==> S5 ==> S6 ==> Final
+    
+    Total[⏱️ 21m total<br/>Sequential execution]:::timeSlow
+    
+    classDef start fill:#7950f2,stroke:#6741d9,stroke-width:3px,color:#fff
+    classDef stage1 fill:#ffd43b,stroke:#fab005,stroke-width:2px,color:#000
+    classDef stage2 fill:#4dabf7,stroke:#339af0,stroke-width:2px,color:#fff
+    classDef stage3 fill:#51cf66,stroke:#2f9e44,stroke-width:2px,color:#fff
+    classDef final fill:#ff6b6b,stroke:#f03e3e,stroke-width:3px,color:#fff
+    classDef timeSlow fill:#ffa94d,stroke:#fd7e14,stroke-width:2px,color:#000
+    
+    linkStyle default stroke:#51cf66,stroke-width:3px
+```
+
 ---
 
-## 🧠 let your ai be the cto - the real power move
+## 🧠 let your AI be the CTO - the real power move
 
 this is where shit gets wild. instead of micromanaging like some middle manager, you let claude wear the cto hat. drop a high-level goal and watch it use `claude-cto`'s toolkit to plan, delegate, and execute like a boss.
 
