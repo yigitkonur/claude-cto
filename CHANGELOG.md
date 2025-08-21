@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.5.0] - 2025-08-21
+
+- fix: enforce CRUD layer compliance in TaskOrchestrator
+- docs: add comprehensive error handling guide
+- feat: implement comprehensive Claude SDK error type handling
+- docs: add comprehensive error handling guide
+- feat: implement comprehensive Claude SDK error type handling
+
+
 ## [0.4.0] - 2025-08-20
 
 - feat: enhance error handling with detailed debugging information
