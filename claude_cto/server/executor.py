@@ -25,7 +25,7 @@ from .task_logger import create_task_logger
 
 class TaskExecutor:
     """
-    Executes a single claude-worker task in an isolated process.
+    Executes a single claude-cto task in an isolated process.
     Manages the entire lifecycle: status updates, SDK communication, and result finalization.
     """
 

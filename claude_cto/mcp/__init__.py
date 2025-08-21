@@ -1,5 +1,5 @@
 """
-MCP (Model Context Protocol) server implementations for claude-worker.
+MCP (Model Context Protocol) server implementations for claude-cto.
 Provides both standalone and proxy modes.
 """
 

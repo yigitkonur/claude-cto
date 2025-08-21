@@ -228,7 +228,7 @@ class RetryHandler:
 
     def should_retry(self, error: Exception, attempt: int) -> bool:
         """Determine if error should be retried."""
-        from claude_worker.server.error_handler import ErrorHandler
+        from claude_cto.server.error_handler import ErrorHandler
 
         # Check if error is transient
         if not ErrorHandler.is_transient_error(error):

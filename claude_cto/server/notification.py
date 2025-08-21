@@ -33,18 +33,18 @@ class SoundNotifier:
 
     def _get_sound_enabled(self) -> bool:
         """Check if sound notifications are enabled via environment variable."""
-        env_value = os.getenv("CLAUDE_WORKER_ENABLE_SOUNDS", "true").lower()
+        env_value = os.getenv("CLAUDE_CTO_ENABLE_SOUNDS", "true").lower()
         return env_value in ("true", "1", "yes", "on")
 
     def _get_start_sound_path(self) -> Optional[str]:
         """Get task start sound file path from environment or system defaults."""
         # Check environment variable first
-        env_sound = os.getenv("CLAUDE_WORKER_START_SOUND")
+        env_sound = os.getenv("CLAUDE_CTO_START_SOUND")
         if env_sound and Path(env_sound).exists():
             return env_sound
 
         # Check custom sounds directory
-        custom_sound = Path.home() / ".claude-worker" / "sounds" / "start.wav"
+        custom_sound = Path.home() / ".claude-cto" / "sounds" / "start.wav"
         if custom_sound.exists():
             return str(custom_sound)
 
@@ -64,12 +64,12 @@ class SoundNotifier:
     def _get_success_sound_path(self) -> Optional[str]:
         """Get success sound file path from environment or system defaults."""
         # Check environment variable first
-        env_sound = os.getenv("CLAUDE_WORKER_SUCCESS_SOUND")
+        env_sound = os.getenv("CLAUDE_CTO_SUCCESS_SOUND")
         if env_sound and Path(env_sound).exists():
             return env_sound
 
         # Check custom sounds directory
-        custom_sound = Path.home() / ".claude-worker" / "sounds" / "success.wav"
+        custom_sound = Path.home() / ".claude-cto" / "sounds" / "success.wav"
         if custom_sound.exists():
             return str(custom_sound)
 
@@ -91,12 +91,12 @@ class SoundNotifier:
     def _get_failure_sound_path(self) -> Optional[str]:
         """Get failure sound file path from environment or system defaults."""
         # Check environment variable first
-        env_sound = os.getenv("CLAUDE_WORKER_FAILURE_SOUND")
+        env_sound = os.getenv("CLAUDE_CTO_FAILURE_SOUND")
         if env_sound and Path(env_sound).exists():
             return env_sound
 
         # Check custom sounds directory
-        custom_sound = Path.home() / ".claude-worker" / "sounds" / "failure.wav"
+        custom_sound = Path.home() / ".claude-cto" / "sounds" / "failure.wav"
         if custom_sound.exists():
             return str(custom_sound)
 
@@ -311,16 +311,16 @@ def configure_sounds(
     global _notifier
 
     if enable is not None:
-        os.environ["CLAUDE_WORKER_ENABLE_SOUNDS"] = "true" if enable else "false"
+        os.environ["CLAUDE_CTO_ENABLE_SOUNDS"] = "true" if enable else "false"
 
     if start_sound is not None:
-        os.environ["CLAUDE_WORKER_START_SOUND"] = start_sound
+        os.environ["CLAUDE_CTO_START_SOUND"] = start_sound
 
     if success_sound is not None:
-        os.environ["CLAUDE_WORKER_SUCCESS_SOUND"] = success_sound
+        os.environ["CLAUDE_CTO_SUCCESS_SOUND"] = success_sound
 
     if failure_sound is not None:
-        os.environ["CLAUDE_WORKER_FAILURE_SOUND"] = failure_sound
+        os.environ["CLAUDE_CTO_FAILURE_SOUND"] = failure_sound
 
     # Reinitialize notifier with new settings
     _notifier = None

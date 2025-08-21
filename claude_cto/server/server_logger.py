@@ -18,7 +18,7 @@ from contextlib import asynccontextmanager
 # Create logs directory structure
 def get_log_directory() -> Path:
     """Get or create the server logs directory."""
-    log_base = Path.home() / ".claude-worker" / "logs"
+    log_base = Path.home() / ".claude-cto" / "logs"
     server_logs = log_base / "server"
     server_logs.mkdir(parents=True, exist_ok=True)
     return server_logs
@@ -26,7 +26,7 @@ def get_log_directory() -> Path:
 
 def get_crash_log_directory() -> Path:
     """Get or create the crash logs directory."""
-    log_base = Path.home() / ".claude-worker" / "logs"
+    log_base = Path.home() / ".claude-cto" / "logs"
     crash_logs = log_base / "crashes"
     crash_logs.mkdir(parents=True, exist_ok=True)
     return crash_logs
@@ -46,7 +46,7 @@ def setup_server_logger(debug: bool = False) -> logging.Logger:
     log_dir = get_log_directory()
 
     # Create main server logger
-    logger = logging.getLogger("claude_worker.server")
+    logger = logging.getLogger("claude_cto.server")
     logger.setLevel(logging.DEBUG if debug else logging.INFO)
 
     # Remove existing handlers to avoid duplicates
@@ -77,7 +77,7 @@ def setup_server_logger(debug: bool = False) -> logging.Logger:
     logger.addHandler(error_handler)
 
     # Console handler for development
-    if debug or os.getenv("CLAUDE_WORKER_DEBUG"):
+    if debug or os.getenv("CLAUDE_CTO_DEBUG"):
         console_handler = logging.StreamHandler()
         console_handler.setLevel(logging.DEBUG)
         console_handler.setFormatter(server_formatter)
@@ -91,7 +91,7 @@ def setup_access_logger() -> logging.Logger:
     """Set up HTTP access logging."""
     log_dir = get_log_directory()
 
-    logger = logging.getLogger("claude_worker.access")
+    logger = logging.getLogger("claude_cto.access")
     logger.setLevel(logging.INFO)
     logger.handlers.clear()
 
@@ -146,7 +146,7 @@ def log_crash(error: Exception, context: Optional[Dict[str, Any]] = None):
         json.dump(crash_info, f, indent=2, default=str)
 
     # Also log to error.log
-    logger = logging.getLogger("claude_worker.server")
+    logger = logging.getLogger("claude_cto.server")
     logger.critical(f"CRASH: {error}", exc_info=True, extra={"crash_id": crash_id})
 
     return crash_id
@@ -155,8 +155,8 @@ def log_crash(error: Exception, context: Optional[Dict[str, Any]] = None):
 # Request/Response logging middleware
 async def log_request_response(request, call_next):
     """Middleware to log all HTTP requests and responses."""
-    access_logger = logging.getLogger("claude_worker.access")
-    server_logger = logging.getLogger("claude_worker.server")
+    access_logger = logging.getLogger("claude_cto.access")
+    server_logger = logging.getLogger("claude_cto.server")
 
     # Log request
     start_time = datetime.now(timezone.utc)
@@ -221,7 +221,7 @@ def setup_exception_handler():
             sys.__excepthook__(exc_type, exc_value, exc_traceback)
             return
 
-        logger = logging.getLogger("claude_worker.server")
+        logger = logging.getLogger("claude_cto.server")
         logger.critical(
             "Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback)
         )
@@ -234,9 +234,9 @@ def setup_exception_handler():
 
 # Startup/shutdown logging
 @asynccontextmanager
-async def log_lifecycle(app_name: str = "claude-worker"):
+async def log_lifecycle(app_name: str = "claude-cto"):
     """Context manager for logging server lifecycle events."""
-    logger = logging.getLogger("claude_worker.server")
+    logger = logging.getLogger("claude_cto.server")
 
     # Startup
     startup_time = datetime.now(timezone.utc)
@@ -268,7 +268,7 @@ def log_database_operation(
     operation: str, details: Dict[str, Any], error: Optional[Exception] = None
 ):
     """Log database operations for debugging."""
-    logger = logging.getLogger("claude_worker.server.db")
+    logger = logging.getLogger("claude_cto.server.db")
 
     if error:
         logger.error(
@@ -285,7 +285,7 @@ def log_database_operation(
 # Task execution logging
 def log_task_event(task_id: int, event: str, details: Optional[Dict[str, Any]] = None):
     """Log task lifecycle events."""
-    logger = logging.getLogger("claude_worker.server.tasks")
+    logger = logging.getLogger("claude_cto.server.tasks")
 
     log_message = f"Task {task_id}: {event}"
     if details:
@@ -303,15 +303,15 @@ def initialize_logging(debug: bool = False):
     setup_exception_handler()
 
     # Create task logger
-    task_logger = logging.getLogger("claude_worker.server.tasks")
+    task_logger = logging.getLogger("claude_cto.server.tasks")
     task_logger.setLevel(logging.INFO)
 
     # Create database logger
-    db_logger = logging.getLogger("claude_worker.server.db")
+    db_logger = logging.getLogger("claude_cto.server.db")
     db_logger.setLevel(logging.DEBUG if debug else logging.INFO)
 
     # Log initialization
-    logger = logging.getLogger("claude_worker.server")
+    logger = logging.getLogger("claude_cto.server")
     logger.info("Logging system initialized")
 
     return logger

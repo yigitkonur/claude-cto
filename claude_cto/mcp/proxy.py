@@ -23,13 +23,13 @@ def create_proxy_server(api_url: Optional[str] = None) -> FastMCP:
 
     # Get API URL from parameter, environment, or default
     if not api_url:
-        api_url = os.getenv("CLAUDE_WORKER_API_URL", "http://localhost:8000")
+        api_url = os.getenv("CLAUDE_CTO_API_URL", "http://localhost:8000")
 
     # Ensure URL doesn't have trailing slash
     api_url = api_url.rstrip("/")
 
     # Create MCP server
-    mcp = FastMCP(name="claude-worker-proxy", dependencies=["httpx>=0.25.0"])
+    mcp = FastMCP(name="claude-cto-proxy", dependencies=["httpx>=0.25.0"])
 
     @mcp.tool()
     async def create_task(
@@ -141,7 +141,7 @@ def create_proxy_server(api_url: Optional[str] = None) -> FastMCP:
                 return {
                     "error": "Cannot connect to REST API server",
                     "api_url": api_url,
-                    "hint": "Ensure the server is running with: claude-worker server start",
+                    "hint": "Ensure the server is running with: claude-cto server start",
                 }
             except Exception as e:
                 return {"error": f"Failed to submit task: {str(e)}", "api_url": api_url}
@@ -264,7 +264,7 @@ def create_proxy_server(api_url: Optional[str] = None) -> FastMCP:
                 return {
                     "error": "Cannot connect to REST API server",
                     "api_url": api_url,
-                    "hint": "Ensure the server is running with: claude-worker server start",
+                    "hint": "Ensure the server is running with: claude-cto server start",
                 }
             except Exception as e:
                 return {"error": f"Failed to list tasks: {str(e)}"}
@@ -286,7 +286,7 @@ def create_proxy_server(api_url: Optional[str] = None) -> FastMCP:
                     return {
                         "status": "healthy",
                         "api_url": api_url,
-                        "service": data.get("service", "claude-worker"),
+                        "service": data.get("service", "claude-cto"),
                     }
                 else:
                     return {
@@ -300,7 +300,7 @@ def create_proxy_server(api_url: Optional[str] = None) -> FastMCP:
                     "status": "offline",
                     "api_url": api_url,
                     "error": "Cannot connect to REST API server",
-                    "hint": "Start server with: claude-worker server start",
+                    "hint": "Start server with: claude-cto server start",
                 }
             except Exception as e:
                 return {"status": "error", "api_url": api_url, "error": str(e)}

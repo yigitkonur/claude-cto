@@ -5,7 +5,7 @@ This extends the MCP interface to support the full orchestration capabilities.
 
 from typing import List, Dict, Any, Optional
 import httpx
-from claude_worker.cli.config import get_server_url
+from claude_cto.cli.config import get_server_url
 
 
 async def create_mcp_orchestration(

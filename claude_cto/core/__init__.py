@@ -1,5 +1,5 @@
 """
-Core shared functionality for claude-worker.
+Core shared functionality for claude-cto.
 This module contains the essential logic used by both REST API and MCP servers.
 """
 

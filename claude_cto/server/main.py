@@ -84,7 +84,7 @@ async def lifespan(app: FastAPI):
     Setup: Initialize database and logging
     Teardown: Shutdown process pool and finalize logs
     """
-    async with log_lifecycle("claude-worker"):
+    async with log_lifecycle("claude-cto"):
         try:
             # Startup
             logger.info("Initializing database...")
@@ -117,7 +117,7 @@ async def lifespan(app: FastAPI):
 
 # Initialize FastAPI app
 app = FastAPI(
-    title="Claude Worker Server",
+    title="Claude CTO Server",
     description="Fire-and-forget task execution for Claude Code SDK",
     version="0.1.0",
     lifespan=lifespan,
@@ -280,7 +280,7 @@ async def create_mcp_task(
 @app.get("/health")
 def health_check():
     """Simple health check endpoint."""
-    return {"status": "healthy", "service": "claude-worker"}
+    return {"status": "healthy", "service": "claude-cto"}
 
 
 # Orchestration endpoints

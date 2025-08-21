@@ -1,5 +1,5 @@
 """
-Shared task executor functionality for claude-worker.
+Shared task executor functionality for claude-cto.
 Handles actual Claude Code SDK execution.
 """
 
@@ -12,7 +12,7 @@ from typing import Optional, Dict, Any
 from claude_code_sdk import query, ClaudeCodeOptions
 from sqlmodel import Session
 
-from claude_worker.server.models import TaskStatus
+from claude_cto.server.models import TaskStatus
 from .database import get_task_by_id, update_task_status
 
 
@@ -26,7 +26,7 @@ class TaskExecutor:
         """Initialize executor with task ID and database session."""
         self.task_id = task_id
         self.session = session
-        self.log_dir = log_dir or Path.home() / ".claude-worker" / "logs"
+        self.log_dir = log_dir or Path.home() / ".claude-cto" / "logs"
         self.log_dir.mkdir(parents=True, exist_ok=True)
 
     async def run(self) -> Dict[str, Any]:
@@ -113,7 +113,7 @@ class TaskExecutor:
         except Exception as e:
             # Use centralized ErrorHandler for consistent error handling
             try:
-                from claude_worker.server.error_handler import ErrorHandler
+                from claude_cto.server.error_handler import ErrorHandler
 
                 # Get structured error information
                 error_info = ErrorHandler.handle_error(e, self.task_id, str(log_file))

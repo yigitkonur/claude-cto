@@ -243,13 +243,13 @@ def get_safe_log_directory(base_dir: Optional[Path] = None) -> Path:
     Get a safe logging directory, creating it if necessary.
 
     Args:
-        base_dir: Optional base directory (defaults to ~/.claude-worker)
+        base_dir: Optional base directory (defaults to ~/.claude-cto)
 
     Returns:
         Path to logs directory
     """
     if base_dir is None:
-        base_dir = Path.home() / ".claude-worker"
+        base_dir = Path.home() / ".claude-cto"
 
     log_dir = base_dir / "tasks"
     log_dir.mkdir(parents=True, exist_ok=True)

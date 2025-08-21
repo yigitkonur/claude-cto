@@ -137,7 +137,7 @@ cython_debug/
 .DS_Store
 
 # Application specific
-~/.claude-worker/
+~/.claude-cto/
 *.db
 *.sqlite
 *.sqlite3
@@ -166,7 +166,7 @@ mcp_test_result.py
 
 # Local development files
 mcp_server_*.py
-claude_worker_mcp.py
+claude_cto_mcp.py
 files-to-read/
 scripts/
 

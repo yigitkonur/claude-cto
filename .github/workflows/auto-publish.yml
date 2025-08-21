@@ -52,7 +52,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/p/claude-worker
+      url: https://pypi.org/p/claude-cto
     
     steps:
     - uses: actions/checkout@v4
@@ -163,6 +163,6 @@ jobs:
     
     - name: Install from PyPI
       run: |
-        pip install claude-worker
-        claude-worker --version || echo "CLI not available without extras"
-        python -c "import claude_worker; print(f'Successfully imported claude_worker v{claude_worker.__version__}')"
+        pip install claude-cto
+        claude-cto --version || echo "CLI not available without extras"
+        python -c "import claude_cto; print(f'Successfully imported claude_cto v{claude_cto.__version__}')"

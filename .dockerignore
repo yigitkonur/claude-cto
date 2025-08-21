@@ -66,8 +66,8 @@ docs/
 *.whl
 *.tar.gz
 
-# Claude Worker specific
-~/.claude-worker/
+# Claude CTO specific
+~/.claude-cto/
 logs/
 *.raw.log
 task_*.log

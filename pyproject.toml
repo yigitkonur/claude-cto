@@ -1,13 +1,13 @@
 [tool.poetry]
-name = "claude-worker"
+name = "claude-cto"
 version = "0.5.0"
 description = "Fire-and-forget task execution system for Claude Code SDK with CLI and MCP interfaces"
 authors = ["Yigit Konur <yigit@thinkbuddy.ai>"]
 readme = "README.md"
 license = "MIT"
-homepage = "https://github.com/yigitkonur/claude-worker"
-repository = "https://github.com/yigitkonur/claude-worker"
-documentation = "https://github.com/yigitkonur/claude-worker/blob/main/README.md"
+homepage = "https://github.com/yigitkonur/claude-cto"
+repository = "https://github.com/yigitkonur/claude-cto"
+documentation = "https://github.com/yigitkonur/claude-cto/blob/main/README.md"
 keywords = ["claude", "ai", "automation", "task-queue", "cli", "mcp", "anthropic"]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -23,7 +23,7 @@ classifiers = [
     "Environment :: Console",
     "Framework :: FastAPI",
 ]
-packages = [{include = "claude_worker"}]
+packages = [{include = "claude_cto"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -49,16 +49,16 @@ server = ["fastapi", "uvicorn", "typer", "httpx"]
 full = ["fastapi", "uvicorn", "typer", "httpx", "fastmcp"]
 
 [tool.poetry.urls]
-"Bug Tracker" = "https://github.com/yigitkonur/claude-worker/issues"
-"Changelog" = "https://github.com/yigitkonur/claude-worker/blob/main/CHANGELOG.md"
-"MCP Documentation" = "https://github.com/yigitkonur/claude-worker/blob/main/MCP_README.md"
-"Smithery" = "https://smithery.ai/@yigitkonur/claude-worker"
+"Bug Tracker" = "https://github.com/yigitkonur/claude-cto/issues"
+"Changelog" = "https://github.com/yigitkonur/claude-cto/blob/main/CHANGELOG.md"
+"MCP Documentation" = "https://github.com/yigitkonur/claude-cto/blob/main/MCP_README.md"
+"Smithery" = "https://smithery.ai/@yigitkonur/claude-cto"
 
 [tool.poetry.scripts]
 # CLI entry point (requires 'server' or 'full' extra)
-claude-worker = "claude_worker.cli.main:app"
+claude-cto = "claude_cto.cli.main:app"
 # MCP entry point (requires 'mcp' or 'full' extra)  
-claude-worker-mcp = "claude_worker.mcp.factory:run_stdio"
+claude-cto-mcp = "claude_cto.mcp.factory:run_stdio"
 
 [tool.poetry.group.dev.dependencies]
 black = "^25.1.0"

@@ -1,4 +1,4 @@
-# Smithery configuration for Claude Worker MCP Server
+# Smithery configuration for Claude CTO MCP Server
 # This enables deployment on smithery.ai for easy installation
 
 runtime: "container"
@@ -6,10 +6,10 @@ runtime: "container"
 # Environment variables for the MCP server
 env:
   # Database and log paths for standalone mode
-  CLAUDE_WORKER_DB: "/data/claude-worker/tasks.db"
-  CLAUDE_WORKER_LOG_DIR: "/data/claude-worker/logs"
+  CLAUDE_CTO_DB: "/data/claude-cto/tasks.db"
+  CLAUDE_CTO_LOG_DIR: "/data/claude-cto/logs"
   # Default to standalone mode (no REST API dependency)
-  CLAUDE_WORKER_MODE: "standalone"
+  CLAUDE_CTO_MODE: "standalone"
 
 # Docker build configuration
 build:
@@ -17,12 +17,12 @@ build:
   dockerBuildPath: "."
 
 # MCP server metadata
-name: "claude-worker"
+name: "claude-cto"
 description: "Fire-and-forget task delegation system for Claude Code SDK with intelligent LLM-optimized tool descriptions"
 version: "0.3.1"
 author: "Yigit Konur"
 license: "MIT"
-homepage: "https://github.com/yigitkonur/claude-worker"
+homepage: "https://github.com/yigitkonur/claude-cto"
 
 # MCP-specific configuration for stdio communication
 mcp:

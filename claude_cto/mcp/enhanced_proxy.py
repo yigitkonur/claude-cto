@@ -29,14 +29,14 @@ def create_enhanced_proxy_server(api_url: Optional[str] = None) -> FastMCP:
     
     # Get API URL from parameter, environment, or default
     if not api_url:
-        api_url = os.getenv("CLAUDE_WORKER_API_URL", "http://localhost:8000")
+        api_url = os.getenv("CLAUDE_CTO_API_URL", "http://localhost:8000")
     
     # Ensure URL doesn't have trailing slash
     api_url = api_url.rstrip("/")
     
     # Create MCP server
     mcp = FastMCP(
-        name="claude-worker-enhanced", 
+        name="claude-cto-enhanced", 
         dependencies=["httpx>=0.25.0"]
     )
     

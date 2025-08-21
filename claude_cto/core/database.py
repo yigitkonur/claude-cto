@@ -1,5 +1,5 @@
 """
-Shared database functionality for claude-worker.
+Shared database functionality for claude-cto.
 Used by both REST API server and standalone MCP server.
 """
 
@@ -10,25 +10,25 @@ from datetime import datetime
 
 from sqlmodel import SQLModel, Session, create_engine, select
 
-from claude_worker.server.models import TaskDB, TaskCreate, TaskStatus
+from claude_cto.server.models import TaskDB, TaskCreate, TaskStatus
 
 
 def get_database_url(db_path: Optional[str] = None) -> str:
     """
     Get database URL, with priority:
     1. Provided db_path
-    2. CLAUDE_WORKER_DB environment variable
+    2. CLAUDE_CTO_DB environment variable
     3. Default location
     """
     if db_path:
         return f"sqlite:///{db_path}"
 
-    env_db = os.getenv("CLAUDE_WORKER_DB")
+    env_db = os.getenv("CLAUDE_CTO_DB")
     if env_db:
         return f"sqlite:///{env_db}"
 
     # Default location
-    default_dir = Path.home() / ".claude-worker"
+    default_dir = Path.home() / ".claude-cto"
     default_dir.mkdir(parents=True, exist_ok=True)
     default_db = default_dir / "tasks.db"
     return f"sqlite:///{default_db}"

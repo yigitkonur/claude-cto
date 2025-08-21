@@ -1,5 +1,5 @@
 """
-SOLE RESPONSIBILITY: Advanced logging system for claude-worker tasks.
+SOLE RESPONSIBILITY: Advanced logging system for claude-cto tasks.
 Creates structured, multi-level logging with summary and detailed logs.
 """
 
@@ -47,7 +47,7 @@ class TaskLogger:
         self.global_logger = self._get_global_logger()
 
     def _setup_log_directory(self) -> Path:
-        """Create and return the .claude-worker directory structure."""
+        """Create and return the .claude-cto directory structure."""
         return get_safe_log_directory()
 
     def _create_logger(self, name: str, log_file: Path) -> logging.Logger:
@@ -71,10 +71,10 @@ class TaskLogger:
         return logger
 
     def _get_global_logger(self) -> logging.Logger:
-        """Get or create the global claude-worker summary logger."""
-        global_log_file = Path.home() / ".claude-worker" / "claude-worker.log"
+        """Get or create the global claude-cto summary logger."""
+        global_log_file = Path.home() / ".claude-cto" / "claude-cto.log"
 
-        logger = logging.getLogger("claude_worker_global")
+        logger = logging.getLogger("claude_cto_global")
         if not logger.handlers:
             logger.setLevel(logging.INFO)
 
@@ -219,7 +219,7 @@ class TaskLogger:
         """Log to global summary with task ID context."""
         # Create a custom log record with task ID
         record = logging.LogRecord(
-            name="claude_worker_global",
+            name="claude_cto_global",
             level=logging.INFO,
             pathname="",
             lineno=0,
@@ -235,7 +235,7 @@ class TaskLogger:
         return {
             "summary": str(self.summary_log_path),
             "detailed": str(self.detailed_log_path),
-            "global": str(Path.home() / ".claude-worker" / "claude-worker.log"),
+            "global": str(Path.home() / ".claude-cto" / "claude-cto.log"),
         }
 
     @contextmanager
@@ -280,7 +280,7 @@ def create_task_logger(
 
 def get_log_directory() -> Path:
     """Get the main logging directory."""
-    return Path.home() / ".claude-worker"
+    return Path.home() / ".claude-cto"
 
 
 def get_task_logs(task_id: int) -> Optional[Dict[str, str]]:
@@ -303,7 +303,7 @@ def get_task_logs(task_id: int) -> Optional[Dict[str, str]]:
             break
 
     if task_logs["summary"]:
-        task_logs["global"] = str(get_log_directory() / "claude-worker.log")
+        task_logs["global"] = str(get_log_directory() / "claude-cto.log")
         return task_logs
 
     return None

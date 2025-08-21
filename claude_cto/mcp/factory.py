@@ -24,7 +24,7 @@ def is_rest_api_available(api_url: str = None) -> bool:
         True if API is available, False otherwise
     """
     if not api_url:
-        api_url = os.getenv("CLAUDE_WORKER_API_URL", "http://localhost:8000")
+        api_url = os.getenv("CLAUDE_CTO_API_URL", "http://localhost:8000")
 
     try:
         response = httpx.get(f"{api_url}/health", timeout=2.0)
@@ -52,14 +52,14 @@ def create_mcp_server(
         FastMCP server instance
 
     Environment Variables:
-        CLAUDE_WORKER_MODE: Override mode (standalone/proxy/auto)
-        CLAUDE_WORKER_API_URL: REST API URL for proxy mode
-        CLAUDE_WORKER_DB: Database path for standalone mode
-        CLAUDE_WORKER_LOG_DIR: Log directory for standalone mode
+        CLAUDE_CTO_MODE: Override mode (standalone/proxy/auto)
+        CLAUDE_CTO_API_URL: REST API URL for proxy mode
+        CLAUDE_CTO_DB: Database path for standalone mode
+        CLAUDE_CTO_LOG_DIR: Log directory for standalone mode
     """
 
     # Check environment for mode override
-    env_mode = os.getenv("CLAUDE_WORKER_MODE", "").lower()
+    env_mode = os.getenv("CLAUDE_CTO_MODE", "").lower()
     if env_mode in ["standalone", "proxy"]:
         mode = env_mode
 
@@ -80,9 +80,9 @@ def create_mcp_server(
     else:  # standalone
         # Get paths from environment if not provided
         if not db_path:
-            db_path = os.getenv("CLAUDE_WORKER_DB")
+            db_path = os.getenv("CLAUDE_CTO_DB")
         if not log_dir:
-            log_dir = os.getenv("CLAUDE_WORKER_LOG_DIR")
+            log_dir = os.getenv("CLAUDE_CTO_LOG_DIR")
 
         return create_standalone_server(db_path, log_dir)
 
@@ -108,7 +108,7 @@ def create_proxy(**kwargs) -> FastMCP:
 
 
 def run_stdio():
-    """Entry point for claude-worker-mcp command."""
+    """Entry point for claude-cto-mcp command."""
     import asyncio
 
     server = create_mcp_server()

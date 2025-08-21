@@ -11,14 +11,14 @@ from typing import Optional, Dict, Any
 
 from fastmcp import FastMCP
 
-from claude_worker.core import (
+from claude_cto.core import (
     init_database,
     create_session_maker,
     create_task_record,
     get_task_by_id,
     execute_task_async,
 )
-from claude_worker.server.models import TaskCreate, TaskStatus
+from claude_cto.server.models import TaskCreate, TaskStatus
 
 
 # Process pool for task execution (module level for pickling)
@@ -47,12 +47,12 @@ def create_standalone_server(
     if log_dir:
         log_path = Path(log_dir)
     else:
-        log_path = Path.home() / ".claude-worker" / "logs"
+        log_path = Path.home() / ".claude-cto" / "logs"
     log_path.mkdir(parents=True, exist_ok=True)
 
     # Create MCP server
     mcp = FastMCP(
-        name="claude-worker-standalone",
+        name="claude-cto-standalone",
         dependencies=["claude-code-sdk>=0.0.19", "sqlmodel>=0.0.14"],
     )
 
@@ -116,7 +116,7 @@ def create_standalone_server(
             }
 
         # Import ClaudeModel enum
-        from claude_worker.server.models import ClaudeModel
+        from claude_cto.server.models import ClaudeModel
 
         # Map string to enum
         model_enum = {
@@ -224,7 +224,7 @@ def create_standalone_server(
         """
         with SessionLocal() as session:
             from sqlmodel import select
-            from claude_worker.server.models import TaskDB
+            from claude_cto.server.models import TaskDB
 
             statement = select(TaskDB)
 

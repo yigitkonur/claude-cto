@@ -13,7 +13,7 @@ from sqlalchemy.exc import OperationalError
 logger = logging.getLogger(__name__)
 
 # Application data directory setup
-app_dir = Path.home() / ".claude-worker"
+app_dir = Path.home() / ".claude-cto"
 app_dir.mkdir(parents=True, exist_ok=True)
 
 # Database file path

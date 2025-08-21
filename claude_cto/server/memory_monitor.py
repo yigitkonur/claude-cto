@@ -1,5 +1,5 @@
 """
-SOLE RESPONSIBILITY: Memory and resource monitoring for claude-worker.
+SOLE RESPONSIBILITY: Memory and resource monitoring for claude-cto.
 Tracks memory usage, task performance metrics, and system health.
 """
 

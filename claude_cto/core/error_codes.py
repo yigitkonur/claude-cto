@@ -1,5 +1,5 @@
 """
-SOLE RESPONSIBILITY: Centralized error codes and categories for claude-worker.
+SOLE RESPONSIBILITY: Centralized error codes and categories for claude-cto.
 Provides structured error classification, correlation, and monitoring hooks.
 """
 
@@ -41,7 +41,7 @@ class ErrorSeverity(Enum):
 
 
 class ErrorCode(Enum):
-    """Standardized error codes for claude-worker."""
+    """Standardized error codes for claude-cto."""
 
     # Authentication & Authorization (1xxx)
     AUTH_API_KEY_INVALID = 1001

@@ -26,31 +26,31 @@ from .config import get_server_url
 
 # Initialize Typer app
 app = typer.Typer(
-    name="claude-worker",
+    name="claude-cto",
     help="""
-🤖 [bold cyan]Claude Worker[/bold cyan] - Run Claude Code SDK tasks in the background
+🤖 [bold cyan]Claude CTO[/bold cyan] - Run Claude Code SDK tasks in the background
 
 Delegate long-running AI tasks to Claude without blocking your terminal.
 Perfect for code refactoring, analysis, and automation tasks.
 
 [bold yellow]Quick Start:[/bold yellow]
-  $ claude-worker run "analyze this codebase and suggest improvements"
-  $ claude-worker run "refactor all Python files to use type hints" --watch
-  $ echo "review this code" | claude-worker run
+  $ claude-cto run "analyze this codebase and suggest improvements"
+  $ claude-cto run "refactor all Python files to use type hints" --watch
+  $ echo "review this code" | claude-cto run
 
 [bold green]Examples:[/bold green]
-  • Simple task:     claude-worker run "create a README.md file"
-  • From file:       claude-worker run instructions.txt
-  • With monitoring: claude-worker run "complex task" --watch
-  • Check progress:  claude-worker status 1
-  • View all tasks:  claude-worker list
+  • Simple task:     claude-cto run "create a README.md file"
+  • From file:       claude-cto run instructions.txt
+  • With monitoring: claude-cto run "complex task" --watch
+  • Check progress:  claude-cto status 1
+  • View all tasks:  claude-cto list
 
 [dim]The server starts automatically when needed. No setup required![/dim]
 """,
     rich_markup_mode="rich",
     no_args_is_help=True,  # Show help when no args provided
     invoke_without_command=True,  # Allow callback to run without subcommand
-    epilog="[dim]For detailed help on any command: claude-worker [COMMAND] --help[/dim]",
+    epilog="[dim]For detailed help on any command: claude-cto [COMMAND] --help[/dim]",
 )
 
 # Server management sub-app
@@ -110,7 +110,7 @@ def start_server_in_background() -> bool:
     import time
 
     console.print(
-        "[yellow]⚠️  Server not running. Starting Claude Worker server...[/yellow]"
+        "[yellow]⚠️  Server not running. Starting Claude CTO server...[/yellow]"
     )
 
     # Find available port
@@ -138,7 +138,7 @@ def start_server_in_background() -> bool:
         sys.executable,
         "-m",
         "uvicorn",
-        "claude_worker.server.main:app",
+        "claude_cto.server.main:app",
         "--host",
         host,
         "--port",
@@ -164,7 +164,7 @@ def start_server_in_background() -> bool:
 
             # Update environment variable for this session if using non-default port
             if port != 8000:
-                os.environ["CLAUDE_WORKER_SERVER_URL"] = f"http://localhost:{port}"
+                os.environ["CLAUDE_CTO_SERVER_URL"] = f"http://localhost:{port}"
 
             return True
         else:
@@ -182,19 +182,19 @@ The server starts automatically if not already running.
 
 [bold]Examples:[/bold]
   [cyan]# Simple task[/cyan]
-  $ claude-worker run "write a Python hello world script"
+  $ claude-cto run "write a Python hello world script"
   
   [cyan]# From a file with instructions[/cyan]
-  $ claude-worker run requirements.txt
+  $ claude-cto run requirements.txt
   
   [cyan]# Watch the task progress live[/cyan]
-  $ claude-worker run "refactor this codebase" --watch
+  $ claude-cto run "refactor this codebase" --watch
   
   [cyan]# Pipe input from another command[/cyan]
-  $ git diff | claude-worker run "review these changes"
+  $ git diff | claude-cto run "review these changes"
   
   [cyan]# Specify working directory[/cyan]
-  $ claude-worker run "organize files here" --dir /path/to/project
+  $ claude-cto run "organize files here" --dir /path/to/project
 """
 )
 def run(
@@ -242,7 +242,7 @@ def run(
     ] = False,
 ):
     """
-    Submit a new task to Claude Worker.
+    Submit a new task to Claude CTO.
 
     Prompt can be provided as:
     - Command line argument
@@ -295,13 +295,13 @@ def run(
             console.print("[bold yellow]To fix this, try:[/bold yellow]")
             console.print("  1. Start the server manually:")
             console.print(
-                "     [bright_white]$ claude-worker server start[/bright_white]\n"
+                "     [bright_white]$ claude-cto server start[/bright_white]\n"
             )
             console.print("  2. Check if port 8000-8010 are available:")
             console.print("     [bright_white]$ lsof -i :8000[/bright_white]\n")
             console.print("  3. Kill any existing servers:")
             console.print(
-                "     [bright_white]$ pkill -f claude_worker.server[/bright_white]\n"
+                "     [bright_white]$ pkill -f claude_cto.server[/bright_white]\n"
             )
             raise typer.Exit(1)
 
@@ -325,10 +325,10 @@ def run(
 
             if not watch:
                 console.print(
-                    f"\n[dim]💡 Tip: Check progress with:[/dim] [bright_white]claude-worker status {result['id']}[/bright_white]"
+                    f"\n[dim]💡 Tip: Check progress with:[/dim] [bright_white]claude-cto status {result['id']}[/bright_white]"
                 )
                 console.print(
-                    '[dim]    Or watch live with:[/dim] [bright_white]claude-worker run "your task" --watch[/bright_white]'
+                    '[dim]    Or watch live with:[/dim] [bright_white]claude-cto run "your task" --watch[/bright_white]'
                 )
 
             # Watch if requested
@@ -346,8 +346,8 @@ def run(
 View detailed information about a specific task.
 
 [bold]Examples:[/bold]
-  $ claude-worker status 1
-  $ claude-worker status     [dim]# Shows available task IDs[/dim]
+  $ claude-cto status 1
+  $ claude-cto status     [dim]# Shows available task IDs[/dim]
   
 Shows the task's current status, progress, and any errors.
 """
@@ -371,13 +371,13 @@ def status(
             console.print("[bold yellow]To fix this, try:[/bold yellow]")
             console.print("  1. Start the server manually:")
             console.print(
-                "     [bright_white]$ claude-worker server start[/bright_white]\n"
+                "     [bright_white]$ claude-cto server start[/bright_white]\n"
             )
             console.print("  2. Check if port 8000-8010 are available:")
             console.print("     [bright_white]$ lsof -i :8000[/bright_white]\n")
             console.print("  3. Kill any existing servers:")
             console.print(
-                "     [bright_white]$ pkill -f claude_worker.server[/bright_white]\n"
+                "     [bright_white]$ pkill -f claude_cto.server[/bright_white]\n"
             )
             raise typer.Exit(1)
 
@@ -395,7 +395,7 @@ def status(
                 if not tasks:
                     console.print("\n[yellow]📭 No tasks found yet![/yellow]\n")
                     console.print("[bold]Create your first task with:[/bold]")
-                    console.print('  $ claude-worker run "your task description"\n')
+                    console.print('  $ claude-cto run "your task description"\n')
                     return
 
                 console.print("\n[bold blue]📋 Available Tasks:[/bold blue]\n")
@@ -429,11 +429,11 @@ def status(
 
                 # Show helpful guidance
                 console.print("\n[bold]💡 To check a specific task:[/bold]")
-                console.print("  $ claude-worker status [cyan]<TASK_ID>[/cyan]")
+                console.print("  $ claude-cto status [cyan]<TASK_ID>[/cyan]")
                 console.print("\n[dim]Example:[/dim]")
                 if tasks:
                     latest_id = tasks[-1]["id"]
-                    console.print(f"  $ claude-worker status [cyan]{latest_id}[/cyan]")
+                    console.print(f"  $ claude-cto status [cyan]{latest_id}[/cyan]")
                 console.print()
 
                 return
@@ -478,8 +478,8 @@ def status(
             if "404" in str(e):
                 console.print(f"\n[red]❌ Task ID {task_id} not found.[/red]")
                 console.print("\n[bold]💡 Check available task IDs with:[/bold]")
-                console.print("  $ claude-worker status")
-                console.print("  $ claude-worker list\n")
+                console.print("  $ claude-cto status")
+                console.print("  $ claude-cto list\n")
             else:
                 console.print(f"[red]Error fetching task status: {e}[/red]")
             raise typer.Exit(1)
@@ -498,7 +498,7 @@ def help(ctx: typer.Context):
 Display a table of all submitted tasks with their status.
 
 [bold]Example:[/bold]
-  $ claude-worker list
+  $ claude-cto list
   
 Shows task IDs, status, creation time, and last actions.
 """,
@@ -514,13 +514,13 @@ def list():
             console.print("[bold yellow]To fix this, try:[/bold yellow]")
             console.print("  1. Start the server manually:")
             console.print(
-                "     [bright_white]$ claude-worker server start[/bright_white]\n"
+                "     [bright_white]$ claude-cto server start[/bright_white]\n"
             )
             console.print("  2. Check if port 8000-8010 are available:")
             console.print("     [bright_white]$ lsof -i :8000[/bright_white]\n")
             console.print("  3. Kill any existing servers:")
             console.print(
-                "     [bright_white]$ pkill -f claude_worker.server[/bright_white]\n"
+                "     [bright_white]$ pkill -f claude_cto.server[/bright_white]\n"
             )
             raise typer.Exit(1)
 
@@ -536,16 +536,16 @@ def list():
             if not tasks:
                 console.print("\n[yellow]📭 No tasks found yet![/yellow]\n")
                 console.print("[bold]Get started with:[/bold]")
-                console.print('  $ claude-worker run "your first task"\n')
+                console.print('  $ claude-cto run "your first task"\n')
                 console.print("[dim]Examples:[/dim]")
                 console.print(
-                    '  • claude-worker run "create a Python script that sorts files by date"'
+                    '  • claude-cto run "create a Python script that sorts files by date"'
                 )
                 console.print(
-                    '  • claude-worker run "analyze this codebase and find bugs"'
+                    '  • claude-cto run "analyze this codebase and find bugs"'
                 )
                 console.print(
-                    '  • claude-worker run "write unit tests for all functions"\n'
+                    '  • claude-cto run "write unit tests for all functions"\n'
                 )
                 return
 
@@ -599,18 +599,18 @@ def list():
             # Show helpful guidance about logs
             console.print("\n[bold blue]📋 Log Files:[/bold blue]")
             console.print(
-                "  [dim]Summary logs:[/dim]   ~/.claude-worker/tasks/task_<ID>_<context>_*_summary.log"
+                "  [dim]Summary logs:[/dim]   ~/.claude-cto/tasks/task_<ID>_<context>_*_summary.log"
             )
             console.print(
-                "  [dim]Detailed logs:[/dim]  ~/.claude-worker/tasks/task_<ID>_<context>_*_detailed.log"
+                "  [dim]Detailed logs:[/dim]  ~/.claude-cto/tasks/task_<ID>_<context>_*_detailed.log"
             )
             console.print(
-                "  [dim]Global log:[/dim]     ~/.claude-worker/claude-worker.log"
+                "  [dim]Global log:[/dim]     ~/.claude-cto/claude-cto.log"
             )
             console.print("\n[bold]💡 View logs with:[/bold]")
-            console.print("  $ ls ~/.claude-worker/tasks/task_<ID>_*")
-            console.print("  $ tail -f ~/.claude-worker/tasks/task_<ID>_*_summary.log")
-            console.print("  $ tail -f ~/.claude-worker/claude-worker.log")
+            console.print("  $ ls ~/.claude-cto/tasks/task_<ID>_*")
+            console.print("  $ tail -f ~/.claude-cto/tasks/task_<ID>_*_summary.log")
+            console.print("  $ tail -f ~/.claude-cto/claude-cto.log")
             console.print(
                 "\n[dim]Note: Log filenames now include directory context for parallel instances[/dim]"
             )
@@ -1016,13 +1016,13 @@ Use this command only if you need manual control.[/dim]
 
 [bold]Examples:[/bold]
   [cyan]# Start with default settings[/cyan]
-  $ claude-worker server start
+  $ claude-cto server start
   
   [cyan]# Use a specific port[/cyan]
-  $ claude-worker server start --port 9000
+  $ claude-cto server start --port 9000
   
   [cyan]# Enable auto-reload for development[/cyan]
-  $ claude-worker server start --reload
+  $ claude-cto server start --reload
 """,
 )
 def server_start(
@@ -1040,13 +1040,13 @@ def server_start(
     ] = True,
 ):
     """
-    Start the Claude Worker server in the background.
+    Start the Claude CTO server in the background.
     Uses subprocess.Popen to launch Uvicorn as a daemon.
     Automatically tries alternative ports if the specified port is occupied.
     """
     import socket
 
-    console.print("\n[bold cyan]🚀 Claude Worker Server[/bold cyan]")
+    console.print("\n[bold cyan]🚀 Claude CTO Server[/bold cyan]")
     console.print("[dim]Fire-and-forget task execution for Claude Code SDK[/dim]\n")
 
     # Function to check if port is available
@@ -1089,7 +1089,7 @@ def server_start(
         sys.executable,
         "-m",
         "uvicorn",
-        "claude_worker.server.main:app",
+        "claude_cto.server.main:app",
         "--host",
         host,
         "--port",
@@ -1135,25 +1135,25 @@ def server_start(
             info_text.append("📝 How to submit tasks:\n", style="bold cyan")
             info_text.append("   Quick task:     ", style="dim")
             info_text.append(
-                'claude-worker run "Your prompt here"\n', style="bright_white"
+                'claude-cto run "Your prompt here"\n', style="bright_white"
             )
             info_text.append("   From file:      ", style="dim")
-            info_text.append("claude-worker run prompt.txt\n", style="bright_white")
+            info_text.append("claude-cto run prompt.txt\n", style="bright_white")
             info_text.append("   With watching:  ", style="dim")
             info_text.append(
-                'claude-worker run "Your prompt" --watch\n', style="bright_white"
+                'claude-cto run "Your prompt" --watch\n', style="bright_white"
             )
             info_text.append("   From pipe:      ", style="dim")
             info_text.append(
-                'git diff | claude-worker run "Review these changes"\n\n',
+                'git diff | claude-cto run "Review these changes"\n\n',
                 style="bright_white",
             )
 
             info_text.append("🔍 Monitor your tasks:\n", style="bold green")
             info_text.append("   List all:       ", style="dim")
-            info_text.append("claude-worker list\n", style="bright_white")
+            info_text.append("claude-cto list\n", style="bright_white")
             info_text.append("   Check status:   ", style="dim")
-            info_text.append("claude-worker status <task-id>\n\n", style="bright_white")
+            info_text.append("claude-cto status <task-id>\n\n", style="bright_white")
 
             info_text.append("💡 When to use:\n", style="bold magenta")
             info_text.append(
@@ -1169,7 +1169,7 @@ def server_start(
             console.print(
                 Panel(
                     info_text,
-                    title="[bold]🚀 Claude Worker Ready![/bold]",
+                    title="[bold]🚀 Claude CTO Ready![/bold]",
                     border_style="green",
                     padding=(1, 2),
                 )
@@ -1179,7 +1179,7 @@ def server_start(
                 f"\n[dim]To stop server: kill {process.pid} or Ctrl+C in the terminal[/dim]"
             )
             console.print(
-                "[dim]Server logs: Check your terminal or ~/.claude-worker/logs/[/dim]"
+                "[dim]Server logs: Check your terminal or ~/.claude-cto/logs/[/dim]"
             )
 
             # If using a non-default port, suggest setting environment variable
@@ -1188,7 +1188,7 @@ def server_start(
                     f"\n[yellow]⚠️  Note: Server running on non-default port {port}[/yellow]"
                 )
                 console.print(
-                    f"[dim]Set CLAUDE_WORKER_SERVER_URL=http://localhost:{port} to use this server with the CLI[/dim]"
+                    f"[dim]Set CLAUDE_CTO_SERVER_URL=http://localhost:{port} to use this server with the CLI[/dim]"
                 )
             console.print()
         else:
@@ -1207,10 +1207,10 @@ def server_start(
     "health",
     help="""[bold cyan]Check server status[/bold cyan] 🏥
     
-Verify if the Claude Worker server is running and healthy.
+Verify if the Claude CTO server is running and healthy.
 
 [bold]Example:[/bold]
-  $ claude-worker server health
+  $ claude-cto server health
 """,
 )
 def server_health():
