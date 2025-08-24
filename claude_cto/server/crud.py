@@ -83,7 +83,9 @@ def update_task_status(
 
 
 def mark_task_skipped(
-    session: Session, task_id: int, error_message: str = "Skipped due to dependency failure"
+    session: Session,
+    task_id: int,
+    error_message: str = "Skipped due to dependency failure",
 ) -> models.TaskDB:
     """Mark a task as skipped due to dependency failure."""
     task = session.get(models.TaskDB, task_id)

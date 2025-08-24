@@ -90,7 +90,7 @@ class SystemMetrics:
 
 class MemoryMonitor:
     """Monitor memory and resource usage for tasks and system.
-    
+
     ⚠️ WARNING: This monitor MUST be started with start_global_monitoring() in the
     server lifespan context or memory tracking will be non-functional. The monitor
     also MUST call cleanup_old_metrics() periodically to prevent unbounded memory growth.
@@ -99,7 +99,7 @@ class MemoryMonitor:
     def __init__(self, check_interval: float = 5.0):
         """
         Initialize memory monitor.
-        
+
         ⚠️ CRITICAL: After initialization, you MUST:
         1. Call start_global_monitoring() to begin tracking
         2. Call stop_global_monitoring() on shutdown

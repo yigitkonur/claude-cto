@@ -58,7 +58,7 @@ async def run_task_async(task_id: int):
 async def _periodic_circuit_breaker_cleanup():
     """CRITICAL FIX: Periodic cleanup of old circuit breaker states to prevent disk space leaks."""
     from .circuit_breaker_persistence import get_circuit_breaker_persistence
-    
+
     while True:
         try:
             await asyncio.sleep(3600)  # Run hourly
@@ -92,6 +92,7 @@ async def lifespan(app: FastAPI):
             # CRITICAL FIX: Start memory monitoring to prevent memory leaks
             logger.info("Starting memory monitoring...")
             from .memory_monitor import start_global_monitoring
+
             asyncio.create_task(start_global_monitoring())
             logger.info("Memory monitoring started")
 
@@ -111,11 +112,12 @@ async def lifespan(app: FastAPI):
         finally:
             # Shutdown
             logger.info("Beginning shutdown sequence...")
-            
+
             # Stop memory monitoring
             from .memory_monitor import stop_global_monitoring
+
             await stop_global_monitoring()
-            
+
             logger.info("Server shutdown complete")
 
 

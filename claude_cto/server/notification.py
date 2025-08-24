@@ -178,7 +178,7 @@ class SoundNotifier:
             rc, stdout, stderr = manager.run_command(
                 cmd,
                 timeout=5,  # 5 second timeout for sound playback
-                description=f"Playing sound: {Path(sound_path).name}"
+                description=f"Playing sound: {Path(sound_path).name}",
             )
 
             if rc == 0:

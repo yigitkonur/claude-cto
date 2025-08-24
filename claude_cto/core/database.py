@@ -41,7 +41,7 @@ def get_database_url(db_path: Optional[str] = None) -> str:
 
 def create_engine_for_db(db_url: str):
     """Create SQLAlchemy engine for database.
-    
+
     CRITICAL: Uses NullPool to avoid SQLite thread-safety issues.
     Each request gets a new connection - safer for concurrent access.
     """
@@ -67,7 +67,7 @@ def init_database(db_path: Optional[str] = None):
     """Initialize database with tables and run migrations."""
     db_url = get_database_url(db_path)
     engine = create_engine_for_db(db_url)
-    
+
     # Run migrations to ensure schema is up to date
     try:
         run_migrations(db_url)
@@ -77,7 +77,7 @@ def init_database(db_path: Optional[str] = None):
         # Fall back to simple schema creation for new databases
         SQLModel.metadata.create_all(engine)
         logger.info("Created database schema without migrations")
-    
+
     return engine
 
 

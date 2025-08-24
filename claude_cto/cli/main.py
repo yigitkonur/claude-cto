@@ -604,9 +604,7 @@ def list():
             console.print(
                 "  [dim]Detailed logs:[/dim]  ~/.claude-cto/tasks/task_<ID>_<context>_*_detailed.log"
             )
-            console.print(
-                "  [dim]Global log:[/dim]     ~/.claude-cto/claude-cto.log"
-            )
+            console.print("  [dim]Global log:[/dim]     ~/.claude-cto/claude-cto.log")
             console.print("\n[bold]💡 View logs with:[/bold]")
             console.print("  $ ls ~/.claude-cto/tasks/task_<ID>_*")
             console.print("  $ tail -f ~/.claude-cto/tasks/task_<ID>_*_summary.log")
@@ -1245,40 +1243,42 @@ def migrate():
     """Run database migrations."""
     from pathlib import Path
     from claude_cto.migrations.manager import MigrationManager
-    
+
     console = Console()
-    
+
     try:
         # Get database path
         app_dir = Path.home() / ".claude-cto"
         db_path = app_dir / "tasks.db"
         db_url = f"sqlite:///{db_path}"
-        
+
         console.print("[cyan]Running database migrations...[/cyan]")
-        
+
         # Create migration manager
         manager = MigrationManager(db_url)
-        
+
         # Check current version
         current_version = manager.get_current_version()
         console.print(f"Current database version: {current_version}")
-        
+
         # Run migrations
         applied = manager.run_migrations()
-        
+
         if applied > 0:
             new_version = manager.get_current_version()
             console.print(f"[green]✓ Applied {applied} migration(s)[/green]")
             console.print(f"New database version: {new_version}")
         else:
             console.print("[green]✓ Database is up to date[/green]")
-        
+
         # Check schema compatibility
         if manager.check_schema_compatibility():
             console.print("[green]✓ Schema compatibility check passed[/green]")
         else:
-            console.print("[yellow]⚠ Schema compatibility check failed - manual intervention may be required[/yellow]")
-            
+            console.print(
+                "[yellow]⚠ Schema compatibility check failed - manual intervention may be required[/yellow]"
+            )
+
     except Exception as e:
         console.print(f"[red]✗ Migration failed: {e}[/red]")
         raise typer.Exit(1)

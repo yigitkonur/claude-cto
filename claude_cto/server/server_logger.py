@@ -96,7 +96,7 @@ def setup_access_logger() -> logging.Logger:
 
     logger = logging.getLogger("claude_cto.access")
     logger.setLevel(logging.INFO)
-    
+
     # Remove existing handlers to avoid duplicates
     for handler in logger.handlers[:]:
         handler.flush()

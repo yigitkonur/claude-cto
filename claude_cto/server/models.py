@@ -87,14 +87,14 @@ class TaskCreate(BaseModel):
     working_directory: str = Field(..., min_length=1)
     system_prompt: Optional[str] = Field(None, max_length=1000)  # More lenient
     model: Optional[ClaudeModel] = ClaudeModel.SONNET
-    
+
     @field_validator("execution_prompt")
     @classmethod
     def validate_execution_prompt(cls, v: str) -> str:
         if len(v.strip()) < 10:
             raise ValueError("Execution prompt must be at least 10 characters")
         return v.strip()
-    
+
     @field_validator("working_directory")
     @classmethod
     def validate_working_directory(cls, v: str) -> str:
@@ -148,14 +148,18 @@ class TaskRead(BaseModel):
 class TaskOrchestrationItem(BaseModel):
     """Single task definition within an orchestration."""
 
-    identifier: str = Field(..., min_length=1, max_length=100)  # User-defined task identifier
+    identifier: str = Field(
+        ..., min_length=1, max_length=100
+    )  # User-defined task identifier
     execution_prompt: str = Field(..., min_length=10)
     working_directory: str = Field(..., min_length=1)
     system_prompt: Optional[str] = Field(None, max_length=1000)
     model: Optional[ClaudeModel] = ClaudeModel.SONNET
     depends_on: Optional[List[str]] = None  # List of identifiers
-    initial_delay: Optional[float] = Field(None, ge=0, le=3600)  # 0-3600 seconds (1 hour max)
-    
+    initial_delay: Optional[float] = Field(
+        None, ge=0, le=3600
+    )  # 0-3600 seconds (1 hour max)
+
     @field_validator("identifier")
     @classmethod
     def validate_identifier(cls, v: str) -> str:
@@ -163,17 +167,20 @@ class TaskOrchestrationItem(BaseModel):
             raise ValueError("Identifier cannot be empty")
         # Only allow alphanumeric, underscore, and hyphen
         import re
-        if not re.match(r'^[a-zA-Z0-9_-]+$', v):
-            raise ValueError("Identifier can only contain letters, numbers, underscore, and hyphen")
+
+        if not re.match(r"^[a-zA-Z0-9_-]+$", v):
+            raise ValueError(
+                "Identifier can only contain letters, numbers, underscore, and hyphen"
+            )
         return v.strip()
-    
+
     @field_validator("execution_prompt")
     @classmethod
     def validate_execution_prompt(cls, v: str) -> str:
         if len(v.strip()) < 10:
             raise ValueError("Execution prompt must be at least 10 characters")
         return v.strip()
-    
+
     @field_validator("working_directory")
     @classmethod
     def validate_working_directory(cls, v: str) -> str:

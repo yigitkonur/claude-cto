@@ -502,7 +502,7 @@ pro tip: mix these commands like a devops bartender. your ai team's always on ca
 ## 📦 get cooking in 60 seconds
 
 ### 1. prep work
--  **python** (v3.10+) & **node.js** (v16+) - the dynamic duo
+-  **python** (v3.10+) & **node.js** (v16+)
 -  **claude code sdk**: `npm install -g @anthropic-ai/claude-code`
 -  **auth**: just `claude auth login` - no api key circus
 
@@ -565,7 +565,7 @@ claude mcp add claude-cto -s user -- python -m claude_cto.mcp.factory
 
 ## 🛠️ rest api: your integration playground
 
-the real magic happens through a slick local rest api - hook it into anything from ci/cd to custom tooling.
+the real magic happens through a slick local rest api - hook it into anything from ci/cd to custom tooling. this can be a thing where you can manage your claude code execution remotely, just built on top of this API.
 
 <details>
 <summary><b>🐍 Python ETL Pipeline Example</b></summary>
@@ -640,6 +640,8 @@ this api's your golden ticket - automate all the things without touching the cli
 
 ```bash
 # quick start with docker
+# an api key isn't required, but you must manually run claude and complete auth.  
+# use `brew` or `pip install` for an easier setup.
 docker run -d \
   --name claude-cto \
   -p 8000:8000 \
@@ -694,7 +696,7 @@ fire it up: `docker-compose up -d`
 
 | variable | purpose | default |
 | :--- | :--- | :--- |
-| `ANTHROPIC_API_KEY` | your claude api key | no need - optional for key-based usage |
+| `ANTHROPIC_API_KEY` | your claude api key | **no need for claude max sub users** - optional for key-based usage |
 | `CLAUDE_CTO_SERVER_URL` | where the cli connects | `http://localhost:8000` |
 | `CLAUDE_CTO_DB` | task database location | `~/.claude-cto/tasks.db` |
 | `CLAUDE_CTO_ENABLE_SOUNDS` | ping when tasks complete | `true` |
@@ -713,32 +715,6 @@ fire it up: `docker-compose up -d`
 | **permission denied** | `sudo chown -R $(whoami) ~/.claude-cto` |
 
 </details>
-
----
-
-## 🏛️ design philosophy
-
-<div align="center">
-<table>
-<tr>
-<td align="center">
-<h3>🛡️</h3>
-<b>Bulletproof</b><br/>
-<sub>Your work never gets lost, period</sub>
-</td>
-<td align="center">
-<h3>🎯</h3>
-<b>Laser Focus</b><br/>
-<sub>Each component does one thing perfectly</sub>
-</td>
-<td align="center">
-<h3>🧩</h3>
-<b>Future-Proof</b><br/>
-<sub>Built for expansion without breaking shit</sub>
-</td>
-</tr>
-</table>
-</div>
 
 ---
 

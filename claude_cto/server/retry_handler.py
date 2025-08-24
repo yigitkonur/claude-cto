@@ -90,7 +90,7 @@ class CircuitBreaker:
         self.config = config
         self.key = key
         self.persistence = get_circuit_breaker_persistence()
-        
+
         # Try to load persisted state
         persisted_state = self.persistence.get_state(key)
         if persisted_state:
@@ -99,7 +99,9 @@ class CircuitBreaker:
             self.success_count = persisted_state.success_count
             if persisted_state.last_failure_time:
                 try:
-                    self.last_failure_time = datetime.fromisoformat(persisted_state.last_failure_time)
+                    self.last_failure_time = datetime.fromisoformat(
+                        persisted_state.last_failure_time
+                    )
                 except:
                     self.last_failure_time = None
             else:
@@ -124,7 +126,7 @@ class CircuitBreaker:
             # Reset failure count on success
             if self.failure_count > 0:
                 self.failure_count = max(0, self.failure_count - 1)
-        
+
         # Save state to persistence
         self._save_state()
 
@@ -144,7 +146,7 @@ class CircuitBreaker:
             # Failed while testing, go back to open
             logger.warning("Circuit breaker reopening after failure in half-open state")
             self.state = CircuitState.OPEN
-        
+
         # Save state to persistence
         self._save_state()
 
@@ -169,7 +171,7 @@ class CircuitBreaker:
 
         # HALF_OPEN - allow attempt
         return True
-    
+
     def _save_state(self) -> None:
         """Save current state to persistence."""
         self.persistence.save_state(
@@ -177,7 +179,7 @@ class CircuitBreaker:
             state=self.state.value,
             failure_count=self.failure_count,
             success_count=self.success_count,
-            last_failure_time=self.last_failure_time
+            last_failure_time=self.last_failure_time,
         )
 
     def get_status(self) -> Dict[str, Any]:

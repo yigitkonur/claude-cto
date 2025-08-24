@@ -59,7 +59,7 @@ class TaskLogger:
             for handler in existing_logger.handlers[:]:
                 handler.close()
                 existing_logger.removeHandler(handler)
-        
+
         logger = logging.getLogger(name)
         logger.setLevel(logging.INFO)
 
@@ -84,19 +84,21 @@ class TaskLogger:
         global_log_file = Path.home() / ".claude-cto" / "claude-cto.log"
 
         logger = logging.getLogger("claude_cto_global")
-        
+
         # Always check for and remove stale handlers
         needs_handler = True
         for handler in logger.handlers[:]:
             if isinstance(handler, logging.FileHandler):
                 # Check if handler is still valid and pointing to the right file
-                if hasattr(handler, 'baseFilename') and handler.baseFilename == str(global_log_file):
+                if hasattr(handler, "baseFilename") and handler.baseFilename == str(
+                    global_log_file
+                ):
                     needs_handler = False
                 else:
                     # Remove stale handler
                     handler.close()
                     logger.removeHandler(handler)
-        
+
         if needs_handler:
             logger.setLevel(logging.INFO)
 
@@ -291,7 +293,7 @@ class TaskLogger:
         Must be called when the task completes to free resources.
         """
         self._cleanup_loggers()
-    
+
     def _cleanup_loggers(self):
         """Clean up logger handlers and remove loggers to prevent resource leaks."""
         for logger in [self.summary_logger, self.detailed_logger]:
@@ -300,10 +302,10 @@ class TaskLogger:
                 handler.flush()
                 handler.close()
                 logger.removeHandler(handler)
-            
+
             # Clear the logger reference
             logger.handlers.clear()
-            
+
         # Remove loggers from the registry to prevent accumulation
         logger_names = [self.summary_logger.name, self.detailed_logger.name]
         for name in logger_names:

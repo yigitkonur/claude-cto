@@ -113,7 +113,7 @@ def extract_directory_context(working_directory: str) -> str:
                 directory_name = "network"
         else:
             path = Path(working_directory)
-            
+
             # Try to resolve, but don't fail if it doesn't exist
             try:
                 path = path.resolve()
@@ -137,9 +137,11 @@ def extract_directory_context(working_directory: str) -> str:
                 parent_name = path.parent.name
                 # Check if parent is meaningful (not root or drive)
                 if parent_name and not (
-                    parent_name == "" or  # Empty
-                    parent_name == path.anchor or  # Unix root
-                    (len(parent_name) == 2 and parent_name[1] == ":")  # Windows drive
+                    parent_name == ""  # Empty
+                    or parent_name == path.anchor  # Unix root
+                    or (
+                        len(parent_name) == 2 and parent_name[1] == ":"
+                    )  # Windows drive
                 ):
                     directory_name = f"{parent_name}_{directory_name}"
 
@@ -152,6 +154,7 @@ def extract_directory_context(working_directory: str) -> str:
         # Fallback for any path resolution issues
         # Extract last part of path that looks meaningful
         import os
+
         basename = os.path.basename(working_directory) or "root"
         return sanitize_filename(basename, max_length=30)
 
@@ -279,9 +282,10 @@ def get_safe_log_directory(base_dir: Optional[Path] = None) -> Path:
     if base_dir is None:
         # Use platform-appropriate home directory
         import os
-        if os.name == 'nt':  # Windows
+
+        if os.name == "nt":  # Windows
             # Try to use LOCALAPPDATA first, then home
-            app_data = os.environ.get('LOCALAPPDATA')
+            app_data = os.environ.get("LOCALAPPDATA")
             if app_data:
                 base_dir = Path(app_data) / "claude-cto"
             else:
@@ -291,13 +295,14 @@ def get_safe_log_directory(base_dir: Optional[Path] = None) -> Path:
             base_dir = Path.home() / ".claude-cto"
 
     log_dir = base_dir / "tasks"
-    
+
     # Create directory with proper permissions
     try:
         log_dir.mkdir(parents=True, exist_ok=True)
     except PermissionError:
         # Fall back to temp directory if can't create in preferred location
         import tempfile
+
         fallback_dir = Path(tempfile.gettempdir()) / "claude-cto" / "tasks"
         fallback_dir.mkdir(parents=True, exist_ok=True)
         return fallback_dir

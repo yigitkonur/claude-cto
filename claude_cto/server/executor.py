@@ -112,17 +112,17 @@ class TaskExecutor:
 
                     # Open legacy log file for backward compatibility
                     with open(log_file_path, "a") as raw_log:
-                    if attempt > 1:
-                        raw_log.write(f"[RETRY] Attempt {attempt}/{max_attempts}\n")
-                    else:
-                        raw_log.write(f"[INFO] Starting task {self.task_id}\n")
-                        raw_log.write(
-                            f"[INFO] Working directory: {working_directory}\n"
-                        )
-                        raw_log.write(f"[INFO] Prompt: {execution_prompt}\n")
-                        raw_log.write(f"[INFO] System prompt: {system_prompt}\n")
-                        raw_log.write(f"[INFO] Timeout: {timeout_seconds}s\n")
-                    raw_log.flush()
+                        if attempt > 1:
+                            raw_log.write(f"[RETRY] Attempt {attempt}/{max_attempts}\n")
+                        else:
+                            raw_log.write(f"[INFO] Starting task {self.task_id}\n")
+                            raw_log.write(
+                                f"[INFO] Working directory: {working_directory}\n"
+                            )
+                            raw_log.write(f"[INFO] Prompt: {execution_prompt}\n")
+                            raw_log.write(f"[INFO] System prompt: {system_prompt}\n")
+                            raw_log.write(f"[INFO] Timeout: {timeout_seconds}s\n")
+                        raw_log.flush()
 
                     # Execute with timeout
                     message_count = 0
