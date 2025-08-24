@@ -30,8 +30,8 @@ jobs:
         CHANGED_FILES=$(git diff --name-only HEAD~1..HEAD)
         echo "Changed files: $CHANGED_FILES"
         
-        # Check if any Python files or pyproject.toml changed
-        if echo "$CHANGED_FILES" | grep -E '\.(py|toml)$' > /dev/null; then
+        # Check if any code files changed that should trigger a release
+        if echo "$CHANGED_FILES" | grep -E '\.(py|toml|lock|yml|yaml|dockerfile|requirements\.txt)$|^Dockerfile$' > /dev/null; then
           echo "should_publish=true" >> $GITHUB_OUTPUT
           
           # Determine version bump type based on commit message
@@ -131,6 +131,36 @@ jobs:
         git tag "v$NEW_VERSION"
         git push origin "v$NEW_VERSION"
     
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: yigitkonur35
+        password: ${{ secrets.DOCKER_TOKEN }}
+    
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: |
+          yigitkonur35/claude-cto:latest
+          yigitkonur35/claude-cto:${{ env.NEW_VERSION }}
+          ghcr.io/${{ github.repository }}:latest
+          ghcr.io/${{ github.repository }}:${{ env.NEW_VERSION }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
     - name: Create GitHub Release
       uses: actions/create-release@v1
       env:
@@ -143,6 +173,10 @@ jobs:
           
           Changes in this version:
           - See CHANGELOG.md for details
+          
+          Docker Images:
+          - `yigitkonur35/claude-cto:${{ env.NEW_VERSION }}`
+          - `ghcr.io/${{ github.repository }}:${{ env.NEW_VERSION }}`
         draft: false
         prerelease: false
 
