@@ -145,7 +145,7 @@ jobs:
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
-        password: ${{ secrets.HOMEBREW_GITHUB_API_TOKEN }}
+        password: ${{ secrets.HOMEBREW_TAP_TOKEN }}
     
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
