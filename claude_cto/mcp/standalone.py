@@ -290,6 +290,23 @@ def create_standalone_server(db_path: Optional[str] = None, log_dir: Optional[st
             except Exception as e:
                 return {"error": f"Failed to read logs: {str(e)}"}
 
+    @mcp.tool()
+    async def get_version() -> Dict[str, Any]:
+        """
+        Get MCP server version information.
+        
+        Returns:
+            Version details for standalone MCP server
+        """
+        from claude_cto import __version__
+        return {
+            "mcp_version": __version__,
+            "mode": "standalone",
+            "description": "Self-contained MCP server with embedded database",
+            "database_path": str(engine.url),
+            "log_directory": str(log_path),
+        }
+
     async def _execute_task_background(task_id: int, log_dir: Path):
         """Background task execution."""
         with SessionLocal() as session:

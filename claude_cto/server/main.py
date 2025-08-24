@@ -306,8 +306,9 @@ async def create_mcp_task(payload: models.MCPCreateTaskPayload, session: Session
 # Health check endpoint
 @app.get("/health")
 def health_check():
-    """Simple health check endpoint."""
-    return {"status": "healthy", "service": "claude-cto"}
+    """Simple health check endpoint with version info."""
+    from claude_cto import __version__
+    return {"status": "healthy", "service": "claude-cto", "version": __version__}
 
 
 # Orchestration endpoints

@@ -80,8 +80,22 @@ app.add_typer(server_app, name="server")
 console = Console()
 
 
+def version_callback(value: bool):
+    """Version callback function for --version flag."""
+    if value:
+        from claude_cto import __version__
+        console.print(f"[bold green]Claude CTO[/bold green] v{__version__}")
+        raise typer.Exit()
+
+
 @app.callback()
-def main(ctx: typer.Context):
+def main(
+    ctx: typer.Context,
+    version: Annotated[
+        Optional[bool], 
+        typer.Option("--version", "-v", callback=version_callback, help="Show version and exit")
+    ] = None
+):
     """
     Show help when no command is provided.
     """

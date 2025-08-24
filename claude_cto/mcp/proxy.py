@@ -284,9 +284,12 @@ def create_proxy_server(api_url: Optional[str] = None) -> FastMCP:
 
                 if response.status_code == 200:
                     data = response.json()
+                    from claude_cto import __version__
                     return {
                         "status": "healthy",
                         "api_url": api_url,
+                        "mcp_version": __version__,
+                        "api_version": data.get("version", "unknown"),
                         "service": data.get("service", "claude-cto"),
                     }
                 else:
@@ -305,6 +308,22 @@ def create_proxy_server(api_url: Optional[str] = None) -> FastMCP:
                 }
             except Exception as e:
                 return {"status": "error", "api_url": api_url, "error": str(e)}
+
+    @mcp.tool()
+    async def get_version() -> Dict[str, Any]:
+        """
+        Get MCP server version information.
+        
+        Returns:
+            Version details for MCP interface and connected API server
+        """
+        from claude_cto import __version__
+        return {
+            "mcp_version": __version__,
+            "mode": "proxy",
+            "description": "MCP proxy server connecting to REST API",
+            "api_url": api_url,
+        }
 
     return mcp
 
