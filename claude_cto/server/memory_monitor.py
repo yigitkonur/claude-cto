@@ -89,11 +89,21 @@ class SystemMetrics:
 
 
 class MemoryMonitor:
-    """Monitor memory and resource usage for tasks and system."""
+    """Monitor memory and resource usage for tasks and system.
+    
+    ⚠️ WARNING: This monitor MUST be started with start_global_monitoring() in the
+    server lifespan context or memory tracking will be non-functional. The monitor
+    also MUST call cleanup_old_metrics() periodically to prevent unbounded memory growth.
+    """
 
     def __init__(self, check_interval: float = 5.0):
         """
         Initialize memory monitor.
+        
+        ⚠️ CRITICAL: After initialization, you MUST:
+        1. Call start_global_monitoring() to begin tracking
+        2. Call stop_global_monitoring() on shutdown
+        3. Call cleanup_old_metrics() periodically (handled by monitoring loop)
 
         Args:
             check_interval: Seconds between memory checks
@@ -196,6 +206,10 @@ class MemoryMonitor:
                 self.system_metrics_history = [
                     m for m in self.system_metrics_history if m.timestamp > cutoff
                 ]
+
+                # Cleanup old task metrics periodically (every 10 iterations)
+                if len(self.task_metrics) > 100:
+                    self.cleanup_old_metrics(older_than_hours=24)
 
                 # Wait for next check
                 await asyncio.sleep(self.check_interval)

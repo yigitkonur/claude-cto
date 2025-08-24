@@ -4,13 +4,18 @@ Used by both REST API server and standalone MCP server.
 """
 
 import os
+import logging
 from pathlib import Path
 from typing import Optional
 from datetime import datetime
 
 from sqlmodel import SQLModel, Session, create_engine, select
+from sqlalchemy.pool import NullPool
 
 from claude_cto.server.models import TaskDB, TaskCreate, TaskStatus
+from claude_cto.migrations.manager import run_migrations
+
+logger = logging.getLogger(__name__)
 
 
 def get_database_url(db_path: Optional[str] = None) -> str:
@@ -35,9 +40,20 @@ def get_database_url(db_path: Optional[str] = None) -> str:
 
 
 def create_engine_for_db(db_url: str):
-    """Create SQLAlchemy engine for database."""
+    """Create SQLAlchemy engine for database.
+    
+    CRITICAL: Uses NullPool to avoid SQLite thread-safety issues.
+    Each request gets a new connection - safer for concurrent access.
+    """
     return create_engine(
-        db_url, echo=False, connect_args={"check_same_thread": False}  # SQLite specific
+        db_url,
+        echo=False,
+        poolclass=NullPool,  # CRITICAL: Use NullPool for SQLite thread safety
+        connect_args={
+            "check_same_thread": False,  # SQLite thread safety
+            "timeout": 30,  # 30 second timeout for locks
+            "isolation_level": None,  # Use SQLite's autocommit mode
+        },
     )
 
 
@@ -48,10 +64,20 @@ def create_session_maker(engine):
 
 
 def init_database(db_path: Optional[str] = None):
-    """Initialize database with tables."""
+    """Initialize database with tables and run migrations."""
     db_url = get_database_url(db_path)
     engine = create_engine_for_db(db_url)
-    SQLModel.metadata.create_all(engine)
+    
+    # Run migrations to ensure schema is up to date
+    try:
+        run_migrations(db_url)
+        logger.info("Database migrations completed successfully")
+    except Exception as e:
+        logger.error(f"Migration failed: {e}")
+        # Fall back to simple schema creation for new databases
+        SQLModel.metadata.create_all(engine)
+        logger.info("Created database schema without migrations")
+    
     return engine
 
 

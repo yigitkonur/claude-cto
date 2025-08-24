@@ -102,22 +102,46 @@ def extract_directory_context(working_directory: str) -> str:
         Safe, meaningful directory context string
     """
     try:
-        path = Path(working_directory).resolve()
+        # Handle Windows UNC paths and normal paths
+        if working_directory.startswith("\\\\"):
+            # UNC path: \\server\share\path
+            parts = working_directory.split("\\")
+            # Use share name as context
+            if len(parts) > 3:
+                directory_name = parts[3] if parts[3] else parts[2]
+            else:
+                directory_name = "network"
+        else:
+            path = Path(working_directory)
+            
+            # Try to resolve, but don't fail if it doesn't exist
+            try:
+                path = path.resolve()
+            except (OSError, RuntimeError):
+                # Path doesn't exist or can't be resolved
+                pass
 
-        # Get the last meaningful directory name
-        directory_name = path.name
+            # Get the last meaningful directory name
+            directory_name = path.name
 
-        # If it's just a single character or common names, get parent too
-        if len(directory_name) <= 2 or directory_name.lower() in [
-            "src",
-            "app",
-            "lib",
-            "bin",
-            "tmp",
-        ]:
-            parent_name = path.parent.name
-            if parent_name and parent_name != path.anchor:  # Not root
-                directory_name = f"{parent_name}_{directory_name}"
+            # If it's just a single character or common names, get parent too
+            if len(directory_name) <= 2 or directory_name.lower() in [
+                "src",
+                "app",
+                "lib",
+                "bin",
+                "tmp",
+                "dist",
+                "build",
+            ]:
+                parent_name = path.parent.name
+                # Check if parent is meaningful (not root or drive)
+                if parent_name and not (
+                    parent_name == "" or  # Empty
+                    parent_name == path.anchor or  # Unix root
+                    (len(parent_name) == 2 and parent_name[1] == ":")  # Windows drive
+                ):
+                    directory_name = f"{parent_name}_{directory_name}"
 
         # Sanitize the directory name
         safe_name = sanitize_filename(directory_name, max_length=30)
@@ -126,7 +150,10 @@ def extract_directory_context(working_directory: str) -> str:
 
     except Exception:
         # Fallback for any path resolution issues
-        return sanitize_filename(str(working_directory)[-30:], max_length=30)
+        # Extract last part of path that looks meaningful
+        import os
+        basename = os.path.basename(working_directory) or "root"
+        return sanitize_filename(basename, max_length=30)
 
 
 def generate_log_filename(
@@ -241,6 +268,7 @@ def parse_log_filename(filename: str) -> Optional[Tuple[int, str, str, str]]:
 def get_safe_log_directory(base_dir: Optional[Path] = None) -> Path:
     """
     Get a safe logging directory, creating it if necessary.
+    Cross-platform compatible.
 
     Args:
         base_dir: Optional base directory (defaults to ~/.claude-cto)
@@ -249,10 +277,30 @@ def get_safe_log_directory(base_dir: Optional[Path] = None) -> Path:
         Path to logs directory
     """
     if base_dir is None:
-        base_dir = Path.home() / ".claude-cto"
+        # Use platform-appropriate home directory
+        import os
+        if os.name == 'nt':  # Windows
+            # Try to use LOCALAPPDATA first, then home
+            app_data = os.environ.get('LOCALAPPDATA')
+            if app_data:
+                base_dir = Path(app_data) / "claude-cto"
+            else:
+                base_dir = Path.home() / ".claude-cto"
+        else:
+            # Unix-like systems
+            base_dir = Path.home() / ".claude-cto"
 
     log_dir = base_dir / "tasks"
-    log_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Create directory with proper permissions
+    try:
+        log_dir.mkdir(parents=True, exist_ok=True)
+    except PermissionError:
+        # Fall back to temp directory if can't create in preferred location
+        import tempfile
+        fallback_dir = Path(tempfile.gettempdir()) / "claude-cto" / "tasks"
+        fallback_dir.mkdir(parents=True, exist_ok=True)
+        return fallback_dir
 
     return log_dir
 

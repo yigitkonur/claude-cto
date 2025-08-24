@@ -1,21 +1,31 @@
-name: Publish to PyPI
+name: Release Pipeline (PyPI, Homebrew, Smithery)
 
 on:
-  release:
-    types: [published]
   push:
     tags:
-      - 'v*'
+      - 'v*.*.*'  # Semantic versioning tags only
   workflow_dispatch:
     inputs:
+      version:
+        description: 'Version to release (e.g., 0.5.2)'
+        required: true
+        type: string
       test_pypi:
-        description: 'Publish to Test PyPI instead of production'
+        description: 'Publish to Test PyPI first'
         required: false
         default: false
         type: boolean
 
+# Prevent multiple concurrent releases
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions:
-  contents: read
+  contents: write
+  packages: write
+  id-token: write  # For trusted PyPI publishing
+  attestations: write  # For Docker attestations
 
 jobs:
   build:
@@ -71,7 +81,7 @@ jobs:
 
   publish:
     name: Publish to PyPI
-    if: github.event_name == 'release' || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/'))
+    if: (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) || (github.event_name == 'workflow_dispatch' && github.event.inputs.test_pypi != 'true')
     needs: build
     runs-on: ubuntu-latest
     environment:
@@ -107,6 +117,203 @@ jobs:
     
     - name: Install from PyPI
       run: |
-        pip install claude-cto
-        claude-cto --version || echo "CLI not available without extras"
-        python -c "import claude_cto; print(f'Successfully imported claude_cto v{claude_cto.__version__}')"
+        pip install claude-cto[full]
+        claude-cto --help
+        python -c "import claude_cto; print(f'Successfully imported claude_cto')"
+
+  docker-build:
+    name: Build and Push Docker Image
+    needs: publish
+    runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Get version
+      id: version
+      run: |
+        if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          VERSION="${{ github.event.inputs.version }}"
+          # Remove 'v' prefix if present
+          VERSION="${VERSION#v}"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+        else
+          # Extract version from tag, removing 'v' prefix
+          VERSION="${GITHUB_REF#refs/tags/}"
+          VERSION="${VERSION#v}"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: yigitkonur35
+        password: ${{ secrets.DOCKER_TOKEN }}
+    
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: |
+          yigitkonur35/claude-cto:latest
+          yigitkonur35/claude-cto:${{ steps.version.outputs.version }}
+          ghcr.io/${{ github.repository }}:latest
+          ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  update-homebrew:
+    name: Update Homebrew Formula
+    needs: [publish, docker-build]
+    runs-on: ubuntu-latest
+    if: github.event_name != 'workflow_dispatch' || github.event.inputs.test_pypi == 'false'
+    steps:
+    - name: Get version
+      id: version
+      run: |
+        if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          VERSION="${{ github.event.inputs.version }}"
+          # Remove 'v' prefix if present
+          VERSION="${VERSION#v}"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+        else
+          # Extract version from tag, removing 'v' prefix
+          VERSION="${GITHUB_REF#refs/tags/}"
+          VERSION="${VERSION#v}"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Trigger Homebrew tap update
+      uses: peter-evans/repository-dispatch@v2
+      with:
+        token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        repository: yigitkonur/homebrew-claude-cto
+        event-type: update-formula
+        client-payload: '{"version": "${{ steps.version.outputs.version }}"}'
+    
+    - name: Create Homebrew update PR
+      run: |
+        echo "Homebrew formula update triggered for version ${{ steps.version.outputs.version }}"
+        echo "Check https://github.com/yigitkonur/homebrew-claude-cto for the update PR"
+
+  deploy-smithery:
+    name: Deploy to Smithery Registry
+    needs: docker-build
+    runs-on: ubuntu-latest
+    if: github.event_name != 'workflow_dispatch' || github.event.inputs.test_pypi == 'false'
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Get version
+      id: version
+      run: |
+        if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          VERSION="${{ github.event.inputs.version }}"
+          # Remove 'v' prefix if present
+          VERSION="${VERSION#v}"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+        else
+          # Extract version from tag, removing 'v' prefix
+          VERSION="${GITHUB_REF#refs/tags/}"
+          VERSION="${VERSION#v}"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Update smithery.yaml version
+      run: |
+        sed -i "s/version: \".*\"/version: \"${{ steps.version.outputs.version }}\"/" smithery.yaml
+    
+    - name: Commit smithery.yaml update
+      run: |
+        git config --global user.name "GitHub Actions"
+        git config --global user.email "actions@github.com"
+        git add smithery.yaml
+        git diff --staged --quiet || git commit -m "chore: update smithery.yaml to v${{ steps.version.outputs.version }} [skip ci]"
+        git push origin HEAD:main || echo "No changes to push"
+    
+    - name: Notify Smithery
+      run: |
+        echo "🚀 Smithery will auto-detect the new Docker image at:"
+        echo "   ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}"
+        echo ""
+        echo "📦 Users can install via: smithery install claude-cto"
+
+  create-github-release:
+    name: Create GitHub Release
+    needs: [publish, docker-build]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Get version
+      id: version
+      run: |
+        # Extract version from tag, removing 'v' prefix
+        VERSION="${GITHUB_REF#refs/tags/}"
+        VERSION="${VERSION#v}"
+        echo "version=${VERSION}" >> $GITHUB_OUTPUT
+    
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: python-package-distributions
+        path: dist/
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ steps.version.outputs.version }}
+        name: Release v${{ steps.version.outputs.version }}
+        body: |
+          ## 🗿 Claude CTO v${{ steps.version.outputs.version }}
+          
+          ### Installation Methods
+          
+          **PyPI:**
+          ```bash
+          pip install claude-cto[full]==${{ steps.version.outputs.version }}
+          ```
+          
+          **Homebrew:**
+          ```bash
+          brew tap yigitkonur/claude-cto
+          brew install claude-cto
+          ```
+          
+          **Smithery (MCP):**
+          ```bash
+          smithery install claude-cto
+          ```
+          
+          **Docker:**
+          ```bash
+          docker pull ghcr.io/yigitkonur/claude-cto:${{ steps.version.outputs.version }}
+          ```
+          
+          ### What's Changed
+          See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md)
+          
+          ### Resources
+          - 📚 [Documentation](https://github.com/${{ github.repository }})
+          - 🐍 [PyPI Package](https://pypi.org/project/claude-cto/)
+          - 🍺 [Homebrew Tap](https://github.com/yigitkonur/homebrew-claude-cto)
+          - 🔧 [Smithery Registry](https://smithery.ai/server/claude-cto)
+        files: dist/*
+        draft: false
+        prerelease: false

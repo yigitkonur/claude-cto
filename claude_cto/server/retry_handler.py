@@ -12,6 +12,12 @@ from enum import Enum
 from datetime import datetime
 import logging
 
+from .circuit_breaker_persistence import (
+    CircuitBreakerPersistence,
+    CircuitBreakerState,
+    get_circuit_breaker_persistence,
+)
+
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
@@ -80,12 +86,30 @@ class CircuitState(Enum):
 class CircuitBreaker:
     """Circuit breaker to prevent cascading failures."""
 
-    def __init__(self, config: RetryConfig):
+    def __init__(self, config: RetryConfig, key: str = "default"):
         self.config = config
-        self.state = CircuitState.CLOSED
-        self.failure_count = 0
-        self.last_failure_time: Optional[datetime] = None
-        self.success_count = 0
+        self.key = key
+        self.persistence = get_circuit_breaker_persistence()
+        
+        # Try to load persisted state
+        persisted_state = self.persistence.get_state(key)
+        if persisted_state:
+            self.state = CircuitState(persisted_state.state)
+            self.failure_count = persisted_state.failure_count
+            self.success_count = persisted_state.success_count
+            if persisted_state.last_failure_time:
+                try:
+                    self.last_failure_time = datetime.fromisoformat(persisted_state.last_failure_time)
+                except:
+                    self.last_failure_time = None
+            else:
+                self.last_failure_time = None
+            logger.info(f"Loaded circuit breaker state for {key}: {self.state.value}")
+        else:
+            self.state = CircuitState.CLOSED
+            self.failure_count = 0
+            self.last_failure_time: Optional[datetime] = None
+            self.success_count = 0
 
     def record_success(self) -> None:
         """Record a successful operation."""
@@ -100,6 +124,9 @@ class CircuitBreaker:
             # Reset failure count on success
             if self.failure_count > 0:
                 self.failure_count = max(0, self.failure_count - 1)
+        
+        # Save state to persistence
+        self._save_state()
 
     def record_failure(self) -> None:
         """Record a failed operation."""
@@ -117,6 +144,9 @@ class CircuitBreaker:
             # Failed while testing, go back to open
             logger.warning("Circuit breaker reopening after failure in half-open state")
             self.state = CircuitState.OPEN
+        
+        # Save state to persistence
+        self._save_state()
 
     def should_attempt(self) -> bool:
         """Check if we should attempt the operation."""
@@ -133,11 +163,22 @@ class CircuitBreaker:
                 if elapsed >= self.config.circuit_breaker_timeout:
                     logger.info("Circuit breaker entering half-open state")
                     self.state = CircuitState.HALF_OPEN
+                    self._save_state()  # Save state transition
                     return True
             return False
 
         # HALF_OPEN - allow attempt
         return True
+    
+    def _save_state(self) -> None:
+        """Save current state to persistence."""
+        self.persistence.save_state(
+            key=self.key,
+            state=self.state.value,
+            failure_count=self.failure_count,
+            success_count=self.success_count,
+            last_failure_time=self.last_failure_time
+        )
 
     def get_status(self) -> Dict[str, Any]:
         """Get circuit breaker status."""
@@ -161,7 +202,7 @@ class RetryHandler:
     def _get_circuit_breaker(self, key: str) -> CircuitBreaker:
         """Get or create circuit breaker for a key."""
         if key not in self.circuit_breakers:
-            self.circuit_breakers[key] = CircuitBreaker(self.config)
+            self.circuit_breakers[key] = CircuitBreaker(self.config, key)
         return self.circuit_breakers[key]
 
     def _calculate_delay(self, attempt: int, error_type: Optional[str] = None) -> float:

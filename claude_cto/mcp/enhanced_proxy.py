@@ -6,7 +6,7 @@ Uses identifier-based task management for better tracking and dependency resolut
 import os
 import json
 from typing import Optional, Dict, Any, List
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import httpx
 from fastmcp import FastMCP
@@ -14,6 +14,43 @@ from fastmcp import FastMCP
 
 # Global orchestration tracker (in-memory for this session)
 _active_orchestrations: Dict[str, Dict[str, Any]] = {}
+# Track last cleanup time
+_last_cleanup: datetime = datetime.utcnow()
+
+
+def _cleanup_old_orchestrations(max_age_hours: int = 24) -> None:
+    """
+    Clean up old orchestration data to prevent memory leaks.
+    Removes orchestrations older than max_age_hours.
+    """
+    global _active_orchestrations, _last_cleanup
+    
+    current_time = datetime.utcnow()
+    
+    # Only run cleanup every hour
+    if (current_time - _last_cleanup).total_seconds() < 3600:
+        return
+    
+    _last_cleanup = current_time
+    cutoff_time = current_time - timedelta(hours=max_age_hours)
+    
+    # Find old orchestrations to remove
+    to_remove = []
+    for key, value in _active_orchestrations.items():
+        if isinstance(value, dict):
+            # Check if it has a timestamp
+            if "created_at" in value:
+                created_at = datetime.fromisoformat(value["created_at"])
+                if created_at < cutoff_time:
+                    to_remove.append(key)
+            # For legacy entries without timestamp, check if submitted
+            elif "identifier_map" in value and len(value.get("identifier_map", {})) > 0:
+                # Assume submitted orchestrations older than 24h can be cleaned
+                to_remove.append(key)
+    
+    # Remove old entries
+    for key in to_remove:
+        del _active_orchestrations[key]
 
 
 def create_enhanced_proxy_server(api_url: Optional[str] = None) -> FastMCP:
@@ -157,6 +194,9 @@ def create_enhanced_proxy_server(api_url: Optional[str] = None) -> FastMCP:
                 "hint": "Mention specific files or directories in your prompt",
             }
         
+        # Periodically clean up old orchestrations
+        _cleanup_old_orchestrations()
+        
         # Check if this is part of an orchestration or standalone
         if depends_on or orchestration_group:
             # This task has dependencies or is part of a group - use orchestration
@@ -168,8 +208,22 @@ def create_enhanced_proxy_server(api_url: Optional[str] = None) -> FastMCP:
             if orchestration_group not in _active_orchestrations:
                 _active_orchestrations[orchestration_group] = {
                     "tasks": [],
-                    "identifier_map": {}
+                    "identifier_map": {},
+                    "created_at": datetime.utcnow().isoformat()
                 }
+            
+            # Validate dependencies exist in the same orchestration group
+            if depends_on:
+                existing_identifiers = [
+                    t["identifier"] for t in _active_orchestrations[orchestration_group]["tasks"]
+                ]
+                for dep in depends_on:
+                    if dep not in existing_identifiers:
+                        return {
+                            "error": f"Dependency '{dep}' not found in orchestration group '{orchestration_group}'",
+                            "hint": f"Create task '{dep}' first or ensure it's in the same orchestration_group",
+                            "existing_tasks": existing_identifiers
+                        }
             
             # Add this task to the orchestration
             task_def = {
@@ -184,48 +238,16 @@ def create_enhanced_proxy_server(api_url: Optional[str] = None) -> FastMCP:
             
             _active_orchestrations[orchestration_group]["tasks"].append(task_def)
             
-            # Check if we should submit the orchestration
-            # (This is a simplified version - in production you'd want more sophisticated logic)
-            if len(_active_orchestrations[orchestration_group]["tasks"]) >= 1:
-                # Submit orchestration to API
-                orchestration_data = {
-                    "tasks": _active_orchestrations[orchestration_group]["tasks"]
-                }
-                
-                async with httpx.AsyncClient() as client:
-                    response = await client.post(
-                        f"{api_url}/api/v1/orchestrations",
-                        json=orchestration_data,
-                        timeout=30.0,
-                    )
-                    
-                    if response.status_code == 200:
-                        result = response.json()
-                        
-                        # Store task ID mappings
-                        for task in result["tasks"]:
-                            _active_orchestrations[orchestration_group]["identifier_map"][
-                                task["identifier"]
-                            ] = task["task_id"]
-                        
-                        # Return info about this specific task
-                        task_id = _active_orchestrations[orchestration_group]["identifier_map"][task_identifier]
-                        
-                        return {
-                            "status": "created",
-                            "task_identifier": task_identifier,
-                            "task_id": task_id,
-                            "orchestration_id": result["orchestration_id"],
-                            "orchestration_group": orchestration_group,
-                            "depends_on": depends_on,
-                            "wait_after_dependencies": wait_after_dependencies,
-                            "message": f"Task '{task_identifier}' created with dependencies {depends_on}" if depends_on else f"Task '{task_identifier}' created"
-                        }
-                    else:
-                        return {
-                            "error": f"Failed to create orchestration: {response.status_code}",
-                            "details": response.text
-                        }
+            # Don't auto-submit orchestrations - wait for explicit submit or batch completion
+            # Store the task for later submission
+            return {
+                "status": "queued",
+                "task_identifier": task_identifier,
+                "orchestration_group": orchestration_group,
+                "depends_on": depends_on,
+                "wait_after_dependencies": wait_after_dependencies,
+                "message": f"Task '{task_identifier}' queued in orchestration group '{orchestration_group}'. Call submit_orchestration('{orchestration_group}') when ready to execute."
+            }
         
         else:
             # No dependencies - create as standalone task
@@ -250,7 +272,8 @@ def create_enhanced_proxy_server(api_url: Optional[str] = None) -> FastMCP:
                     if task_identifier not in _active_orchestrations:
                         _active_orchestrations[task_identifier] = {
                             "task_id": result["id"],
-                            "standalone": True
+                            "standalone": True,
+                            "created_at": datetime.utcnow().isoformat()
                         }
                     
                     return {
@@ -281,23 +304,36 @@ def create_enhanced_proxy_server(api_url: Optional[str] = None) -> FastMCP:
             Task status and details
         """
         # Look up task ID from identifier
+        task_id = None
+        
+        # First check if it's a standalone task
         if task_identifier in _active_orchestrations:
-            if isinstance(_active_orchestrations[task_identifier], dict):
-                if "task_id" in _active_orchestrations[task_identifier]:
-                    task_id = _active_orchestrations[task_identifier]["task_id"]
-                else:
-                    # Check in orchestration groups
-                    for group_name, group_data in _active_orchestrations.items():
-                        if "identifier_map" in group_data:
-                            if task_identifier in group_data["identifier_map"]:
-                                task_id = group_data["identifier_map"][task_identifier]
-                                break
-                    else:
-                        return {
-                            "error": f"Task identifier '{task_identifier}' not found",
-                            "hint": "Check the identifier you used when creating the task"
-                        }
-        else:
+            data = _active_orchestrations[task_identifier]
+            if isinstance(data, dict) and "task_id" in data:
+                task_id = data["task_id"]
+        
+        # If not found, check orchestration groups
+        if task_id is None:
+            for group_name, group_data in _active_orchestrations.items():
+                if isinstance(group_data, dict) and "identifier_map" in group_data:
+                    if task_identifier in group_data["identifier_map"]:
+                        task_id = group_data["identifier_map"][task_identifier]
+                        break
+        
+        # If still not found, check if it's a queued task not yet submitted
+        if task_id is None:
+            for group_name, group_data in _active_orchestrations.items():
+                if isinstance(group_data, dict) and "tasks" in group_data:
+                    for task in group_data["tasks"]:
+                        if task.get("identifier") == task_identifier:
+                            return {
+                                "status": "queued",
+                                "task_identifier": task_identifier,
+                                "orchestration_group": group_name,
+                                "message": f"Task is queued but not yet submitted. Call submit_orchestration('{group_name}') to start execution."
+                            }
+        
+        if task_id is None:
             return {
                 "error": f"Task identifier '{task_identifier}' not found",
                 "hint": "Check the identifier you used when creating the task"

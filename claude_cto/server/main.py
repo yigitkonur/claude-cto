@@ -1,13 +1,12 @@
 """
 SOLE RESPONSIBILITY: The system's central hub. Initializes the FastAPI and FastMCP apps,
-defines all API endpoints, manages the ProcessPoolExecutor, and orchestrates the overall server lifecycle.
+defines all API endpoints, and orchestrates the overall server lifecycle.
 """
 
 import asyncio
 import json
 import os
 from contextlib import asynccontextmanager
-from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime
 from typing import List, Optional
 
@@ -30,27 +29,6 @@ from .server_logger import (
 
 # Initialize comprehensive logging
 logger = initialize_logging(debug=False)
-
-
-# Initialize process pool for task execution
-executor_pool = ProcessPoolExecutor(max_workers=4)
-
-
-# Worker process entry point (must be top-level for pickling)
-def run_task_in_worker(task_id: int):
-    """
-    Entry point for worker processes.
-    Creates TaskExecutor and runs the async task.
-    """
-    try:
-        log_task_event(task_id, "worker_started", {"pid": os.getpid()})
-        executor = TaskExecutor(task_id)
-        asyncio.run(executor.run())
-        log_task_event(task_id, "worker_completed")
-    except Exception as e:
-        logger.error(f"Worker process failed for task {task_id}: {e}", exc_info=True)
-        log_task_event(task_id, "worker_failed", {"error": str(e)})
-        raise
 
 
 # Async task runner for main process execution
@@ -77,6 +55,21 @@ async def run_task_async(task_id: int):
             log_crash(e, {"task_id": task_id, "phase": "task_execution"})
 
 
+async def _periodic_circuit_breaker_cleanup():
+    """CRITICAL FIX: Periodic cleanup of old circuit breaker states to prevent disk space leaks."""
+    from .circuit_breaker_persistence import get_circuit_breaker_persistence
+    
+    while True:
+        try:
+            await asyncio.sleep(3600)  # Run hourly
+            persistence = get_circuit_breaker_persistence()
+            removed = persistence.cleanup_old_states(max_age_days=7)
+            if removed > 0:
+                logger.info(f"Cleaned up {removed} old circuit breaker states")
+        except Exception as e:
+            logger.error(f"Circuit breaker cleanup failed: {e}")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
@@ -96,6 +89,17 @@ async def lifespan(app: FastAPI):
             log_dir.mkdir(exist_ok=True)
             logger.info(f"Task log directory: {log_dir}")
 
+            # CRITICAL FIX: Start memory monitoring to prevent memory leaks
+            logger.info("Starting memory monitoring...")
+            from .memory_monitor import start_global_monitoring
+            asyncio.create_task(start_global_monitoring())
+            logger.info("Memory monitoring started")
+
+            # CRITICAL FIX: Start circuit breaker cleanup to prevent disk space leaks
+            logger.info("Starting circuit breaker cleanup...")
+            asyncio.create_task(_periodic_circuit_breaker_cleanup())
+            logger.info("Circuit breaker cleanup started")
+
             logger.info("Server startup complete - ready to accept requests")
 
             yield
@@ -107,12 +111,12 @@ async def lifespan(app: FastAPI):
         finally:
             # Shutdown
             logger.info("Beginning shutdown sequence...")
-            try:
-                executor_pool.shutdown(wait=True)
-                logger.info("Process pool shutdown complete")
-            except Exception as e:
-                logger.error(f"Shutdown error: {e}", exc_info=True)
-                log_crash(e, {"phase": "shutdown"})
+            
+            # Stop memory monitoring
+            from .memory_monitor import stop_global_monitoring
+            await stop_global_monitoring()
+            
+            logger.info("Server shutdown complete")
 
 
 # Initialize FastAPI app

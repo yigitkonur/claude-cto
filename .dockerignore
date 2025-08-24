@@ -55,6 +55,20 @@ docs/
 !README.md
 !CHANGELOG.md
 
+# Homebrew tap (separate repository)
+homebrew-claude-cto/
+
+# Handoff docs
+HANDOFF_DOCS_TO_NEXT_DEVELOPER/
+
+# Test artifacts
+tests/
+test-directory/
+pytest.ini
+run_tests.sh
+coverage.xml
+tests/reports/
+
 # Local development files
 *.log
 *.sqlite
@@ -80,6 +94,7 @@ temp/
 # Scripts (not needed in container)
 scripts/
 *.sh
+!docker-entrypoint.sh
 
 # CI/CD
 .travis.yml

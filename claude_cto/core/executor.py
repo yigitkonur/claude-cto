@@ -111,37 +111,21 @@ class TaskExecutor:
             }
 
         except Exception as e:
-            # Use centralized ErrorHandler for consistent error handling
-            try:
-                from claude_cto.server.error_handler import ErrorHandler
+            # Format error message with relevant details
+            error_type = type(e).__name__
+            error_msg = f"Task failed [{error_type}]: {str(e)}"
 
-                # Get structured error information
-                error_info = ErrorHandler.handle_error(e, self.task_id, str(log_file))
+            # Extract error details based on error type
+            if hasattr(e, "exit_code"):
+                error_msg += f" | exit_code: {e.exit_code}"
+            if hasattr(e, "stderr") and e.stderr:
+                error_msg += f" | stderr: {e.stderr[:200]}"
+            if hasattr(e, "line"):  # CLIJSONDecodeError
+                error_msg += f" | problematic_line: {e.line[:100]}"
+            if hasattr(e, "data"):  # MessageParseError
+                error_msg += f" | parse_data: {str(e.data)[:100]}"
 
-                # Log detailed error information
-                ErrorHandler.log_error(error_info, str(log_file))
-
-                # Format error message for database
-                error_msg = ErrorHandler.format_error_message(error_info)
-
-                task_logger.error(f"Task failed: {error_msg}", exc_info=True)
-
-            except ImportError:
-                # Fallback if ErrorHandler not available (shouldn't happen)
-                error_type = type(e).__name__
-                error_msg = f"Task failed [{error_type}]: {str(e)}"
-
-                # Manual extraction of error details
-                if hasattr(e, "exit_code"):
-                    error_msg += f" | exit_code: {e.exit_code}"
-                if hasattr(e, "stderr") and e.stderr:
-                    error_msg += f" | stderr: {e.stderr}"
-                if hasattr(e, "line"):  # CLIJSONDecodeError
-                    error_msg += f" | problematic_line: {e.line[:100]}"
-                if hasattr(e, "data"):  # MessageParseError
-                    error_msg += f" | parse_data: {e.data}"
-
-                task_logger.error(error_msg, exc_info=True)
+            task_logger.error(f"Task failed: {error_msg}", exc_info=True)
 
             update_task_status(
                 self.session,

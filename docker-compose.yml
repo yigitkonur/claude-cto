@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  # REST API Server
+  claude-cto-server:
+    image: yigitkonur35/claude-cto:latest
+    container_name: claude-cto-server
+    ports:
+      - "8000:8000"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - CLAUDE_CTO_DB=/data/tasks.db
+      - CLAUDE_CTO_LOG_DIR=/data/logs
+      - PORT=8000
+    volumes:
+      - claude-data:/data
+      - claude-home:/home/claude/.claude-cto
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    networks:
+      - claude-network
+
+  # MCP Server (Smithery-compatible)
+  claude-cto-mcp:
+    image: yigitkonur35/claude-cto:latest
+    container_name: claude-cto-mcp
+    command: ["mcp"]
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - CLAUDE_CTO_MODE=standalone
+      - CLAUDE_CTO_DB=/data/tasks.db
+      - CLAUDE_CTO_LOG_DIR=/data/logs
+    volumes:
+      - claude-data:/data
+      - claude-home:/home/claude/.claude-cto
+    restart: unless-stopped
+    networks:
+      - claude-network
+    profiles:
+      - mcp
+
+  # Development version with hot reload
+  claude-cto-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: claude-cto:dev
+    container_name: claude-cto-dev
+    entrypoint: ["python", "-m"]
+    command: ["uvicorn", "claude_cto.server.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    ports:
+      - "8001:8000"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - CLAUDE_CTO_DB=/data/tasks.db
+      - CLAUDE_CTO_LOG_DIR=/data/logs
+      - PORT=8000
+    volumes:
+      - ./claude_cto:/app/claude_cto:ro
+      - claude-dev-data:/data
+      - claude-dev-home:/home/claude/.claude-cto
+    networks:
+      - claude-network
+    profiles:
+      - dev
+
+volumes:
+  claude-data:
+    name: claude-cto-data
+  claude-home:
+    name: claude-cto-home
+  claude-dev-data:
+    name: claude-cto-dev-data
+  claude-dev-home:
+    name: claude-cto-dev-home
+
+networks:
+  claude-network:
+    name: claude-cto-network
+    driver: bridge

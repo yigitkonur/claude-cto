@@ -1,15 +1,39 @@
 # Smithery configuration for Claude CTO MCP Server
 # This enables deployment on smithery.ai for easy installation
+# Documentation: https://smithery.ai/docs/build/project-config/smithery-yaml
 
 runtime: "container"
 
-# Environment variables for the MCP server
-env:
-  # Database and log paths for standalone mode
-  CLAUDE_CTO_DB: "/data/claude-cto/tasks.db"
-  CLAUDE_CTO_LOG_DIR: "/data/claude-cto/logs"
-  # Default to standalone mode (no REST API dependency)
-  CLAUDE_CTO_MODE: "standalone"
+# MCP server configuration
+startCommand:
+  type: "stdio"
+
+# Configuration schema for the MCP server
+configSchema:
+  type: "object"
+  properties:
+    api_url:
+      type: "string"
+      description: "REST API URL (optional - defaults to http://localhost:8000)"
+      default: "http://localhost:8000"
+    mode:
+      type: "string"
+      description: "Server mode: auto, standalone, or proxy"
+      default: "auto"
+      enum: ["auto", "standalone", "proxy"]
+    db_path:
+      type: "string"
+      description: "Database path for standalone mode"
+      default: "~/.claude-cto/tasks.db"
+    log_dir:
+      type: "string"
+      description: "Log directory for standalone mode"
+      default: "~/.claude-cto/logs"
+
+# Command function for stdio mode
+commandFunction: |
+  #!/bin/sh
+  exec python -m claude_cto.mcp.factory
 
 # Docker build configuration
 build:
@@ -18,18 +42,28 @@ build:
 
 # MCP server metadata
 name: "claude-cto"
-description: "Fire-and-forget task delegation system for Claude Code SDK with intelligent LLM-optimized tool descriptions"
-version: "0.3.1"
+description: "🗿 Fire-and-forget task execution system for Claude Code SDK. Delegate complex coding tasks to AI agents with intelligent orchestration, dependency management, and parallel execution."
+version: "0.5.1"
 author: "Yigit Konur"
 license: "MIT"
 homepage: "https://github.com/yigitkonur/claude-cto"
+repository: "https://github.com/yigitkonur/claude-cto"
 
-# MCP-specific configuration for stdio communication
-mcp:
-  protocol: "stdio"
-  tools:
-    - create_task: "Delegate tasks to skilled developers for parallel execution"
-    - get_task_status: "Check task status with dependency management"
-    - list_tasks: "View all delegated tasks with strategic overview"
-    - get_task_logs: "Retrieve detailed execution logs (standalone mode)"
-    - check_api_health: "Verify system health (proxy mode)"
+# Tags for discovery
+tags:
+  - "automation"
+  - "claude"
+  - "orchestration"
+  - "task-management"
+  - "ai-agents"
+  - "parallel-execution"
+  - "dependency-management"
+
+# Capabilities
+capabilities:
+  - "Create and manage AI-powered tasks"
+  - "Orchestrate complex workflows with dependencies"
+  - "Parallel task execution"
+  - "Smart model selection (Opus/Sonnet/Haiku)"
+  - "Resource monitoring and circuit breaker"
+  - "Persistent task state with crash recovery"

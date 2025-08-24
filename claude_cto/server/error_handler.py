@@ -19,7 +19,7 @@ from claude_code_sdk._errors import (
 
 
 class ErrorHandler:
-    """Centralized error handling for Claude Worker tasks."""
+    """Centralized error handling for Claude CTO tasks."""
 
     @classmethod
     def is_transient_error(cls, error: Exception) -> bool:
@@ -116,7 +116,7 @@ class ErrorHandler:
             "Check if you're authenticated: claude auth status",
             "Try re-authenticating: claude auth login",
             "Check network connectivity and firewall settings",
-            "Restart the Claude Worker server",
+            "Restart the Claude CTO server",
         ],
         ProcessError: {
             # Exit code specific suggestions

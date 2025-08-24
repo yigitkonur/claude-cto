@@ -21,6 +21,7 @@ from . import crud, models
 from .log_formatter import format_content_block
 from .error_handler import ErrorHandler
 from .task_logger import create_task_logger
+from .memory_monitor import get_memory_monitor
 
 
 class TaskExecutor:
@@ -81,31 +82,36 @@ class TaskExecutor:
         # Create task logger for structured logging
         task_logger = create_task_logger(self.task_id, working_directory)
 
+        # CRITICAL FIX: Start memory monitoring for this task
+        memory_monitor = get_memory_monitor()
+        memory_monitor.start_task_monitoring(self.task_id)
+
         # Execute with simple retry logic (3 attempts for transient errors only)
         max_attempts = 3
         attempt = 0
         last_error = None
         start_time = datetime.utcnow()
+        
+        try:
+            while attempt < max_attempts:
+                attempt += 1
 
-        while attempt < max_attempts:
-            attempt += 1
+                try:
+                    # Initialize structured logging on first attempt
+                    if attempt == 1:
+                        task_logger.log_task_start(
+                            execution_prompt=execution_prompt,
+                            model=model.value,
+                            system_prompt=system_prompt,
+                        )
+                    else:
+                        task_logger.log_task_progress(
+                            f"Retry attempt {attempt}/{max_attempts} after error: {last_error}",
+                            "RETRY",
+                        )
 
-            try:
-                # Initialize structured logging on first attempt
-                if attempt == 1:
-                    task_logger.log_task_start(
-                        execution_prompt=execution_prompt,
-                        model=model.value,
-                        system_prompt=system_prompt,
-                    )
-                else:
-                    task_logger.log_task_progress(
-                        f"Retry attempt {attempt}/{max_attempts} after error: {last_error}",
-                        "RETRY",
-                    )
-
-                # Open legacy log file for backward compatibility
-                with open(log_file_path, "a") as raw_log:
+                    # Open legacy log file for backward compatibility
+                    with open(log_file_path, "a") as raw_log:
                     if attempt > 1:
                         raw_log.write(f"[RETRY] Attempt {attempt}/{max_attempts}\n")
                     else:
@@ -149,22 +155,25 @@ class TaskExecutor:
                         raw_log.write(f"[INFO] Succeeded after {attempt} attempts\n")
                     raw_log.flush()
 
-                # Task completed successfully
-                duration = (datetime.utcnow() - start_time).total_seconds()
-                success_msg = f"Task completed successfully ({message_count} messages)"
-                if attempt > 1:
-                    success_msg += f" after {attempt} attempts"
+                    # Task completed successfully
+                    duration = (datetime.utcnow() - start_time).total_seconds()
+                    success_msg = f"Task completed successfully ({message_count} messages)"
+                    if attempt > 1:
+                        success_msg += f" after {attempt} attempts"
 
-                # Log completion with structured logger
-                task_logger.log_task_completion(True, success_msg, duration)
+                    # Log completion with structured logger
+                    task_logger.log_task_completion(True, success_msg, duration)
 
-                for session in get_session():
-                    crud.finalize_task(
-                        session, self.task_id, models.TaskStatus.COMPLETED, success_msg
-                    )
-                return  # Success - exit retry loop
+                    for session in get_session():
+                        crud.finalize_task(
+                            session, self.task_id, models.TaskStatus.COMPLETED, success_msg
+                        )
+                        
+                    # CRITICAL FIX: End memory monitoring for successful task
+                    memory_monitor.end_task_monitoring(self.task_id, success=True)
+                    return  # Success - exit retry loop
 
-            except (CLIConnectionError, ConnectionError, TimeoutError) as e:
+                except (CLIConnectionError, ConnectionError, TimeoutError) as e:
                 # These are transient errors - retry with exponential backoff
                 last_error = e
 
@@ -194,48 +203,54 @@ class TaskExecutor:
                     # Max attempts reached - fall through to error handling
                     break
 
-            except (
-                ProcessError,
-                CLINotFoundError,
-                CLIJSONDecodeError,
-                MessageParseError,
-                ClaudeSDKError,
-            ) as e:
+                except (
+                    ProcessError,
+                    CLINotFoundError,
+                    CLIJSONDecodeError,
+                    MessageParseError,
+                    ClaudeSDKError,
+                ) as e:
                 # These are permanent errors - don't retry
                 last_error = e
                 break
 
-            except Exception as e:
-                # Unexpected error - don't retry
-                last_error = e
-                break
+                except Exception as e:
+                    # Unexpected error - don't retry
+                    last_error = e
+                    break
 
-        # If we get here, task failed
-        if last_error:
-            duration = (datetime.utcnow() - start_time).total_seconds()
+            # If we get here, task failed
+            if last_error:
+                duration = (datetime.utcnow() - start_time).total_seconds()
 
-            # Log error with structured logger
-            task_logger.log_error(last_error, "Task execution failed")
+                # Log error with structured logger
+                task_logger.log_error(last_error, "Task execution failed")
 
-            # Handle error with ErrorHandler
-            error_info = ErrorHandler.handle_error(
-                last_error, self.task_id, log_file_path
-            )
-            ErrorHandler.log_error(error_info, log_file_path)
-            error_msg = ErrorHandler.format_error_message(error_info)
-
-            if attempt >= max_attempts and isinstance(
-                last_error, (CLIConnectionError, ConnectionError, TimeoutError)
-            ):
-                error_msg += f" | Failed after {max_attempts} attempts"
-
-            # Log completion with failure status
-            task_logger.log_task_completion(False, error_msg, duration)
-
-            for session in get_session():
-                crud.finalize_task(
-                    session, self.task_id, models.TaskStatus.FAILED, error_msg
+                # Handle error with ErrorHandler
+                error_info = ErrorHandler.handle_error(
+                    last_error, self.task_id, log_file_path
                 )
+                ErrorHandler.log_error(error_info, log_file_path)
+                error_msg = ErrorHandler.format_error_message(error_info)
+
+                if attempt >= max_attempts and isinstance(
+                    last_error, (CLIConnectionError, ConnectionError, TimeoutError)
+                ):
+                    error_msg += f" | Failed after {max_attempts} attempts"
+
+                # Log completion with failure status
+                task_logger.log_task_completion(False, error_msg, duration)
+
+                for session in get_session():
+                    crud.finalize_task(
+                        session, self.task_id, models.TaskStatus.FAILED, error_msg
+                    )
+                
+                # CRITICAL FIX: End memory monitoring for failed task
+                memory_monitor.end_task_monitoring(self.task_id, success=False)
+        finally:
+            # CRITICAL FIX: Always clean up task logger to prevent memory leak
+            task_logger.close()
 
     async def _process_message(self, message: Message, task_logger) -> None:
         """

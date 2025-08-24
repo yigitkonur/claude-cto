@@ -1,5 +1,6 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
+**/__pycache__/
 *.py[cod]
 *$py.class
 
@@ -83,6 +84,9 @@ ipython_config.py
 
 # pipenv
 Pipfile.lock
+
+# Poetry - keeping poetry.lock as it's an application
+# poetry.lock
 
 # PEP 582
 __pypackages__/
@@ -177,3 +181,27 @@ scripts/
 
 # Exception: Keep README.md
 !README.md
+
+# Homebrew tap (separate repository - don't commit)
+homebrew-claude-cto/
+
+# Coverage reports
+htmlcov/
+coverage.xml
+.coverage
+.coverage.*
+*.cover
+*.py,cover
+
+# Test artifacts
+test-directory/
+tests/logs/
+tests/reports/
+tests/__pycache__/
+tests/**/__pycache__/
+
+# Database files
+tasks.db
+*.db
+*.sqlite
+*.sqlite3

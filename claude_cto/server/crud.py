@@ -3,13 +3,11 @@ SOLE RESPONSIBILITY: Contains all database Create, Read, Update, Delete (CRUD) l
 Functions in this module are pure, stateless, and accept a database session and data models as arguments.
 """
 
-import asyncio
 from pathlib import Path
 from datetime import datetime
 from typing import Optional, List
 from sqlmodel import Session, select
 from . import models
-from .notification import notify_task_started, notify_task_completed
 from .path_utils import generate_log_filename, get_safe_log_directory
 
 
@@ -69,7 +67,7 @@ def get_all_tasks(session: Session) -> List[models.TaskDB]:
 def update_task_status(
     session: Session, task_id: int, status: models.TaskStatus
 ) -> models.TaskDB:
-    """Update the status of a task with sound notifications."""
+    """Update the status of a task."""
     task = session.get(models.TaskDB, task_id)
     if task:
         task.status = status
@@ -77,12 +75,6 @@ def update_task_status(
         # Set timestamps
         if status == models.TaskStatus.RUNNING and not task.started_at:
             task.started_at = datetime.utcnow()
-
-            # Play start sound when task begins running
-            try:
-                asyncio.create_task(notify_task_started(task_id))
-            except Exception:
-                pass  # Don't fail task creation if sound fails
 
         session.add(task)
         session.commit()
@@ -142,7 +134,7 @@ def finalize_task(
     session: Session, task_id: int, status: models.TaskStatus, result_message: str
 ):
     """
-    Finalize a task with a final status, result message, and sound notification.
+    Finalize a task with a final status and result message.
     Sets ended_at timestamp and populates either final_summary or error_message.
     """
     task = session.get(models.TaskDB, task_id)
@@ -159,13 +151,6 @@ def finalize_task(
         session.add(task)
         session.commit()
         session.refresh(task)
-
-        # Play completion sound
-        try:
-            success = status == models.TaskStatus.COMPLETED
-            asyncio.create_task(notify_task_completed(task_id, success=success))
-        except Exception:
-            pass  # Don't fail task finalization if sound fails
 
     return task
 

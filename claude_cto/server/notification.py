@@ -12,6 +12,8 @@ from pathlib import Path
 from typing import Optional, Dict, Any
 from concurrent.futures import ThreadPoolExecutor
 
+from .subprocess_manager import get_subprocess_manager
+
 logger = logging.getLogger(__name__)
 
 # Thread pool for non-blocking sound playback
@@ -136,15 +138,8 @@ class SoundNotifier:
 
     def _command_exists(self, command: str) -> bool:
         """Check if a command exists in the system PATH."""
-        try:
-            result = subprocess.run(
-                ["which", command] if sys.platform != "win32" else ["where", command],
-                capture_output=True,
-                timeout=2,
-            )
-            return result.returncode == 0
-        except Exception:
-            return False
+        manager = get_subprocess_manager()
+        return manager.check_command_exists(command)
 
     def _play_sound_sync(self, sound_path: str) -> bool:
         """
@@ -178,24 +173,21 @@ class SoundNotifier:
             else:
                 cmd = [self.sound_command, sound_path]
 
-            # Execute with timeout
-            result = subprocess.run(
+            # Execute with timeout using subprocess manager
+            manager = get_subprocess_manager()
+            rc, stdout, stderr = manager.run_command(
                 cmd,
-                capture_output=True,
                 timeout=5,  # 5 second timeout for sound playback
-                text=True,
+                description=f"Playing sound: {Path(sound_path).name}"
             )
 
-            if result.returncode == 0:
+            if rc == 0:
                 logger.debug(f"Sound played successfully: {sound_path}")
                 return True
             else:
-                logger.warning(f"Sound playback failed: {result.stderr}")
+                logger.warning(f"Sound playback failed: {stderr}")
                 return False
 
-        except subprocess.TimeoutExpired:
-            logger.warning(f"Sound playback timed out: {sound_path}")
-            return False
         except Exception as e:
             logger.warning(f"Error playing sound {sound_path}: {e}")
             return False

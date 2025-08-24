@@ -1,5 +1,5 @@
 """
-Comprehensive server logging infrastructure for Claude Worker.
+Comprehensive server logging infrastructure for Claude CTO.
 Captures crashes, errors, requests, and important events.
 """
 
@@ -50,7 +50,10 @@ def setup_server_logger(debug: bool = False) -> logging.Logger:
     logger.setLevel(logging.DEBUG if debug else logging.INFO)
 
     # Remove existing handlers to avoid duplicates
-    logger.handlers.clear()
+    for handler in logger.handlers[:]:
+        handler.flush()
+        handler.close()
+        logger.removeHandler(handler)
 
     # Main server log (10MB max, keep 5 backups)
     server_handler = RotatingFileHandler(
@@ -93,7 +96,12 @@ def setup_access_logger() -> logging.Logger:
 
     logger = logging.getLogger("claude_cto.access")
     logger.setLevel(logging.INFO)
-    logger.handlers.clear()
+    
+    # Remove existing handlers to avoid duplicates
+    for handler in logger.handlers[:]:
+        handler.flush()
+        handler.close()
+        logger.removeHandler(handler)
 
     # Access log (20MB max, keep 3 backups)
     access_handler = RotatingFileHandler(

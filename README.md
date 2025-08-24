@@ -487,13 +487,33 @@ this api's your golden ticket - automate all the things without touching the cli
 
 ## 🚢 deployment options
 
-### docker (set it & forget it)
+### 🐳 docker (set it & forget it)
+```bash
+# quick start with docker
+docker run -d \
+  --name claude-cto \
+  -p 8000:8000 \
+  -e ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY \
+  yigitkonur35/claude-cto:latest
+
+# or run CLI commands directly
+docker run --rm \
+  -e ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY \
+  yigitkonur35/claude-cto run "analyze this codebase"
+
+# or use docker-compose for full setup
+docker-compose up -d
+```
+
+for detailed docker setup, multi-arch builds, and advanced configs, check out [DOCKER.md](./DOCKER.md).
+
+### docker-compose snippet
 drop this in `docker-compose.yml`:
 ```yaml
 version: '3.8'
 services:
   claude-cto:
-    image: ghcr.io/yigitkonur/claude-cto:latest
+    image: yigitkonur35/claude-cto:latest
     ports:
       - "8000:8000"
     environment:

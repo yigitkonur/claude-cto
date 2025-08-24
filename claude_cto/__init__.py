@@ -1,4 +1,4 @@
-"""Claude Worker - A fire-and-forget task execution system for Claude Code SDK.
+"""Claude CTO - A fire-and-forget task execution system for Claude Code SDK.
 
 This package provides automated task execution with PyPI auto-publishing.
 """
