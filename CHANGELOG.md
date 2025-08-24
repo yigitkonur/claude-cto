@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.7.2] - 2025-08-24
+
+- fix: remove GHCR push due to permission issues, focus on Docker Hub
+- chore: bump version to 0.7.1 [skip ci]
+- fix: use yigitkonur as commit author instead of github-actions bot
+- chore: bump version to 0.7.0 [skip ci]
+- feat: enable automatic Docker build and push on every code change
+
+
 ## [0.7.1] - 2025-08-24
 
 - fix: use yigitkonur as commit author instead of github-actions bot
