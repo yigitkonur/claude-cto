@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.7.0] - 2025-08-24
+
+- feat: enable automatic Docker build and push on every code change
+- fix: update poetry.lock to sync with alembic dependency
+- fix: add critical memory leak prevention and circuit breaker persistence
+- chore: bump version to 0.6.3 [skip ci]
+- fix: add alembic dependency for database migrations
+
+
 ## [0.6.3] - 2025-08-24
 
 - fix: add alembic dependency for database migrations
