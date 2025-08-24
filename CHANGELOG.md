@@ -2,6 +2,15 @@
 
 ## [0.6.2] - 2025-08-24
 
+- chore: remove code quality checks from CI workflow
+- chore: bump version to 0.6.2 [skip ci]
+- style: apply black formatting and fix syntax errors
+- chore: bump version to 0.6.1 [skip ci]
+- refactor: remove all tests and simplify CI workflow
+
+
+## [0.6.2] - 2025-08-24
+
 - style: apply black formatting and fix syntax errors
 - chore: bump version to 0.6.1 [skip ci]
 - refactor: remove all tests and simplify CI workflow
