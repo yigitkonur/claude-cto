@@ -81,7 +81,7 @@ jobs:
 
   publish:
     name: Publish to PyPI
-    if: (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) || (github.event_name == 'workflow_dispatch' && github.event.inputs.test_pypi != 'true')
+    if: (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) || github.event_name == 'workflow_dispatch'
     needs: build
     runs-on: ubuntu-latest
     environment:
@@ -199,6 +199,8 @@ jobs:
         fi
     
     - name: Trigger Homebrew tap update
+      # HOMEBREW_TAP_TOKEN must be a PAT with 'repo' scope for the homebrew-claude-cto repository
+      # Create at: https://github.com/settings/tokens/new?scopes=repo&description=Homebrew%20tap%20updates
       uses: peter-evans/repository-dispatch@v2
       with:
         token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
