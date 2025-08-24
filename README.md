@@ -1,4 +1,4 @@
-<h3 align="center">claude-cto 🗿 your ai coding agents' cto that gets shit done 10x faster</h3>
+<h3 align="center">🗿 claude-cto 🗿 your ai coding agents' cto that gets shit done 10x faster</h3>
 
 <p align="center">
  <strong>
@@ -508,7 +508,7 @@ pro tip: mix these commands like a devops bartender. your ai team's always on ca
 
 ### 2. installation options
 
-> I've laid out a bunch of options here. Honestly, if you're on a Mac, installing it with `brew` is probably the easiest and best way to go. If not, just use `pip` – it'll handle everything, including the CLI's `/bin` setup. Docker, I'd say, should be your very last choice. And just so you know, Smithery won't help for installing the full service (CLI, server, etc.) – it's just for quickly setting up the MCP integration with Claude Desktop.
+> I've laid out a bunch of options here. Honestly, if you're on a Mac, installing it with `brew` is probably the easiest and best way to go. If not, `uv` is the new hotness – blazing fast and handles everything including extras. Still solid with `pip` too – it'll handle everything, including the CLI's `/bin` setup. Docker, I'd say, should be your very last choice. And just so you know, Smithery won't help for installing the full service (CLI, server, etc.) – it's just for quickly setting up the MCP integration with Claude Desktop.
 
 <div align="center">
   
@@ -522,6 +522,11 @@ pro tip: mix these commands like a devops bartender. your ai team's always on ca
 <td align="center"><b>🍺 Homebrew</b><br/><sub>macOS/Linux</sub></td>
 <td><code>brew install yigitkonur/claude-cto/claude-cto</code></td>
 <td>One-command install</td>
+</tr>
+<tr>
+<td align="center"><b>⚡ UV</b><br/><sub>blazing fast</sub></td>
+<td><code>uv pip install "claude-cto[full]"</code></td>
+<td>Modern Python workflows</td>
 </tr>
 <tr>
 <td align="center"><b>✨ Smithery</b><br/><sub>MCP only</sub></td>
@@ -552,10 +557,33 @@ pro tip: mix these commands like a devops bartender. your ai team's always on ca
 
 </div>
 
-### 3. claude config (pip users only)
+### 3. installation deep dive
+
+<details>
+<summary><b>⚡ UV Users (the fast lane)</b></summary>
+
+```bash
+# install uv if you haven't already
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# install with all extras
+uv pip install "claude-cto[full]"
+
+# or for a project setup with lock file
+uv init my-automation
+cd my-automation
+uv add "claude-cto[full]"
+uv sync  # creates deterministic uv.lock
+```
+
+UV is Rust-powered and **10-100x faster** than pip. It also handles virtual environments automatically and creates lock files for reproducible installs.
+
+</details>
+
+### 4. claude config (pip/uv users only)
 
 > [!IMPORTANT]
-> If you went the pip route, wire up claude and fully restart claude desktop/vscode after this:
+> If you went the pip or uv route, wire up claude and fully restart claude desktop/vscode after this:
 
 ```bash
 claude mcp add claude-cto -s user -- python -m claude_cto.mcp.factory

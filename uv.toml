@@ -1,0 +1,31 @@
+# UV configuration for claude-cto
+# https://docs.astral.sh/uv/
+
+[tool.uv]
+# Preferred Python version
+python-preference = "only-managed"
+
+# Virtual environment settings
+venv = ".venv"
+
+# Index strategy for package resolution
+index-strategy = "first-match"
+
+# Cache settings
+cache-dir = "~/.cache/uv"
+
+# Package sources (in addition to PyPI)
+[[tool.uv.index]]
+name = "pypi"
+url = "https://pypi.org/simple"
+
+# Development workflow settings
+[tool.uv.pip]
+# Automatically create virtual environment
+python = "3.10"
+
+# Compile Python bytecode for faster imports
+compile = true
+
+# Install editable by default in development
+editable-mode = "compat"

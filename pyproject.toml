@@ -1,3 +1,102 @@
+[project]
+name = "claude-cto"
+version = "0.6.1"
+description = "Fire-and-forget task execution system for Claude Code SDK with CLI and MCP interfaces"
+authors = [{name = "Yigit Konur", email = "yigit@thinkbuddy.ai"}]
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+keywords = ["claude", "ai", "automation", "task-queue", "cli", "mcp", "anthropic"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Operating System :: OS Independent",
+    "Environment :: Console",
+    "Framework :: FastAPI",
+]
+
+# Core dependencies (always needed)
+dependencies = [
+    "sqlmodel>=0.0.14",
+    "claude-code-sdk>=0.0.19",
+]
+
+[project.optional-dependencies]
+# For MCP-only users (lightweight)
+mcp = [
+    "fastmcp>=2.0.0",
+    "httpx>=0.25.0",
+]
+
+# For REST API + CLI users (no MCP)
+server = [
+    "fastapi>=0.100.0",
+    "uvicorn[standard]>=0.23.0",
+    "typer[rich]>=0.12.0",
+    "httpx>=0.25.0",
+]
+
+# Everything - full installation
+full = [
+    "fastapi>=0.100.0",
+    "uvicorn[standard]>=0.23.0",
+    "typer[rich]>=0.12.0",
+    "httpx>=0.25.0",
+    "fastmcp>=2.0.0",
+]
+
+# Development dependencies
+dev = [
+    "black>=25.1.0",
+    "ruff>=0.12.9",
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/yigitkonur/claude-cto"
+Repository = "https://github.com/yigitkonur/claude-cto"
+Documentation = "https://github.com/yigitkonur/claude-cto/blob/main/README.md"
+"Bug Tracker" = "https://github.com/yigitkonur/claude-cto/issues"
+Changelog = "https://github.com/yigitkonur/claude-cto/blob/main/CHANGELOG.md"
+"MCP Documentation" = "https://github.com/yigitkonur/claude-cto/blob/main/MCP_README.md"
+Smithery = "https://smithery.ai/@yigitkonur/claude-cto"
+
+[project.scripts]
+# CLI entry point (requires 'server' or 'full' extra)
+claude-cto = "claude_cto.cli.main:app"
+# MCP entry point (requires 'mcp' or 'full' extra)
+claude-cto-mcp = "claude_cto.mcp.factory:run_stdio"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["claude_cto"]
+
+# UV-specific configuration
+[tool.uv]
+# Dev dependencies to install by default with `uv sync`
+dev-dependencies = [
+    "black>=25.1.0",
+    "ruff>=0.12.9",
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+]
+
+# UV workspace configuration (if needed)
+[tool.uv.workspace]
+members = []
+
+# Keep existing Poetry config for backwards compatibility
 [tool.poetry]
 name = "claude-cto"
 version = "0.6.2"
@@ -64,6 +163,12 @@ claude-cto-mcp = "claude_cto.mcp.factory:run_stdio"
 black = "^25.1.0"
 ruff = "^0.12.9"
 
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+# Ruff configuration
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+# Black configuration
+[tool.black]
+line-length = 120
+target-version = ['py310', 'py311', 'py312']

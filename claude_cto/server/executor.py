@@ -174,8 +174,8 @@ class TaskExecutor:
                     return  # Success - exit retry loop
 
                 except (CLIConnectionError, ConnectionError, TimeoutError) as e:
-                # These are transient errors - retry with exponential backoff
-                last_error = e
+                    # These are transient errors - retry with exponential backoff
+                    last_error = e
 
                 if attempt < max_attempts:
                     # Check if it's a rate limit error (special handling)
