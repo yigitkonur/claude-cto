@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.6.3] - 2025-08-24
+
+- fix: add alembic dependency for database migrations
+- fix: load Docker image in CI workflow for testing
+- chore: bump version to 0.6.2 [skip ci]
+- chore: remove code quality checks from CI workflow
+- chore: bump version to 0.6.2 [skip ci]
+
+
 ## [0.6.2] - 2025-08-24
 
 - chore: remove code quality checks from CI workflow
