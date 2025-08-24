@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.7.1] - 2025-08-24
+
+- fix: use yigitkonur as commit author instead of github-actions bot
+- chore: bump version to 0.7.0 [skip ci]
+- feat: enable automatic Docker build and push on every code change
+- fix: update poetry.lock to sync with alembic dependency
+- fix: add critical memory leak prevention and circuit breaker persistence
+
+
 ## [0.7.0] - 2025-08-24
 
 - feat: enable automatic Docker build and push on every code change
