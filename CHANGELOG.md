@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.7.8] - 2025-08-24
+
+- critical: fix version bump script corruption bug + add version management infrastructure
+- chore: bump version to v0.7.6
+- chore: bump version to 0.7.7 [skip ci]
+- fix: add repository_dispatch trigger support to release workflow
+- chore: bump version to 0.7.6 [skip ci]
+
+
 ## [0.7.7] - 2025-08-24
 
 - fix: add repository_dispatch trigger support to release workflow
