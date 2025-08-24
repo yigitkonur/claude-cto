@@ -242,8 +242,8 @@ jobs:
     
     - name: Commit smithery.yaml update
       run: |
-        git config --global user.name "GitHub Actions"
-        git config --global user.email "actions@github.com"
+        git config --global user.name "yigitkonur"
+        git config --global user.email "9989650+yigitkonur@users.noreply.github.com"
         git add smithery.yaml
         git diff --staged --quiet || git commit -m "chore: update smithery.yaml to v${{ steps.version.outputs.version }} [skip ci]"
         git push origin HEAD:main || echo "No changes to push"
