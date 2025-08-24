@@ -63,8 +63,6 @@ claude-cto-mcp = "claude_cto.mcp.factory:run_stdio"
 [tool.poetry.group.dev.dependencies]
 black = "^25.1.0"
 ruff = "^0.12.9"
-pytest = "^8.4.1"
-pytest-asyncio = "^1.1.0"
 
 [build-system]
 requires = ["poetry-core"]

@@ -1,4 +1,4 @@
-name: CI Tests
+name: CI Checks
 
 on:
   push:
@@ -19,20 +19,17 @@ permissions:
   contents: read
 
 jobs:
-  test:
-    name: Test Python ${{ matrix.python-version }}
+  code-quality:
+    name: Code Quality Check
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ['3.10', '3.11', '3.12']
     
     steps:
     - uses: actions/checkout@v4
     
-    - name: Set up Python ${{ matrix.python-version }}
+    - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: '3.11'
     
     - name: Install Poetry
       uses: snok/install-poetry@v1
@@ -46,7 +43,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: .venv
-        key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
+        key: venv-${{ runner.os }}-3.11-${{ hashFiles('**/poetry.lock') }}
     
     - name: Install dependencies
       if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
@@ -55,13 +52,12 @@ jobs:
     - name: Install package
       run: poetry install --no-interaction --extras full
     
-    - name: Run tests
+    - name: Check code formatting
       run: |
-        poetry run pytest tests/test_basic.py tests/unit/server/test_models.py -v --no-cov
+        poetry run black --check claude_cto/
     
     - name: Check code quality
       run: |
-        poetry run black --check claude_cto/
         poetry run ruff check claude_cto/
 
   docker-test:

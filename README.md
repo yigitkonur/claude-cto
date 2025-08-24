@@ -9,10 +9,13 @@
 </p>
 
 <p align="center">
+  <!-- Package Info -->
   <a href="#"><img alt="pypi" src="https://img.shields.io/pypi/v/claude-cto.svg?style=flat-square&color=4D87E6"></a>
   <a href="#"><img alt="python" src="https://img.shields.io/badge/python-3.10+-4D87E6.svg?style=flat-square"></a>
- <a href="#"><img alt="license" src="https://img.shields.io/badge/License-MIT-F9A825.svg?style=flat-square"></a> 
- <a href="#"><img alt="mcp compatible" src="https://img.shields.io/badge/MCP-Compatible-2ED573.svg?style=flat-square"></a>
+  &nbsp;&nbsp;•&nbsp;&nbsp;
+  <!-- Features -->
+  <a href="#"><img alt="license" src="https://img.shields.io/badge/License-MIT-F9A825.svg?style=flat-square"></a> 
+  <a href="#"><img alt="mcp compatible" src="https://img.shields.io/badge/MCP-Compatible-2ED573.svg?style=flat-square"></a>
 </p>
 
 <p align="center">
@@ -20,10 +23,47 @@
   <img alt="zero config" src="https://img.shields.io/badge/⚙️_zero_config-plug_&_play-2ED573.svg?style=for-the-badge">
 </p>
 
-**`claude-cto`** is your AI dream team on steroids. stop doing that one-task-at-a-time workflow — now you’ve got a whole squad of ai devs (opus for the heavy stuff, sonnet for mid-tier, haiku for the easy wins) cracking code simultaneously while you sip your coffee ☕
+<div align="center">
+  
+### 🧭 Quick Navigation
+
+[**⚡ Get Started**](#-get-cooking-in-60-seconds) • 
+[**🎯 Real Example**](#-real-case-building-a-calorie-counter-in-minutes-wclaude-cto) • 
+[**💻 CLI Dashboard**](#-your-mission-control-the-cli-dashboard) • 
+[**🛠️ REST API**](#️-rest-api-your-integration-playground) • 
+[**🐳 Docker**](#-deployment-options) •
+[**✨ Features**](#-feature-breakdown-the-tech-sauce)
+
+</div>
+
+---
+
+**`claude-cto`** is your AI dream team on steroids. stop doing that one-task-at-a-time workflow — now you've got a whole squad of ai devs (opus for the heavy stuff, sonnet for mid-tier, haiku for the easy wins) cracking code simultaneously while you sip your coffee ☕
+
+<div align="center">
+<table>
+<tr>
+<td align="center">
+<h3>⚡</h3>
+<b>10x Faster</b><br/>
+<sub>Parallel execution</sub>
+</td>
+<td align="center">
+<h3>🧠</h3>
+<b>Smart AF</b><br/>
+<sub>Dependency resolution</sub>
+</td>
+<td align="center">
+<h3>🔥</h3>
+<b>Never Fails</b><br/>
+<sub>Auto-retries & circuit breakers</sub>
+</td>
+</tr>
+</table>
+</div>
 
 how it slaps:  
--  you’re the big-picture boss  
+-  you're the big-picture boss  
 -  claude-cto handles the boring pm work  
 -  subtle notifications keep you in the loop without killing your vibe  
 
@@ -31,11 +71,13 @@ how it slaps:
 
 ## 💥 why claude-cto claps traditional workflows  
 
-we’ve hacked the claude code sdk with that spicy `--dangerously-skip-permissions` flag to make your ai go brrrrr:  
+we've hacked the claude code sdk with that spicy `--dangerously-skip-permissions` flag to make your ai go brrrrr:  
 1. cooks up a bulletproof game plan  
 2. delegates like a machine  
-3. handles task dependencies so smooth you’ll think it’s cheating  
+3. handles task dependencies so smooth you'll think it's cheating  
 
+<details open>
+<summary><b>⚡ Performance Comparison: See the Difference</b></summary>
 
 ### claude-cto: advantage of parallel execution
 
@@ -111,6 +153,35 @@ graph LR
     linkStyle default stroke:#51cf66,stroke-width:3px
 ```
 
+</details>
+
+<table align="center">
+<tr>
+<td align="center"><b>❌ Old Way</b><br/><sub>Sequential = Slow</sub></td>
+<td align="center"><b>✅ With claude-cto</b><br/><sub>Parallel = Fast AF</sub></td>
+</tr>
+<tr>
+<td>
+
+```
+21 minutes of pain
+task1 → task2 → task3 → task4
+```
+
+</td>
+<td>
+
+```
+11 minutes of glory
+task1 ⟶
+task2 ⟶ } → task4
+task3 ⟶
+```
+
+</td>
+</tr>
+</table>
+
 ---
 
 ## 🧠 let your AI be the CTO - the real power move
@@ -118,15 +189,23 @@ graph LR
 this is where shit gets wild. instead of micromanaging like some middle manager, you let claude wear the cto hat. drop a high-level goal and watch it use `claude-cto`'s toolkit to plan, delegate, and execute like a boss.
 
 ### the mcp tool belt 🧰
+
+<details>
+<summary><b>📚 Available MCP Tools (click to expand)</b></summary>
+
 once installed, claude gets these shiny new toys to whip your ai team into shape:
 
 | tool | what it does |
-| :--- | :--- |
-| **`create_task`** | 🚀 **delegate like a pro**: assigns jobs to ai workers with optional dependencies |
-| **`submit_orchestration`** | 🏁 **the big red button**: launches entire task groups in one go |
-| **`get_task_status`** | 📊 **spy mode**: checks up on a single worker's progress |
-| **`list_tasks`** | 📋 **mission control**: shows what the whole squad's cooking |
-| **`check_api_health`** | ❤️ **pulse check**: makes sure the engine's purring |
+| :---: | :--- |
+| **`create_task`**<br/>🚀 | **delegate like a pro**: assigns jobs to ai workers with optional dependencies |
+| **`submit_orchestration`**<br/>🏁 | **the big red button**: launches entire task groups in one go |
+| **`get_task_status`**<br/>📊 | **spy mode**: checks up on a single worker's progress |
+| **`list_tasks`**<br/>📋 | **mission control**: shows what the whole squad's cooking |
+| **`check_api_health`**<br/>❤️ | **pulse check**: makes sure the engine's purring |
+
+</details>
+
+---
 
 # 📸 real case: building a calorie counter in minutes w/claude-cto
 
@@ -136,6 +215,10 @@ watch how claude architects a photo-to-calories app like a 10x engineer on red b
 > "yo, need a mobile app that identifies food from photos and tracks calories. full AI integration, slick UI, the works. make it happen."
 
 ## claude's game plan (internal monologue):
+
+<details>
+<summary><b>🧠 Claude's Master Plan (click to see the strategy)</b></summary>
+
 > "aight bet. this is a classic waterfall-but-make-it-parallel situation:
 >
 > 1. **phase 1 (laying groundwork)**: app scaffold + database + AI research all go brrr at once
@@ -185,9 +268,13 @@ graph TD
     classDef phase4 fill:#96CEB4,stroke:#4CAF50,color:#fff
 ```
 
+</details>
+
 ## claude starts delegating (`create_task` calls):
 
-### **phase 1: foundation (parallel ops)**
+<details>
+<summary><b>📱 Phase 1: Foundation Setup (parallel ops)</b></summary>
+
 ```python
 # Claude's Tool Call:
 create_task(
@@ -214,8 +301,11 @@ create_task(
 )
 ```
 
+</details>
 
-### **phase 2: core features (needs phase 1 stuff)**
+<details>
+<summary><b>🏗️ Phase 2: Core Features (needs phase 1 stuff)</b></summary>
+
 ```python
 # Claude's Tool Call:
 create_task(
@@ -243,7 +333,11 @@ create_task(
 )
 ```
 
-### **phase 3: make it sexy (all done, lets jump to the UI part)**
+</details>
+
+<details>
+<summary><b>✨ Phase 3: User Experience (make it sexy)</b></summary>
+
 ```python
 # Claude's Tool Call:
 create_task(
@@ -269,7 +363,11 @@ create_task(
 )
 ```
 
-### **phase 4: ship it (final boss)**
+</details>
+
+<details>
+<summary><b>🚀 Phase 4: Ship It (final boss)</b></summary>
+
 ```python
 # Claude's Tool Call:
 create_task(
@@ -306,7 +404,11 @@ create_task(
 )
 ```
 
+</details>
+
 ## claude hits go (`submit_orchestration`):
+
+> [!TIP]
 > "locked and loaded. spinning up the `calorie_counter` squad. grab a coffee, this is gonna be lit."
 
 ```python
@@ -328,6 +430,9 @@ while your AI cto's running the show, the CLI is your ops center - monitor progr
 </p>
 
 ### real-time ops: how you'd run this circus
+
+<details>
+<summary><b>🎮 CLI Commands Cheat Sheet</b></summary>
 
 say your ai just launched that "ecommerce_modernization" plan. here's how you stay in the loop.
 
@@ -389,7 +494,8 @@ $ claude-cto orchestrate cicd-pipeline.json --wait
 ```
 
 pro tip: mix these commands like a devops bartender. your ai team's always on call. 🍸
-```
+
+</details>
 
 ---
 
@@ -402,34 +508,68 @@ pro tip: mix these commands like a devops bartender. your ai team's always on ca
 
 ### 2. installation options
 
-#### ✨ smithery express lane (recommended)
-one command to rule them all for claude desktop/vscode users:
-```bash
-npx -y @smithery/cli install @yigitkonur/claude-cto --client claude-desktop
-```
+> I've laid out a bunch of options here. Honestly, if you're on a Mac, installing it with `brew` is probably the easiest and best way to go. If not, just use `pip` – it'll handle everything, including the CLI's `/bin` setup. Docker, I'd say, should be your very last choice. And just so you know, Smithery won't help for installing the full service (CLI, server, etc.) – it's just for quickly setting up the MCP integration with Claude Desktop.
 
-#### 🐍 pip flavors (choose your fighter)
-pick your poison:
+<div align="center">
+  
+<table>
+<tr>
+<th width="25%">Method</th>
+<th width="40%">Command</th>
+<th width="35%">Best For</th>
+</tr>
+<tr>
+<td align="center"><b>🍺 Homebrew</b><br/><sub>macOS/Linux</sub></td>
+<td><code>brew install yigitkonur/claude-cto/claude-cto</code></td>
+<td>One-command install</td>
+</tr>
+<tr>
+<td align="center"><b>✨ Smithery</b><br/><sub>MCP only</sub></td>
+<td><code>npx -y @smithery/cli install @yigitkonur/claude-cto</code></td>
+<td>Claude Desktop/VSCode users</td>
+</tr>
+<tr>
+<td align="center"><b>👑 Full Monty</b></td>
+<td><code>pip install "claude-cto[full]"</code></td>
+<td>CLI + API + MCP combo</td>
+</tr>
+<tr>
+<td align="center"><b>🧠 MCP Only</b></td>
+<td><code>pip install "claude-cto[mcp]"</code></td>
+<td>Just the Claude sauce</td>
+</tr>
+<tr>
+<td align="center"><b>🖥️ CLI/Server</b></td>
+<td><code>pip install "claude-cto[server]"</code></td>
+<td>Terminal power user</td>
+</tr>
+<tr>
+<td align="center"><b>🐳 Docker</b></td>
+<td><code>docker run yigitkonur35/claude-cto</code></td>
+<td>Zero dependencies</td>
+</tr>
+</table>
 
-| option | command | what you get |
-| :--- | :--- | :--- |
-| **👑 full monty** | `pip install "claude-cto[full]"` | cli + rest api + mcp - the whole enchilada |
-| **🧠 mcp only** | `pip install "claude-cto[mcp]"` | just the claude desktop/vscode sauce |
-| **🖥️ cli/server** | `pip install "claude-cto[server]"` | terminal power without the mcp stuff |
+</div>
 
 ### 3. claude config (pip users only)
-if you went the pip route, wire up claude:
+
+> [!IMPORTANT]
+> If you went the pip route, wire up claude and fully restart claude desktop/vscode after this:
+
 ```bash
 claude mcp add claude-cto -s user -- python -m claude_cto.mcp.factory
 ```
-pro tip: fully restart claude desktop/vscode after this.
 
 ---
+
 ## 🛠️ rest api: your integration playground
 
 the real magic happens through a slick local rest api - hook it into anything from ci/cd to custom tooling.
 
-**example**: python script to launch and monitor an etl pipeline:
+<details>
+<summary><b>🐍 Python ETL Pipeline Example</b></summary>
+
 ```python
 import httpx, time, json
 
@@ -470,24 +610,34 @@ while True:
 
 this api's your golden ticket - automate all the things without touching the cli. 🤖
 
+</details>
+
 ---
 
 ## ✨ feature breakdown: the tech sauce
 
-| feature | what it does | why you care |
-| :--- | :--- | :--- |
-| **🚀 parallel execution** | runs multiple ai agents simultaneously | 10x speed boost - 10 tasks finish in 5 mins, not 50 |
-| **🔗 dependency magic** | handles task dependencies automatically | complex workflows just work without manual babysitting |
-| **🔄 auto-retries** | smart retries with exponential backoff | no more restarting failed tasks because of flaky wifi |
-| **🧠 model picker** | assign opus/sonnet/haiku per task | save $$$ using heavy models only where needed |
-| **📜 full logs** | summary + detailed logs for every task | debug like a pro with complete context |
-| **📊 resource guard** | monitors cpu/memory/disk | prevents your machine from melting down |
-| **💾 crash-proof** | persists everything to disk | power outage? just pick up where you left off |
-| **🛡️ circuit breaker** | stops retrying broken components | saves you from infinite failure loops |
+<div align="center">
+
+| Feature | What it does | Why you care |
+| :---: | :--- | :--- |
+| **🚀 Parallel**<br/>`10x speed` | Runs multiple AI agents simultaneously | 10 tasks finish in 5 mins, not 50 |
+| **🔗 Dependencies**<br/>`DAG support` | Handles task dependencies automatically | Complex workflows just work |
+| **🔄 Auto-retries**<br/>`exponential backoff` | Smart retries with circuit breakers | No manual restarts for flaky wifi |
+| **🧠 Model picker**<br/>`opus/sonnet/haiku` | Assign models per task complexity | Save $$$ using heavy models wisely |
+| **📜 Full logs**<br/>`summary + detailed` | Two-tier logging for every task | Debug like a pro with context |
+| **📊 Resource guard**<br/>`CPU/memory/disk` | Monitors system resources | Prevents machine meltdown |
+| **💾 Crash-proof**<br/>`disk persistence` | Everything saved to SQLite | Power outage? Pick up where you left |
+| **🛡️ Circuit breaker**<br/>`failure protection` | Stops retrying broken components | No infinite failure loops |
+
+</div>
+
+---
 
 ## 🚢 deployment options
 
-### 🐳 docker (set it & forget it)
+<details>
+<summary><b>🐳 Docker (set it & forget it)</b></summary>
+
 ```bash
 # quick start with docker
 docker run -d \
@@ -524,14 +674,23 @@ services:
 ```
 fire it up: `docker-compose up -d`
 
-### systemd (for linux servers)
+</details>
+
+<details>
+<summary><b>🐧 Systemd (for linux servers)</b></summary>
+
 1. create `/etc/systemd/system/claude-cto.service`
 2. paste config (ask your friendly neighborhood sysadmin)
 3. run: `sudo systemctl enable --now claude-cto`
 
+</details>
+
+---
+
 ## 🔧 config & fixes
 
-### env vars cheat sheet
+<details>
+<summary><b>⚙️ Environment Variables</b></summary>
 
 | variable | purpose | default |
 | :--- | :--- | :--- |
@@ -541,7 +700,10 @@ fire it up: `docker-compose up -d`
 | `CLAUDE_CTO_ENABLE_SOUNDS` | ping when tasks complete | `true` |
 | `CLAUDE_CTO_MODE` | `standalone` or `proxy` | `auto` |
 
-### common issues quickfix
+</details>
+
+<details>
+<summary><b>🔥 Common Issues Quickfix</b></summary>
 
 | problem | solution |
 | :--- | :--- |
@@ -550,8 +712,38 @@ fire it up: `docker-compose up -d`
 | **port 8000 taken** | `lsof -i :8000` or let it auto-find ports |
 | **permission denied** | `sudo chown -R $(whoami) ~/.claude-cto` |
 
+</details>
+
+---
+
 ## 🏛️ design philosophy
 
-1. **🛡️ bulletproof** - your work never gets lost, period  
-2. **🎯 laser focus** - each component does one thing perfectly  
-3. **🧩 future-proof** - built for easy expansion without breaking shit  
+<div align="center">
+<table>
+<tr>
+<td align="center">
+<h3>🛡️</h3>
+<b>Bulletproof</b><br/>
+<sub>Your work never gets lost, period</sub>
+</td>
+<td align="center">
+<h3>🎯</h3>
+<b>Laser Focus</b><br/>
+<sub>Each component does one thing perfectly</sub>
+</td>
+<td align="center">
+<h3>🧩</h3>
+<b>Future-Proof</b><br/>
+<sub>Built for expansion without breaking shit</sub>
+</td>
+</tr>
+</table>
+</div>
+
+---
+
+<div align="center">
+
+**Built with 🔥 by devs who got tired of watching AI work sequentially**
+
+</div>
