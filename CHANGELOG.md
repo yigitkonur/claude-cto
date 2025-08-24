@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.7.6] - 2025-08-24
+
+- chore: bump version to v0.7.5
+- feat: implement comprehensive automated version management system
+- chore: bump version to 0.7.5 [skip ci]
+- docs: add comprehensive inline comments across entire codebase
+- chore: bump version to 0.7.4 [skip ci]
+
+
 ## [0.7.5] - 2025-08-24
 
 - docs: add comprehensive inline comments across entire codebase
