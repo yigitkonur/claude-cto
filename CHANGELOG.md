@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.7.3] - 2025-08-24
+
+- fix: use HOMEBREW_GITHUB_API_TOKEN for GHCR publishing to enable dual registry support
+- chore: bump version to 0.7.2 [skip ci]
+- fix: remove GHCR push due to permission issues, focus on Docker Hub
+- chore: bump version to 0.7.1 [skip ci]
+- fix: use yigitkonur as commit author instead of github-actions bot
+
+
 ## [0.7.2] - 2025-08-24
 
 - fix: remove GHCR push due to permission issues, focus on Docker Hub
