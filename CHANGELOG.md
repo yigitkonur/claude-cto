@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.6.1] - 2025-08-24
+
+- refactor: remove all tests and simplify CI workflow
+- fix: disable pytest coverage in CI workflow
+- fix: resolve GitHub Actions workflow issues
+- chore: update smithery.yaml to v0.6.0 [skip ci]
+- chore: bump version to 0.6.0 [skip ci]
+
+
 ## [0.6.0] - 2025-08-24
 
 - feat: major infrastructure improvements and Docker multi-registry support
