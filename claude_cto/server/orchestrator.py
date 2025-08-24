@@ -33,9 +33,7 @@ class TaskOrchestrator:
         self.orchestration_id = orchestration_id
         self.task_map: Dict[str, int] = {}  # identifier -> task_id
         self.dependency_graph: Dict[str, List[str]] = {}  # identifier -> [dependencies]
-        self.task_events: Dict[str, asyncio.Event] = (
-            {}
-        )  # identifier -> completion event
+        self.task_events: Dict[str, asyncio.Event] = {}  # identifier -> completion event
         self.task_statuses: Dict[str, models.TaskStatus] = {}  # identifier -> status
         self._lock = asyncio.Lock()  # For thread-safe status updates
 
@@ -93,9 +91,7 @@ class TaskOrchestrator:
         for identifier, deps in self.dependency_graph.items():
             for dep in deps:
                 if dep not in all_identifiers:
-                    raise InvalidDependencyError(
-                        f"Task '{identifier}' depends on non-existent task '{dep}'"
-                    )
+                    raise InvalidDependencyError(f"Task '{identifier}' depends on non-existent task '{dep}'")
 
         # Check for cycles using DFS
         visited = set()
@@ -118,9 +114,7 @@ class TaskOrchestrator:
         for node in self.task_map:
             if node not in visited:
                 if has_cycle(node):
-                    raise CycleDetectedError(
-                        f"Circular dependency detected involving task '{node}'"
-                    )
+                    raise CycleDetectedError(f"Circular dependency detected involving task '{node}'")
 
     async def _run_task(self, identifier: str) -> None:
         """Run a single task with dependency and delay management."""
@@ -144,9 +138,7 @@ class TaskOrchestrator:
                     await asyncio.sleep(task.initial_delay)
 
             # Update status to pending (ready to run)
-            await self._update_task_status(
-                task_id, identifier, models.TaskStatus.PENDING
-            )
+            await self._update_task_status(task_id, identifier, models.TaskStatus.PENDING)
 
             # Execute the task
             executor = TaskExecutor(task_id)
@@ -193,9 +185,7 @@ class TaskOrchestrator:
             self.task_statuses[identifier] = models.TaskStatus.SKIPPED
             self.task_events[identifier].set()
 
-    async def _mark_task_failed(
-        self, task_id: int, identifier: str, error: str
-    ) -> None:
+    async def _mark_task_failed(self, task_id: int, identifier: str, error: str) -> None:
         """Mark a task as failed."""
         for session in get_session():
             # Use CRUD layer - maintains SOLE principle
@@ -205,9 +195,7 @@ class TaskOrchestrator:
             self.task_statuses[identifier] = models.TaskStatus.FAILED
             self.task_events[identifier].set()
 
-    async def _update_task_status(
-        self, task_id: int, identifier: str, status: models.TaskStatus
-    ) -> None:
+    async def _update_task_status(self, task_id: int, identifier: str, status: models.TaskStatus) -> None:
         """Update task status in database and memory."""
         for session in get_session():
             # Use CRUD layer - maintains SOLE principle

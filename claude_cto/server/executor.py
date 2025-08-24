@@ -91,7 +91,7 @@ class TaskExecutor:
         attempt = 0
         last_error = None
         start_time = datetime.utcnow()
-        
+
         try:
             while attempt < max_attempts:
                 attempt += 1
@@ -116,9 +116,7 @@ class TaskExecutor:
                             raw_log.write(f"[RETRY] Attempt {attempt}/{max_attempts}\n")
                         else:
                             raw_log.write(f"[INFO] Starting task {self.task_id}\n")
-                            raw_log.write(
-                                f"[INFO] Working directory: {working_directory}\n"
-                            )
+                            raw_log.write(f"[INFO] Working directory: {working_directory}\n")
                             raw_log.write(f"[INFO] Prompt: {execution_prompt}\n")
                             raw_log.write(f"[INFO] System prompt: {system_prompt}\n")
                             raw_log.write(f"[INFO] Timeout: {timeout_seconds}s\n")
@@ -129,9 +127,7 @@ class TaskExecutor:
 
                     async def execute_query():
                         nonlocal message_count
-                        async for message in query(
-                            prompt=execution_prompt, options=options
-                        ):
+                        async for message in query(prompt=execution_prompt, options=options):
                             message_count += 1
                             raw_log.write(
                                 f"[{datetime.utcnow().isoformat()}] Message {message_count}: {type(message).__name__}\n"
@@ -148,9 +144,7 @@ class TaskExecutor:
                     except asyncio.TimeoutError:
                         raise TimeoutError(f"Task exceeded {timeout_seconds}s timeout")
 
-                    raw_log.write(
-                        f"[INFO] Task completed with {message_count} messages\n"
-                    )
+                    raw_log.write(f"[INFO] Task completed with {message_count} messages\n")
                     if attempt > 1:
                         raw_log.write(f"[INFO] Succeeded after {attempt} attempts\n")
                     raw_log.flush()
@@ -165,10 +159,8 @@ class TaskExecutor:
                     task_logger.log_task_completion(True, success_msg, duration)
 
                     for session in get_session():
-                        crud.finalize_task(
-                            session, self.task_id, models.TaskStatus.COMPLETED, success_msg
-                        )
-                        
+                        crud.finalize_task(session, self.task_id, models.TaskStatus.COMPLETED, success_msg)
+
                     # CRITICAL FIX: End memory monitoring for successful task
                     memory_monitor.end_task_monitoring(self.task_id, success=True)
                     return  # Success - exit retry loop
@@ -177,31 +169,29 @@ class TaskExecutor:
                     # These are transient errors - retry with exponential backoff
                     last_error = e
 
-                if attempt < max_attempts:
-                    # Check if it's a rate limit error (special handling)
-                    if "rate limit" in str(e).lower() or "429" in str(e).lower():
-                        wait_time = 60  # Rate limit gets longer wait
+                    if attempt < max_attempts:
+                        # Check if it's a rate limit error (special handling)
+                        if "rate limit" in str(e).lower() or "429" in str(e).lower():
+                            wait_time = 60  # Rate limit gets longer wait
+                        else:
+                            wait_time = 2 ** (attempt - 1)  # Exponential: 1s, 2s, 4s
+
+                        # Log retry attempt
+                        with open(log_file_path, "a") as raw_log:
+                            raw_log.write(f"[RETRY] {type(e).__name__}: {e}. Waiting {wait_time}s before retry...\n")
+
+                        for session in get_session():
+                            crud.append_to_summary_log(
+                                session,
+                                self.task_id,
+                                f"[retry] Attempt {attempt} failed, retrying in {wait_time}s",
+                            )
+
+                        await asyncio.sleep(wait_time)
+                        continue
                     else:
-                        wait_time = 2 ** (attempt - 1)  # Exponential: 1s, 2s, 4s
-
-                    # Log retry attempt
-                    with open(log_file_path, "a") as raw_log:
-                        raw_log.write(
-                            f"[RETRY] {type(e).__name__}: {e}. Waiting {wait_time}s before retry...\n"
-                        )
-
-                    for session in get_session():
-                        crud.append_to_summary_log(
-                            session,
-                            self.task_id,
-                            f"[retry] Attempt {attempt} failed, retrying in {wait_time}s",
-                        )
-
-                    await asyncio.sleep(wait_time)
-                    continue
-                else:
-                    # Max attempts reached - fall through to error handling
-                    break
+                        # Max attempts reached - fall through to error handling
+                        break
 
                 except (
                     ProcessError,
@@ -210,9 +200,9 @@ class TaskExecutor:
                     MessageParseError,
                     ClaudeSDKError,
                 ) as e:
-                # These are permanent errors - don't retry
-                last_error = e
-                break
+                    # These are permanent errors - don't retry
+                    last_error = e
+                    break
 
                 except Exception as e:
                     # Unexpected error - don't retry
@@ -227,9 +217,7 @@ class TaskExecutor:
                 task_logger.log_error(last_error, "Task execution failed")
 
                 # Handle error with ErrorHandler
-                error_info = ErrorHandler.handle_error(
-                    last_error, self.task_id, log_file_path
-                )
+                error_info = ErrorHandler.handle_error(last_error, self.task_id, log_file_path)
                 ErrorHandler.log_error(error_info, log_file_path)
                 error_msg = ErrorHandler.format_error_message(error_info)
 
@@ -242,10 +230,8 @@ class TaskExecutor:
                 task_logger.log_task_completion(False, error_msg, duration)
 
                 for session in get_session():
-                    crud.finalize_task(
-                        session, self.task_id, models.TaskStatus.FAILED, error_msg
-                    )
-                
+                    crud.finalize_task(session, self.task_id, models.TaskStatus.FAILED, error_msg)
+
                 # CRITICAL FIX: End memory monitoring for failed task
                 memory_monitor.end_task_monitoring(self.task_id, success=False)
         finally:

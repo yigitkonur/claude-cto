@@ -139,9 +139,7 @@ def extract_directory_context(working_directory: str) -> str:
                 if parent_name and not (
                     parent_name == ""  # Empty
                     or parent_name == path.anchor  # Unix root
-                    or (
-                        len(parent_name) == 2 and parent_name[1] == ":"
-                    )  # Windows drive
+                    or (len(parent_name) == 2 and parent_name[1] == ":")  # Windows drive
                 ):
                     directory_name = f"{parent_name}_{directory_name}"
 
@@ -199,9 +197,7 @@ def generate_log_filename(
     return filename
 
 
-def generate_unique_session_id(
-    working_directory: str, timestamp: Optional[datetime] = None
-) -> str:
+def generate_unique_session_id(working_directory: str, timestamp: Optional[datetime] = None) -> str:
     """
     Generate a unique session identifier for this working directory.
 

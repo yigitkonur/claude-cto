@@ -5,7 +5,6 @@ defines all API endpoints, and orchestrates the overall server lifecycle.
 
 import asyncio
 import json
-import os
 from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import List, Optional
@@ -27,11 +26,11 @@ from .server_logger import (
 )
 
 
-# Initialize comprehensive logging
+# Global logging setup for the entire server
 logger = initialize_logging(debug=False)
 
 
-# Async task runner for main process execution
+# Entry point for executing a task in the main server process (OAuth requirement)
 async def run_task_async(task_id: int):
     """
     Run task in the main process as an async task.
@@ -46,9 +45,7 @@ async def run_task_async(task_id: int):
     except Exception as e:
         # Log error but don't crash the server
         logger.error(f"Task {task_id} failed: {e}", exc_info=True)
-        log_task_event(
-            task_id, "execution_failed", {"error": str(e), "type": type(e).__name__}
-        )
+        log_task_event(task_id, "execution_failed", {"error": str(e), "type": type(e).__name__})
 
         # Log crash if it's an unexpected error
         if not isinstance(e, (KeyboardInterrupt, SystemExit, asyncio.CancelledError)):
@@ -56,7 +53,7 @@ async def run_task_async(task_id: int):
 
 
 async def _periodic_circuit_breaker_cleanup():
-    """CRITICAL FIX: Periodic cleanup of old circuit breaker states to prevent disk space leaks."""
+    """Background task to prevent disk space leaks from old circuit breaker states."""
     from .circuit_breaker_persistence import get_circuit_breaker_persistence
 
     while True:
@@ -72,14 +69,11 @@ async def _periodic_circuit_breaker_cleanup():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """
-    Manage application lifecycle with comprehensive logging.
-    Setup: Initialize database and logging
-    Teardown: Shutdown process pool and finalize logs
-    """
+    """FastAPI lifespan manager for server startup and shutdown."""
+    # Logs server lifecycle events (start/stop)
     async with log_lifecycle("claude-cto"):
         try:
-            # Startup
+            # Startup sequence
             logger.info("Initializing database...")
             create_db_and_tables()
             logger.info("Database initialized successfully")
@@ -89,20 +83,21 @@ async def lifespan(app: FastAPI):
             log_dir.mkdir(exist_ok=True)
             logger.info(f"Task log directory: {log_dir}")
 
-            # CRITICAL FIX: Start memory monitoring to prevent memory leaks
+            # Start memory monitoring to prevent memory leaks
             logger.info("Starting memory monitoring...")
             from .memory_monitor import start_global_monitoring
 
             asyncio.create_task(start_global_monitoring())
             logger.info("Memory monitoring started")
 
-            # CRITICAL FIX: Start circuit breaker cleanup to prevent disk space leaks
+            # Start circuit breaker cleanup to prevent disk space leaks
             logger.info("Starting circuit breaker cleanup...")
             asyncio.create_task(_periodic_circuit_breaker_cleanup())
             logger.info("Circuit breaker cleanup started")
 
             logger.info("Server startup complete - ready to accept requests")
 
+            # Yield control to FastAPI - server runs here
             yield
 
         except Exception as e:
@@ -110,7 +105,7 @@ async def lifespan(app: FastAPI):
             log_crash(e, {"phase": "startup"})
             raise
         finally:
-            # Shutdown
+            # Shutdown sequence
             logger.info("Beginning shutdown sequence...")
 
             # Stop memory monitoring
@@ -121,7 +116,7 @@ async def lifespan(app: FastAPI):
             logger.info("Server shutdown complete")
 
 
-# Initialize FastAPI app
+# Main FastAPI application instance
 app = FastAPI(
     title="Claude CTO Server",
     description="Fire-and-forget task execution for Claude Code SDK",
@@ -130,14 +125,14 @@ app = FastAPI(
 )
 
 
-# Add middleware for request/response logging
+# HTTP middleware that intercepts and logs all requests/responses
 @app.middleware("http")
 async def logging_middleware(request: Request, call_next):
     """Log all HTTP requests and responses."""
     return await log_request_response(request, call_next)
 
 
-# Add CORS middleware for cross-origin requests
+# Enable cross-origin requests for web clients
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -151,13 +146,8 @@ app.add_middleware(
 
 
 @app.post("/api/v1/tasks", response_model=models.TaskRead)
-async def create_task(
-    task_in: models.TaskCreate, session: Session = Depends(get_session)
-):
-    """
-    Create and execute a new task (human-friendly API).
-    Lenient validation, applies defaults if needed.
-    """
+async def create_task(task_in: models.TaskCreate, session: Session = Depends(get_session)):
+    """REST API endpoint for creating and executing tasks."""
     try:
         # Apply default system prompt if not provided
         if not task_in.system_prompt:
@@ -166,7 +156,7 @@ async def create_task(
                 "of simplicity and minimalism in software development."
             )
 
-        # Create task in database
+        # Persist task in database
         log_dir = app_dir / "logs"
         db_task = crud.create_task(session, task_in, log_dir)
 
@@ -245,9 +235,7 @@ def list_tasks(session: Session = Depends(get_session)):
 
 
 @app.post("/api/v1/mcp/tasks", response_model=models.TaskRead)
-async def create_mcp_task(
-    payload: models.MCPCreateTaskPayload, session: Session = Depends(get_session)
-):
+async def create_mcp_task(payload: models.MCPCreateTaskPayload, session: Session = Depends(get_session)):
     """
     Create and execute a new task (machine-friendly API).
     Strict validation enforced by Pydantic.
@@ -295,14 +283,10 @@ def health_check():
 async def run_orchestration_async(orchestration_id: int):
     """Run an orchestration asynchronously."""
     try:
-        log_task_event(
-            orchestration_id, "orchestration_started", {"type": "orchestration"}
-        )
+        log_task_event(orchestration_id, "orchestration_started", {"type": "orchestration"})
         orchestrator = TaskOrchestrator(orchestration_id)
         await orchestrator.run()
-        log_task_event(
-            orchestration_id, "orchestration_completed", {"type": "orchestration"}
-        )
+        log_task_event(orchestration_id, "orchestration_completed", {"type": "orchestration"})
     except Exception as e:
         logger.error(f"Orchestration {orchestration_id} failed: {e}", exc_info=True)
         log_task_event(
@@ -313,9 +297,7 @@ async def run_orchestration_async(orchestration_id: int):
 
 
 @app.post("/api/v1/orchestrations", response_model=dict)
-async def create_orchestration(
-    orchestration: models.OrchestrationCreate, session: Session = Depends(get_session)
-):
+async def create_orchestration(orchestration: models.OrchestrationCreate, session: Session = Depends(get_session)):
     """
     Create and execute a task orchestration with dependencies.
     Validates the DAG, creates all tasks, and starts the orchestrator.
@@ -412,9 +394,7 @@ async def create_orchestration(
 
 
 @app.get("/api/v1/orchestrations/{orchestration_id}")
-async def get_orchestration_status(
-    orchestration_id: int, session: Session = Depends(get_session)
-):
+async def get_orchestration_status(orchestration_id: int, session: Session = Depends(get_session)):
     """Get the status and details of an orchestration."""
     orch = crud.get_orchestration(session, orchestration_id)
     if not orch:
@@ -454,9 +434,7 @@ async def get_orchestration_status(
 
 
 @app.delete("/api/v1/orchestrations/{orchestration_id}/cancel")
-async def cancel_orchestration(
-    orchestration_id: int, session: Session = Depends(get_session)
-):
+async def cancel_orchestration(orchestration_id: int, session: Session = Depends(get_session)):
     """Cancel a running orchestration and all its pending tasks."""
     orch = crud.get_orchestration(session, orchestration_id)
     if not orch:

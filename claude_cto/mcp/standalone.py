@@ -25,9 +25,7 @@ from claude_cto.server.models import TaskCreate, TaskStatus
 executor_pool = ProcessPoolExecutor(max_workers=2)
 
 
-def create_standalone_server(
-    db_path: Optional[str] = None, log_dir: Optional[str] = None
-) -> FastMCP:
+def create_standalone_server(db_path: Optional[str] = None, log_dir: Optional[str] = None) -> FastMCP:
     """
     Create a standalone MCP server with embedded database.
 
@@ -197,9 +195,7 @@ def create_standalone_server(
             }
 
     @mcp.tool()
-    async def list_tasks(
-        status: Optional[str] = None, limit: int = 10
-    ) -> Dict[str, Any]:
+    async def list_tasks(status: Optional[str] = None, limit: int = 10) -> Dict[str, Any]:
         """
         List all delegated tasks to track completion and results. After planning, review outputs
         and re-create failed tasks if needed.
@@ -243,9 +239,7 @@ def create_standalone_server(
                     {
                         "id": task.id,
                         "status": task.status.value,
-                        "created_at": (
-                            task.created_at.isoformat() if task.created_at else None
-                        ),
+                        "created_at": (task.created_at.isoformat() if task.created_at else None),
                         "execution_prompt": (
                             task.execution_prompt[:100] + "..."
                             if len(task.execution_prompt) > 100

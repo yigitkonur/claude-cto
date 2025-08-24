@@ -84,10 +84,7 @@ class ErrorHandler:
             return False
 
         # Network/connection issues in error messages
-        if any(
-            word in error_msg
-            for word in ["connection", "network", "timeout", "temporary", "unavailable"]
-        ):
+        if any(word in error_msg for word in ["connection", "network", "timeout", "temporary", "unavailable"]):
             return True
 
         # Everything else is permanent (auth errors, parse errors, etc.)
@@ -151,9 +148,7 @@ class ErrorHandler:
     }
 
     @classmethod
-    def handle_error(
-        cls, error: Exception, task_id: int, log_file_path: Optional[str] = None
-    ) -> Dict[str, Any]:
+    def handle_error(cls, error: Exception, task_id: int, log_file_path: Optional[str] = None) -> Dict[str, Any]:
         """
         Handle an error and return structured error information.
 
@@ -184,9 +179,7 @@ class ErrorHandler:
                     "exit_code": error.exit_code,
                     "stderr": error.stderr,
                     "debugging": {
-                        "exit_code_meaning": cls._get_exit_code_meaning(
-                            error.exit_code
-                        ),
+                        "exit_code_meaning": cls._get_exit_code_meaning(error.exit_code),
                         "likely_cause": cls._analyze_process_error(error),
                     },
                 }
@@ -222,14 +215,8 @@ class ErrorHandler:
         elif isinstance(error, CLIJSONDecodeError):
             error_info.update(
                 {
-                    "problematic_line": (
-                        error.line[:500] if hasattr(error, "line") else None
-                    ),
-                    "original_error": (
-                        str(error.original_error)
-                        if hasattr(error, "original_error")
-                        else None
-                    ),
+                    "problematic_line": (error.line[:500] if hasattr(error, "line") else None),
+                    "original_error": (str(error.original_error) if hasattr(error, "original_error") else None),
                     "debugging": {
                         "line_preview": (
                             error.line[:100] + "..."
@@ -237,9 +224,7 @@ class ErrorHandler:
                             else error.line if hasattr(error, "line") else None
                         ),
                         "json_error_type": (
-                            type(error.original_error).__name__
-                            if hasattr(error, "original_error")
-                            else None
+                            type(error.original_error).__name__ if hasattr(error, "original_error") else None
                         ),
                     },
                 }
@@ -250,15 +235,9 @@ class ErrorHandler:
                 {
                     "parse_data": error.data if hasattr(error, "data") else None,
                     "debugging": {
-                        "data_type": (
-                            type(error.data).__name__
-                            if hasattr(error, "data")
-                            else None
-                        ),
+                        "data_type": (type(error.data).__name__ if hasattr(error, "data") else None),
                         "data_keys": (
-                            list(error.data.keys())
-                            if hasattr(error, "data") and isinstance(error.data, dict)
-                            else None
+                            list(error.data.keys()) if hasattr(error, "data") and isinstance(error.data, dict) else None
                         ),
                     },
                 }
@@ -430,9 +409,7 @@ class ErrorHandler:
         import subprocess
 
         try:
-            result = subprocess.run(
-                ["claude", "auth", "status"], capture_output=True, text=True, timeout=2
-            )
+            result = subprocess.run(["claude", "auth", "status"], capture_output=True, text=True, timeout=2)
             if result.returncode == 0:
                 return "Authenticated"
             else:

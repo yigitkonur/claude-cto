@@ -3,7 +3,7 @@ MCP tool for creating task orchestrations with dependencies.
 This extends the MCP interface to support the full orchestration capabilities.
 """
 
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 import httpx
 from claude_cto.cli.config import get_server_url
 
@@ -56,21 +56,15 @@ async def create_mcp_orchestration(tasks: List[Dict[str, Any]]) -> Dict[str, Any
                 "system_prompt",
             ]
         ):
-            raise ValueError(
-                f"Task {task.get('identifier', 'unknown')} missing required fields"
-            )
+            raise ValueError(f"Task {task.get('identifier', 'unknown')} missing required fields")
 
         # Validate system prompt contains "John Carmack" (MCP requirement)
         if "John Carmack" not in task["system_prompt"]:
-            raise ValueError(
-                f"Task {task['identifier']} system_prompt must contain 'John Carmack'"
-            )
+            raise ValueError(f"Task {task['identifier']} system_prompt must contain 'John Carmack'")
 
         # Validate execution prompt contains path-like string (MCP requirement)
         if "/" not in task["execution_prompt"] and "\\" not in task["execution_prompt"]:
-            raise ValueError(
-                f"Task {task['identifier']} execution_prompt must contain a path-like string"
-            )
+            raise ValueError(f"Task {task['identifier']} execution_prompt must contain a path-like string")
 
     # Check for duplicate identifiers
     identifiers = [t["identifier"] for t in tasks]
@@ -96,9 +90,7 @@ async def create_mcp_orchestration(tasks: List[Dict[str, Any]]) -> Dict[str, Any
     # Submit to orchestration API
     server_url = get_server_url()
     async with httpx.AsyncClient() as client:
-        response = await client.post(
-            f"{server_url}/api/v1/orchestrations", json=orchestration_data, timeout=30.0
-        )
+        response = await client.post(f"{server_url}/api/v1/orchestrations", json=orchestration_data, timeout=30.0)
         response.raise_for_status()
         result = response.json()
 
@@ -107,9 +99,7 @@ async def create_mcp_orchestration(tasks: List[Dict[str, Any]]) -> Dict[str, Any
         "orchestration_id": result["orchestration_id"],
         "status": result["status"],
         "total_tasks": result["total_tasks"],
-        "task_mappings": {
-            task["identifier"]: task["task_id"] for task in result["tasks"]
-        },
+        "task_mappings": {task["identifier"]: task["task_id"] for task in result["tasks"]},
         "message": f"Orchestration {result['orchestration_id']} created with {result['total_tasks']} tasks",
     }
 
@@ -126,8 +116,6 @@ async def get_mcp_orchestration_status(orchestration_id: int) -> Dict[str, Any]:
     """
     server_url = get_server_url()
     async with httpx.AsyncClient() as client:
-        response = await client.get(
-            f"{server_url}/api/v1/orchestrations/{orchestration_id}", timeout=10.0
-        )
+        response = await client.get(f"{server_url}/api/v1/orchestrations/{orchestration_id}", timeout=10.0)
         response.raise_for_status()
         return response.json()

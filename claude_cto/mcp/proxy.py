@@ -173,9 +173,7 @@ def create_proxy_server(api_url: Optional[str] = None) -> FastMCP:
         """
         async with httpx.AsyncClient() as client:
             try:
-                response = await client.get(
-                    f"{api_url}/api/v1/tasks/{task_id}", timeout=10.0
-                )
+                response = await client.get(f"{api_url}/api/v1/tasks/{task_id}", timeout=10.0)
 
                 if response.status_code == 200:
                     data = response.json()
@@ -230,9 +228,7 @@ def create_proxy_server(api_url: Optional[str] = None) -> FastMCP:
         """
         async with httpx.AsyncClient() as client:
             try:
-                response = await client.get(
-                    f"{api_url}/api/v1/tasks", params={"limit": limit}, timeout=10.0
-                )
+                response = await client.get(f"{api_url}/api/v1/tasks", params={"limit": limit}, timeout=10.0)
 
                 if response.status_code == 200:
                     tasks = response.json()
@@ -245,9 +241,7 @@ def create_proxy_server(api_url: Optional[str] = None) -> FastMCP:
                                 "id": task["id"],
                                 "status": task["status"],
                                 "created_at": task.get("created_at"),
-                                "last_action": (task.get("last_action_cache") or "")[
-                                    :100
-                                ],
+                                "last_action": (task.get("last_action_cache") or "")[:100],
                             }
                             for task in tasks[:limit]
                         ],

@@ -128,9 +128,7 @@ class MemoryMonitor:
         logger.info(f"Started monitoring task {task_id}")
         return metrics
 
-    def end_task_monitoring(
-        self, task_id: int, success: bool = True
-    ) -> Optional[TaskMetrics]:
+    def end_task_monitoring(self, task_id: int, success: bool = True) -> Optional[TaskMetrics]:
         """End monitoring a task."""
         if task_id not in self.task_metrics:
             return None
@@ -203,9 +201,7 @@ class MemoryMonitor:
 
                 # Cleanup old history (keep last hour)
                 cutoff = datetime.now() - timedelta(hours=1)
-                self.system_metrics_history = [
-                    m for m in self.system_metrics_history if m.timestamp > cutoff
-                ]
+                self.system_metrics_history = [m for m in self.system_metrics_history if m.timestamp > cutoff]
 
                 # Cleanup old task metrics periodically (every 10 iterations)
                 if len(self.task_metrics) > 100:
@@ -235,31 +231,21 @@ class MemoryMonitor:
             disk_usage_percent = disk.percent
 
             # Task counts
-            active_tasks = sum(
-                1 for m in self.task_metrics.values() if m.end_time is None
-            )
+            active_tasks = sum(1 for m in self.task_metrics.values() if m.end_time is None)
 
             # Calculate 1-hour stats
             one_hour_ago = datetime.now() - timedelta(hours=1)
-            recent_tasks = [
-                m for m in self.task_metrics.values() if m.start_time > one_hour_ago
-            ]
+            recent_tasks = [m for m in self.task_metrics.values() if m.start_time > one_hour_ago]
 
             failed_tasks_1h = sum(1 for m in recent_tasks if m.error_count > 0)
             completed_tasks_1h = sum(1 for m in recent_tasks if m.end_time is not None)
 
             success_rate_1h = 0.0
             if completed_tasks_1h > 0:
-                success_rate_1h = (
-                    (completed_tasks_1h - failed_tasks_1h) / completed_tasks_1h * 100
-                )
+                success_rate_1h = (completed_tasks_1h - failed_tasks_1h) / completed_tasks_1h * 100
 
             # Average duration
-            durations = [
-                m.duration_seconds
-                for m in recent_tasks
-                if m.duration_seconds is not None
-            ]
+            durations = [m.duration_seconds for m in recent_tasks if m.duration_seconds is not None]
             avg_task_duration_1h = sum(durations) / len(durations) if durations else 0.0
 
             return SystemMetrics(
@@ -302,17 +288,13 @@ class MemoryMonitor:
             for task_id, metrics in self.task_metrics.items():
                 if metrics.end_time is None:  # Still active
                     # Update peak memory
-                    metrics.peak_memory_mb = max(
-                        metrics.peak_memory_mb, current_memory_mb
-                    )
+                    metrics.peak_memory_mb = max(metrics.peak_memory_mb, current_memory_mb)
 
                     # Update average memory (simple moving average)
                     if metrics.avg_memory_mb == 0:
                         metrics.avg_memory_mb = current_memory_mb
                     else:
-                        metrics.avg_memory_mb = (
-                            metrics.avg_memory_mb + current_memory_mb
-                        ) / 2
+                        metrics.avg_memory_mb = (metrics.avg_memory_mb + current_memory_mb) / 2
 
                     # Update CPU
                     metrics.cpu_percent = cpu_percent
@@ -328,15 +310,13 @@ class MemoryMonitor:
         """Check if memory usage exceeds thresholds."""
         if metrics.memory_percent >= self.memory_critical_threshold:
             logger.critical(
-                f"CRITICAL: Memory usage at {metrics.memory_percent:.1f}% "
-                f"({metrics.memory_used_mb:.0f}MB used)"
+                f"CRITICAL: Memory usage at {metrics.memory_percent:.1f}% " f"({metrics.memory_used_mb:.0f}MB used)"
             )
             # Could trigger cleanup or task cancellation here
 
         elif metrics.memory_percent >= self.memory_warning_threshold:
             logger.warning(
-                f"WARNING: Memory usage at {metrics.memory_percent:.1f}% "
-                f"({metrics.memory_used_mb:.0f}MB used)"
+                f"WARNING: Memory usage at {metrics.memory_percent:.1f}% " f"({metrics.memory_used_mb:.0f}MB used)"
             )
 
     def get_current_metrics(self) -> Dict[str, Any]:
@@ -345,14 +325,8 @@ class MemoryMonitor:
 
         return {
             "system": current_system.to_dict(),
-            "active_tasks": [
-                m.to_dict() for m in self.task_metrics.values() if m.end_time is None
-            ],
-            "recent_completed": [
-                m.to_dict()
-                for m in self.task_metrics.values()
-                if m.end_time is not None
-            ][
+            "active_tasks": [m.to_dict() for m in self.task_metrics.values() if m.end_time is None],
+            "recent_completed": [m.to_dict() for m in self.task_metrics.values() if m.end_time is not None][
                 -10:
             ],  # Last 10 completed
             "thresholds": {

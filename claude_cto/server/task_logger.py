@@ -15,33 +15,23 @@ from .path_utils import generate_log_filename, get_safe_log_directory
 class TaskLogger:
     """Advanced logger for individual tasks with multiple log levels."""
 
-    def __init__(
-        self, task_id: int, working_directory: str, timestamp: Optional[datetime] = None
-    ):
+    def __init__(self, task_id: int, working_directory: str, timestamp: Optional[datetime] = None):
         self.task_id = task_id
         self.working_directory = working_directory
         self.timestamp = timestamp or datetime.now()
         self.log_dir = self._setup_log_directory()
 
         # Create enhanced log file paths with directory context
-        summary_filename = generate_log_filename(
-            task_id, working_directory, "summary", self.timestamp
-        )
-        detailed_filename = generate_log_filename(
-            task_id, working_directory, "detailed", self.timestamp
-        )
+        summary_filename = generate_log_filename(task_id, working_directory, "summary", self.timestamp)
+        detailed_filename = generate_log_filename(task_id, working_directory, "detailed", self.timestamp)
 
         self.summary_log_path = self.log_dir / summary_filename
         self.detailed_log_path = self.log_dir / detailed_filename
 
         # Setup loggers with unique names to avoid conflicts
         logger_suffix = f"{task_id}_{self.timestamp.strftime('%H%M%S')}"
-        self.summary_logger = self._create_logger(
-            f"summary_{logger_suffix}", self.summary_log_path
-        )
-        self.detailed_logger = self._create_logger(
-            f"detailed_{logger_suffix}", self.detailed_log_path
-        )
+        self.summary_logger = self._create_logger(f"summary_{logger_suffix}", self.summary_log_path)
+        self.detailed_logger = self._create_logger(f"detailed_{logger_suffix}", self.detailed_log_path)
 
         # Global summary logger
         self.global_logger = self._get_global_logger()
@@ -70,9 +60,7 @@ class TaskLogger:
 
         # File handler with rich formatting
         handler = logging.FileHandler(log_file, mode="w")
-        formatter = logging.Formatter(
-            "%(asctime)s │ %(levelname)-8s │ %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
-        )
+        formatter = logging.Formatter("%(asctime)s │ %(levelname)-8s │ %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
         handler.setFormatter(formatter)
         logger.addHandler(handler)
         logger.propagate = False
@@ -90,9 +78,7 @@ class TaskLogger:
         for handler in logger.handlers[:]:
             if isinstance(handler, logging.FileHandler):
                 # Check if handler is still valid and pointing to the right file
-                if hasattr(handler, "baseFilename") and handler.baseFilename == str(
-                    global_log_file
-                ):
+                if hasattr(handler, "baseFilename") and handler.baseFilename == str(global_log_file):
                     needs_handler = False
                 else:
                     # Remove stale handler
@@ -113,9 +99,7 @@ class TaskLogger:
 
         return logger
 
-    def log_task_start(
-        self, execution_prompt: str, model: str, system_prompt: str = None
-    ):
+    def log_task_start(self, execution_prompt: str, model: str, system_prompt: str = None):
         """Log task initialization with full context."""
         start_time = datetime.now()
 
@@ -123,9 +107,7 @@ class TaskLogger:
         self.summary_logger.info(f"🚀 Task {self.task_id} STARTED")
         self.summary_logger.info(f"📁 Working Directory: {self.working_directory}")
         self.summary_logger.info(f"🤖 Model: {model}")
-        self.summary_logger.info(
-            f"📝 Prompt: {execution_prompt[:100]}{'...' if len(execution_prompt) > 100 else ''}"
-        )
+        self.summary_logger.info(f"📝 Prompt: {execution_prompt[:100]}{'...' if len(execution_prompt) > 100 else ''}")
 
         # Detailed log
         self.detailed_logger.info("=" * 80)
@@ -139,25 +121,19 @@ class TaskLogger:
         self.detailed_logger.info("-" * 80)
 
         # Global log
-        self._log_global(
-            "STARTED", f"Model: {model} | Dir: {Path(self.working_directory).name}"
-        )
+        self._log_global("STARTED", f"Model: {model} | Dir: {Path(self.working_directory).name}")
 
     def log_task_progress(self, message: str, action_type: str = "ACTION"):
         """Log task progress with structured format."""
         timestamp = datetime.now().strftime("%H:%M:%S")
 
         # Summary log (concise)
-        self.summary_logger.info(
-            f"⚡ [{timestamp}] {action_type}: {message[:80]}{'...' if len(message) > 80 else ''}"
-        )
+        self.summary_logger.info(f"⚡ [{timestamp}] {action_type}: {message[:80]}{'...' if len(message) > 80 else ''}")
 
         # Detailed log (full content)
         self.detailed_logger.info(f"[{action_type}] {message}")
 
-    def log_tool_usage(
-        self, tool_name: str, tool_input: Dict[str, Any], success: bool = True
-    ):
+    def log_tool_usage(self, tool_name: str, tool_input: Dict[str, Any], success: bool = True):
         """Log tool usage with structured data."""
         status = "✅" if success else "❌"
 
@@ -172,13 +148,9 @@ class TaskLogger:
             display = str(tool_input)[:50]
 
         self.summary_logger.info(f"{status} {tool_name}: {display}")
-        self.detailed_logger.info(
-            f"TOOL: {tool_name} | INPUT: {json.dumps(tool_input, indent=2)}"
-        )
+        self.detailed_logger.info(f"TOOL: {tool_name} | INPUT: {json.dumps(tool_input, indent=2)}")
 
-    def log_task_completion(
-        self, success: bool, final_message: str, duration: Optional[float] = None
-    ):
+    def log_task_completion(self, success: bool, final_message: str, duration: Optional[float] = None):
         """Log task completion with summary statistics."""
         end_time = datetime.now()
         status = "✅ COMPLETED" if success else "❌ FAILED"
@@ -263,9 +235,7 @@ class TaskLogger:
         }
 
     @contextmanager
-    def task_context(
-        self, execution_prompt: str, model: str, system_prompt: str = None
-    ):
+    def task_context(self, execution_prompt: str, model: str, system_prompt: str = None):
         """Context manager for complete task logging lifecycle."""
         start_time = datetime.now()
 
@@ -313,9 +283,7 @@ class TaskLogger:
                 del logging.Logger.manager.loggerDict[name]
 
 
-def create_task_logger(
-    task_id: int, working_directory: str, timestamp: Optional[datetime] = None
-) -> TaskLogger:
+def create_task_logger(task_id: int, working_directory: str, timestamp: Optional[datetime] = None) -> TaskLogger:
     """Factory function to create a task logger."""
     return TaskLogger(task_id, working_directory, timestamp)
 

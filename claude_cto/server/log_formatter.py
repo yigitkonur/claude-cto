@@ -26,11 +26,7 @@ def format_content_block(block: ContentBlock) -> Optional[str]:
         return format_tool_use(block)
     elif HAS_THINKING_BLOCK and ThinkingBlock and isinstance(block, ThinkingBlock):
         # Log thinking blocks with a preview (SDK 0.0.20+)
-        preview = (
-            block.thinking[:100] + "..."
-            if len(block.thinking) > 100
-            else block.thinking
-        )
+        preview = block.thinking[:100] + "..." if len(block.thinking) > 100 else block.thinking
         return f"[thinking] {preview}"
     elif isinstance(block, TextBlock):
         # Log text responses with a preview

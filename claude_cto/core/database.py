@@ -87,9 +87,7 @@ def get_task_by_id(session: Session, task_id: int) -> Optional[TaskDB]:
     return session.exec(statement).first()
 
 
-def create_task_record(
-    session: Session, task_data: TaskCreate, log_file_path: Optional[Path] = None
-) -> TaskDB:
+def create_task_record(session: Session, task_data: TaskCreate, log_file_path: Optional[Path] = None) -> TaskDB:
     """Create a new task record in database."""
     db_task = TaskDB(
         execution_prompt=task_data.execution_prompt,
@@ -105,17 +103,15 @@ def create_task_record(
     return db_task
 
 
-def update_task_status(
-    session: Session, task_id: int, status: TaskStatus, **kwargs
-) -> Optional[TaskDB]:
-    """Update task status and optional fields."""
+def update_task_status(session: Session, task_id: int, status: TaskStatus, **kwargs) -> Optional[TaskDB]:
+    """Updates task model using dynamic attribute setting."""
     task = get_task_by_id(session, task_id)
     if not task:
         return None
 
     task.status = status
 
-    # Update optional fields if provided
+    # Dynamic field updates using **kwargs
     for key, value in kwargs.items():
         if hasattr(task, key):
             setattr(task, key, value)

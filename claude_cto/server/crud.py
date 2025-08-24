@@ -11,9 +11,7 @@ from . import models
 from .path_utils import generate_log_filename, get_safe_log_directory
 
 
-def create_task(
-    session: Session, task_in: models.TaskCreate, log_dir: Optional[Path] = None
-) -> models.TaskDB:
+def create_task(session: Session, task_in: models.TaskCreate, log_dir: Optional[Path] = None) -> models.TaskDB:
     """
     Create a new task in the database.
     Sets initial status to 'pending' and generates structured log file paths.
@@ -39,9 +37,7 @@ def create_task(
 
     # Generate enhanced log file path with directory context
     timestamp = datetime.utcnow()
-    summary_filename = generate_log_filename(
-        db_task.id, task_in.working_directory, "summary", timestamp
-    )
+    summary_filename = generate_log_filename(db_task.id, task_in.working_directory, "summary", timestamp)
     db_task.log_file_path = str(log_dir / summary_filename)
 
     # Update with log path
@@ -64,9 +60,7 @@ def get_all_tasks(session: Session) -> List[models.TaskDB]:
     return list(results)
 
 
-def update_task_status(
-    session: Session, task_id: int, status: models.TaskStatus
-) -> models.TaskDB:
+def update_task_status(session: Session, task_id: int, status: models.TaskStatus) -> models.TaskDB:
     """Update the status of a task."""
     task = session.get(models.TaskDB, task_id)
     if task:
@@ -100,9 +94,7 @@ def mark_task_skipped(
     return task
 
 
-def mark_task_failed(
-    session: Session, task_id: int, error_message: str
-) -> models.TaskDB:
+def mark_task_failed(session: Session, task_id: int, error_message: str) -> models.TaskDB:
     """Mark a task as failed with error message."""
     task = session.get(models.TaskDB, task_id)
     if task:
@@ -132,9 +124,7 @@ def append_to_summary_log(session: Session, task_id: int, summary_line: str):
         session.commit()
 
 
-def finalize_task(
-    session: Session, task_id: int, status: models.TaskStatus, result_message: str
-):
+def finalize_task(session: Session, task_id: int, status: models.TaskStatus, result_message: str):
     """
     Finalize a task with a final status and result message.
     Sets ended_at timestamp and populates either final_summary or error_message.
@@ -167,13 +157,9 @@ def get_task_logs(task_id: int) -> Optional[dict]:
     return get_logs(task_id)
 
 
-def get_tasks_by_orchestration(
-    session: Session, orchestration_id: int
-) -> List[models.TaskDB]:
+def get_tasks_by_orchestration(session: Session, orchestration_id: int) -> List[models.TaskDB]:
     """Get all tasks belonging to an orchestration."""
-    statement = select(models.TaskDB).where(
-        models.TaskDB.orchestration_id == orchestration_id
-    )
+    statement = select(models.TaskDB).where(models.TaskDB.orchestration_id == orchestration_id)
     results = session.exec(statement)
     return list(results)
 
@@ -212,9 +198,7 @@ def update_orchestration_status(
     return orch
 
 
-def get_orchestration(
-    session: Session, orchestration_id: int
-) -> Optional[models.OrchestrationDB]:
+def get_orchestration(session: Session, orchestration_id: int) -> Optional[models.OrchestrationDB]:
     """Get a single orchestration by ID."""
     return session.get(models.OrchestrationDB, orchestration_id)
 
@@ -228,8 +212,6 @@ def get_all_orchestrations(
     if status:
         statement = statement.where(models.OrchestrationDB.status == status)
 
-    statement = statement.order_by(models.OrchestrationDB.created_at.desc()).limit(
-        limit
-    )
+    statement = statement.order_by(models.OrchestrationDB.created_at.desc()).limit(limit)
     results = session.exec(statement)
     return list(results)

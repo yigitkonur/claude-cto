@@ -20,10 +20,10 @@ logger = logging.getLogger(__name__)
 
 
 class TaskExecutor:
-    """Executes tasks using Claude Code SDK."""
+    """Encapsulates direct task execution with Claude SDK."""
 
     def __init__(self, task_id: int, session: Session, log_dir: Optional[Path] = None):
-        """Initialize executor with task ID and database session."""
+        """Initializes with dependencies for task execution."""
         self.task_id = task_id
         self.session = session
         self.log_dir = log_dir or Path.home() / ".claude-cto" / "logs"
@@ -38,15 +38,13 @@ class TaskExecutor:
         # Setup logging
         log_file = self.log_dir / f"task_{self.task_id}.log"
         file_handler = logging.FileHandler(log_file)
-        file_handler.setFormatter(
-            logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-        )
+        file_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
         task_logger = logging.getLogger(f"task_{self.task_id}")
         task_logger.addHandler(file_handler)
         task_logger.setLevel(logging.INFO)
 
         try:
-            # Update status to running
+            # Update status to running and set PID
             update_task_status(
                 self.session,
                 self.task_id,
@@ -61,11 +59,11 @@ class TaskExecutor:
             task_logger.info(f"Execution prompt: {task.execution_prompt}")
             task_logger.info(f"Model: {task.model}")
 
-            # Configure Claude Code SDK
+            # Configure Claude Code SDK options
             options = ClaudeCodeOptions(
                 cwd=task.working_directory,
                 system_prompt=task.system_prompt,
-                model=task.model,  # Pass the model to Claude SDK
+                model=task.model,
             )
 
             # Execute with Claude Code SDK
@@ -76,7 +74,7 @@ class TaskExecutor:
                 message_count += 1
                 last_message = message
 
-                # Log each message
+                # Process message from SDK stream
                 task_logger.info(f"Message {message_count}: {message}")
 
                 # Update last action cache periodically
@@ -88,7 +86,7 @@ class TaskExecutor:
                         last_action_cache=str(message)[:500],
                     )
 
-            # Task completed successfully
+            # Task completed successfully - finalize status
             final_summary = f"Task completed. Processed {message_count} messages."
             if last_message:
                 final_summary += f" Last: {str(last_message)[:200]}"
@@ -111,7 +109,7 @@ class TaskExecutor:
             }
 
         except Exception as e:
-            # Format error message with relevant details
+            # Capture failures and format error message
             error_type = type(e).__name__
             error_msg = f"Task failed [{error_type}]: {str(e)}"
 
@@ -142,16 +140,12 @@ class TaskExecutor:
             file_handler.close()
 
 
-async def execute_task_async(
-    task_id: int, session: Session, log_dir: Optional[Path] = None
-) -> Dict[str, Any]:
-    """Execute a task asynchronously."""
+async def execute_task_async(task_id: int, session: Session, log_dir: Optional[Path] = None) -> Dict[str, Any]:
+    """Async wrapper for TaskExecutor."""
     executor = TaskExecutor(task_id, session, log_dir)
     return await executor.run()
 
 
-def execute_task_sync(
-    task_id: int, session: Session, log_dir: Optional[Path] = None
-) -> Dict[str, Any]:
-    """Execute a task synchronously (for process pool)."""
+def execute_task_sync(task_id: int, session: Session, log_dir: Optional[Path] = None) -> Dict[str, Any]:
+    """Sync wrapper for process pool usage."""
     return asyncio.run(execute_task_async(task_id, session, log_dir))

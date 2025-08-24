@@ -10,7 +10,7 @@ from datetime import datetime
 
 
 class ErrorCategory(Enum):
-    """Error categorization for monitoring and alerting."""
+    """High-level error classification for monitoring."""
 
     # User errors (4xx equivalent)
     USER_INPUT = "user_input"  # Invalid user input
@@ -31,7 +31,7 @@ class ErrorCategory(Enum):
 
 
 class ErrorSeverity(Enum):
-    """Error severity levels for alerting."""
+    """Priority levels for error alerting."""
 
     DEBUG = "debug"  # Development only
     INFO = "info"  # Informational
@@ -41,7 +41,7 @@ class ErrorSeverity(Enum):
 
 
 class ErrorCode(Enum):
-    """Standardized error codes for claude-cto."""
+    """Trackable error identifiers for consistent error handling."""
 
     # Authentication & Authorization (1xxx)
     AUTH_API_KEY_INVALID = 1001
@@ -88,7 +88,7 @@ class ErrorCode(Enum):
 
 
 class ErrorContext:
-    """Contextual information for error tracking and correlation."""
+    """Context for error tracing across service boundaries."""
 
     def __init__(
         self,
@@ -99,7 +99,7 @@ class ErrorContext:
         request_id: Optional[str] = None,
     ):
         self.task_id = task_id
-        self.correlation_id = correlation_id or str(uuid.uuid4())
+        self.correlation_id = correlation_id or str(uuid.uuid4())  # Traces single logical operation across services
         self.user_id = user_id
         self.session_id = session_id
         self.request_id = request_id
@@ -124,7 +124,7 @@ class ErrorContext:
 
 
 class ErrorMetrics:
-    """Track error metrics for monitoring."""
+    """Counters for application observability."""
 
     def __init__(self):
         self.error_counts: Dict[ErrorCode, int] = {}
@@ -133,9 +133,7 @@ class ErrorMetrics:
         self.recovery_failure: Dict[ErrorCode, int] = {}
         self.last_errors: Dict[ErrorCode, datetime] = {}
 
-    def record_error(
-        self, code: ErrorCode, category: ErrorCategory, recovered: bool = False
-    ) -> None:
+    def record_error(self, code: ErrorCode, category: ErrorCategory, recovered: bool = False) -> None:
         """Record an error occurrence."""
         # Increment counters
         self.error_counts[code] = self.error_counts.get(code, 0) + 1
@@ -196,6 +194,7 @@ def map_sdk_error_to_code(error: Exception) -> ErrorCode:
         ClaudeSDKError,
     )
 
+    # Translates SDK exceptions to internal codes
     error_map = {
         CLINotFoundError: ErrorCode.SDK_CLI_NOT_FOUND,
         CLIConnectionError: ErrorCode.SDK_CLI_CONNECTION,
@@ -213,7 +212,7 @@ def map_sdk_error_to_code(error: Exception) -> ErrorCode:
 
 
 def categorize_error(error: Exception) -> ErrorCategory:
-    """Categorize an error for monitoring."""
+    """Determines broad category through pattern matching."""
     from claude_code_sdk._errors import (
         CLINotFoundError,
         CLIConnectionError,
@@ -252,7 +251,7 @@ def categorize_error(error: Exception) -> ErrorCategory:
 
 
 def get_severity(error: Exception) -> ErrorSeverity:
-    """Determine error severity for alerting."""
+    """Assigns priority level based on exception type."""
     from claude_code_sdk._errors import CLINotFoundError, ProcessError
 
     # Critical errors - need immediate attention

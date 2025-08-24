@@ -7,7 +7,6 @@ import os
 import sys
 import asyncio
 import logging
-import subprocess
 from pathlib import Path
 from typing import Optional, Dict, Any
 from concurrent.futures import ThreadPoolExecutor
@@ -199,9 +198,7 @@ class SoundNotifier:
 
         try:
             loop = asyncio.get_event_loop()
-            await loop.run_in_executor(
-                sound_executor, self._play_sound_sync, self.start_sound
-            )
+            await loop.run_in_executor(sound_executor, self._play_sound_sync, self.start_sound)
         except Exception as e:
             logger.warning(f"Failed to play start sound: {e}")
 
@@ -212,9 +209,7 @@ class SoundNotifier:
 
         try:
             loop = asyncio.get_event_loop()
-            await loop.run_in_executor(
-                sound_executor, self._play_sound_sync, self.success_sound
-            )
+            await loop.run_in_executor(sound_executor, self._play_sound_sync, self.success_sound)
         except Exception as e:
             logger.warning(f"Failed to play success sound: {e}")
 
@@ -225,9 +220,7 @@ class SoundNotifier:
 
         try:
             loop = asyncio.get_event_loop()
-            await loop.run_in_executor(
-                sound_executor, self._play_sound_sync, self.failure_sound
-            )
+            await loop.run_in_executor(sound_executor, self._play_sound_sync, self.failure_sound)
         except Exception as e:
             logger.warning(f"Failed to play failure sound: {e}")
 

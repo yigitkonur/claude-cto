@@ -73,9 +73,7 @@ def get_session():
                 yield session
                 return
         except OperationalError as e:
-            logger.warning(
-                f"Database connection failed (attempt {attempt + 1}/{max_retries}): {e}"
-            )
+            logger.warning(f"Database connection failed (attempt {attempt + 1}/{max_retries}): {e}")
             if attempt < max_retries - 1:
                 import time
 

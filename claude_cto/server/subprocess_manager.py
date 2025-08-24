@@ -7,8 +7,6 @@ import subprocess
 import logging
 import sys
 from typing import Optional, List, Tuple, Union
-from pathlib import Path
-from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +89,7 @@ class SubprocessManager:
                 try:
                     e.kill()
                     logger.info(f"Killed timed-out process: {description}")
-                except:
+                except Exception:
                     pass
 
             return -1, "", f"Command timed out after {timeout} seconds"
@@ -143,9 +141,7 @@ class SubprocessManager:
                 return rc, stdout, stderr
 
             if attempt < max_retries:
-                logger.info(
-                    f"Retrying command (attempt {attempt + 2}/{max_retries + 1})"
-                )
+                logger.info(f"Retrying command (attempt {attempt + 2}/{max_retries + 1})")
                 time.sleep(retry_delay * (2**attempt))  # Exponential backoff
 
         return rc, stdout, stderr
@@ -160,9 +156,7 @@ class SubprocessManager:
         Returns:
             True if command exists, False otherwise
         """
-        check_cmd = (
-            ["which", command] if sys.platform != "win32" else ["where", command]
-        )
+        check_cmd = ["which", command] if sys.platform != "win32" else ["where", command]
         rc, _, _ = self.run_command(check_cmd, timeout=2, capture_output=True)
         return rc == 0
 
@@ -173,14 +167,10 @@ class SubprocessManager:
             from .notification import NotificationManager
 
             notifier = NotificationManager()
-            notifier.notify_error(
-                f"Subprocess timeout: {command[:50]}... (after {timeout}s)"
-            )
+            notifier.notify_error(f"Subprocess timeout: {command[:50]}... (after {timeout}s)")
         except ImportError:
             # Fallback to logging
-            logger.warning(
-                f"Subprocess timeout notification: {command} after {timeout}s"
-            )
+            logger.warning(f"Subprocess timeout notification: {command} after {timeout}s")
 
     def get_stats(self) -> dict:
         """
@@ -205,9 +195,7 @@ class SubprocessManager:
 _subprocess_manager = None
 
 
-def get_subprocess_manager(
-    default_timeout: int = 30, notify_on_timeout: bool = True
-) -> SubprocessManager:
+def get_subprocess_manager(default_timeout: int = 30, notify_on_timeout: bool = True) -> SubprocessManager:
     """
     Get the global subprocess manager instance.
 
@@ -241,9 +229,7 @@ def run_safe_command(
         Tuple of (success, output_or_error)
     """
     manager = get_subprocess_manager()
-    rc, stdout, stderr = manager.run_command(
-        command, timeout=timeout, description=description
-    )
+    rc, stdout, stderr = manager.run_command(command, timeout=timeout, description=description)
 
     if rc == 0:
         return True, stdout

@@ -7,7 +7,7 @@ import json
 import logging
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import Dict, Optional
 from dataclasses import dataclass, asdict
 
 logger = logging.getLogger(__name__)
@@ -79,9 +79,7 @@ class CircuitBreakerPersistence:
                 try:
                     states[key] = CircuitBreakerState.from_dict(state_data)
                 except Exception as e:
-                    logger.warning(
-                        f"Failed to load circuit breaker state for {key}: {e}"
-                    )
+                    logger.warning(f"Failed to load circuit breaker state for {key}: {e}")
 
             logger.info(f"Loaded {len(states)} circuit breaker states from disk")
             return states
@@ -131,9 +129,7 @@ class CircuitBreakerPersistence:
             state=state,
             failure_count=failure_count,
             success_count=success_count,
-            last_failure_time=(
-                last_failure_time.isoformat() if last_failure_time else None
-            ),
+            last_failure_time=(last_failure_time.isoformat() if last_failure_time else None),
         )
 
         self.states[key] = cb_state
@@ -184,7 +180,7 @@ class CircuitBreakerPersistence:
                     last_updated = datetime.fromisoformat(state.last_updated)
                     if last_updated < cutoff:
                         keys_to_remove.append(key)
-                except:
+                except (ValueError, TypeError, KeyError):
                     pass
 
         for key in keys_to_remove:

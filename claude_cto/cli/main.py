@@ -109,9 +109,7 @@ def start_server_in_background() -> bool:
     import socket
     import time
 
-    console.print(
-        "[yellow]⚠️  Server not running. Starting Claude CTO server...[/yellow]"
-    )
+    console.print("[yellow]⚠️  Server not running. Starting Claude CTO server...[/yellow]")
 
     # Find available port
     def is_port_available(host: str, port: int) -> bool:
@@ -158,9 +156,7 @@ def start_server_in_background() -> bool:
 
         # Check if process is still running
         if process.poll() is None:
-            console.print(
-                f"[green]✓ Server started on port {port} (PID: {process.pid})[/green]"
-            )
+            console.print(f"[green]✓ Server started on port {port} (PID: {process.pid})[/green]")
 
             # Update environment variable for this session if using non-default port
             if port != 8000:
@@ -200,9 +196,7 @@ The server starts automatically if not already running.
 def run(
     prompt: Annotated[
         Optional[str],
-        typer.Argument(
-            help="Task prompt or path to file with instructions", metavar="PROMPT"
-        ),
+        typer.Argument(help="Task prompt or path to file with instructions", metavar="PROMPT"),
     ] = None,
     working_dir: Annotated[
         str,
@@ -279,9 +273,7 @@ def run(
     # Validate and add model
     model_lower = model.lower()
     if model_lower not in ["sonnet", "opus", "haiku"]:
-        console.print(
-            f"[red]❌ Invalid model: {model}. Must be one of: sonnet, opus, haiku[/red]"
-        )
+        console.print(f"[red]❌ Invalid model: {model}. Must be one of: sonnet, opus, haiku[/red]")
         raise typer.Exit(1)
     task_data["model"] = model_lower
 
@@ -294,15 +286,11 @@ def run(
             console.print("\n[red]❌ Could not start the server automatically.[/red]\n")
             console.print("[bold yellow]To fix this, try:[/bold yellow]")
             console.print("  1. Start the server manually:")
-            console.print(
-                "     [bright_white]$ claude-cto server start[/bright_white]\n"
-            )
+            console.print("     [bright_white]$ claude-cto server start[/bright_white]\n")
             console.print("  2. Check if port 8000-8010 are available:")
             console.print("     [bright_white]$ lsof -i :8000[/bright_white]\n")
             console.print("  3. Kill any existing servers:")
-            console.print(
-                "     [bright_white]$ pkill -f claude_cto.server[/bright_white]\n"
-            )
+            console.print("     [bright_white]$ pkill -f claude_cto.server[/bright_white]\n")
             raise typer.Exit(1)
 
         # Update server_url if it changed
@@ -311,16 +299,12 @@ def run(
     # Submit task to server
     with httpx.Client() as client:
         try:
-            response = client.post(
-                f"{server_url}/api/v1/tasks", json=task_data, timeout=30.0
-            )
+            response = client.post(f"{server_url}/api/v1/tasks", json=task_data, timeout=30.0)
             response.raise_for_status()
             result = response.json()
 
             # Display task info
-            console.print(
-                f"\n[green]✓[/green] Task created with ID: [bold cyan]{result['id']}[/bold cyan]"
-            )
+            console.print(f"\n[green]✓[/green] Task created with ID: [bold cyan]{result['id']}[/bold cyan]")
             console.print(f"Status: [yellow]{result['status']}[/yellow]")
 
             if not watch:
@@ -370,15 +354,11 @@ def status(
             console.print("\n[red]❌ Could not start the server automatically.[/red]\n")
             console.print("[bold yellow]To fix this, try:[/bold yellow]")
             console.print("  1. Start the server manually:")
-            console.print(
-                "     [bright_white]$ claude-cto server start[/bright_white]\n"
-            )
+            console.print("     [bright_white]$ claude-cto server start[/bright_white]\n")
             console.print("  2. Check if port 8000-8010 are available:")
             console.print("     [bright_white]$ lsof -i :8000[/bright_white]\n")
             console.print("  3. Kill any existing servers:")
-            console.print(
-                "     [bright_white]$ pkill -f claude_cto.server[/bright_white]\n"
-            )
+            console.print("     [bright_white]$ pkill -f claude_cto.server[/bright_white]\n")
             raise typer.Exit(1)
 
         # Update server_url if it changed
@@ -410,11 +390,7 @@ def status(
                 for task in tasks[-10:]:  # Show last 10 tasks
                     description = task.get("last_action_cache", "No description")
                     if description:
-                        description = (
-                            description[:60] + "..."
-                            if len(description) > 60
-                            else description
-                        )
+                        description = description[:60] + "..." if len(description) > 60 else description
                     else:
                         description = "-"
 
@@ -513,15 +489,11 @@ def list():
             console.print("\n[red]❌ Could not start the server automatically.[/red]\n")
             console.print("[bold yellow]To fix this, try:[/bold yellow]")
             console.print("  1. Start the server manually:")
-            console.print(
-                "     [bright_white]$ claude-cto server start[/bright_white]\n"
-            )
+            console.print("     [bright_white]$ claude-cto server start[/bright_white]\n")
             console.print("  2. Check if port 8000-8010 are available:")
             console.print("     [bright_white]$ lsof -i :8000[/bright_white]\n")
             console.print("  3. Kill any existing servers:")
-            console.print(
-                "     [bright_white]$ pkill -f claude_cto.server[/bright_white]\n"
-            )
+            console.print("     [bright_white]$ pkill -f claude_cto.server[/bright_white]\n")
             raise typer.Exit(1)
 
         # Update server_url if it changed
@@ -538,15 +510,9 @@ def list():
                 console.print("[bold]Get started with:[/bold]")
                 console.print('  $ claude-cto run "your first task"\n')
                 console.print("[dim]Examples:[/dim]")
-                console.print(
-                    '  • claude-cto run "create a Python script that sorts files by date"'
-                )
-                console.print(
-                    '  • claude-cto run "analyze this codebase and find bugs"'
-                )
-                console.print(
-                    '  • claude-cto run "write unit tests for all functions"\n'
-                )
+                console.print('  • claude-cto run "create a Python script that sorts files by date"')
+                console.print('  • claude-cto run "analyze this codebase and find bugs"')
+                console.print('  • claude-cto run "write unit tests for all functions"\n')
                 return
 
             # Create tasks table
@@ -571,11 +537,7 @@ def list():
                     # Create a short directory context for display
                     from pathlib import Path
 
-                    dir_name = (
-                        Path(working_dir).name
-                        if working_dir != "unknown"
-                        else "unknown"
-                    )
+                    dir_name = Path(working_dir).name if working_dir != "unknown" else "unknown"
                     if len(dir_name) > 15:
                         dir_name = dir_name[:12] + "..."
 
@@ -598,20 +560,14 @@ def list():
 
             # Show helpful guidance about logs
             console.print("\n[bold blue]📋 Log Files:[/bold blue]")
-            console.print(
-                "  [dim]Summary logs:[/dim]   ~/.claude-cto/tasks/task_<ID>_<context>_*_summary.log"
-            )
-            console.print(
-                "  [dim]Detailed logs:[/dim]  ~/.claude-cto/tasks/task_<ID>_<context>_*_detailed.log"
-            )
+            console.print("  [dim]Summary logs:[/dim]   ~/.claude-cto/tasks/task_<ID>_<context>_*_summary.log")
+            console.print("  [dim]Detailed logs:[/dim]  ~/.claude-cto/tasks/task_<ID>_<context>_*_detailed.log")
             console.print("  [dim]Global log:[/dim]     ~/.claude-cto/claude-cto.log")
             console.print("\n[bold]💡 View logs with:[/bold]")
             console.print("  $ ls ~/.claude-cto/tasks/task_<ID>_*")
             console.print("  $ tail -f ~/.claude-cto/tasks/task_<ID>_*_summary.log")
             console.print("  $ tail -f ~/.claude-cto/claude-cto.log")
-            console.print(
-                "\n[dim]Note: Log filenames now include directory context for parallel instances[/dim]"
-            )
+            console.print("\n[dim]Note: Log filenames now include directory context for parallel instances[/dim]")
 
         except httpx.HTTPError as e:
             console.print(f"[red]Error fetching tasks: {e}[/red]")
@@ -629,9 +585,7 @@ async def watch_status(task_id: int):
         while True:
             async with httpx.AsyncClient() as client:
                 try:
-                    response = await client.get(
-                        f"{server_url}/api/v1/tasks/{task_id}", timeout=10.0
-                    )
+                    response = await client.get(f"{server_url}/api/v1/tasks/{task_id}", timeout=10.0)
                     response.raise_for_status()
                     task = response.json()
 
@@ -647,9 +601,7 @@ async def watch_status(task_id: int):
                     elif task["status"] == "error":
                         status_color = "red"
 
-                    table.add_row(
-                        "Status", f"[{status_color}]{task['status']}[/{status_color}]"
-                    )
+                    table.add_row("Status", f"[{status_color}]{task['status']}[/{status_color}]")
                     table.add_row("Created", task["created_at"])
 
                     if task.get("started_at"):
@@ -684,18 +636,10 @@ async def watch_status(task_id: int):
 
 @app.command()
 def orchestrate(
-    tasks_file: Path = typer.Argument(
-        ..., help="Path to JSON file containing task orchestration definition"
-    ),
-    server_url: str = typer.Option(
-        None, "--server-url", help="Override the default server URL"
-    ),
-    wait: bool = typer.Option(
-        False, "--wait", "-w", help="Wait for orchestration to complete"
-    ),
-    poll_interval: int = typer.Option(
-        5, "--poll-interval", help="Polling interval in seconds when waiting"
-    ),
+    tasks_file: Path = typer.Argument(..., help="Path to JSON file containing task orchestration definition"),
+    server_url: str = typer.Option(None, "--server-url", help="Override the default server URL"),
+    wait: bool = typer.Option(False, "--wait", "-w", help="Wait for orchestration to complete"),
+    poll_interval: int = typer.Option(5, "--poll-interval", help="Polling interval in seconds when waiting"),
 ):
     """
     Create and execute a task orchestration from a JSON file.
@@ -753,9 +697,7 @@ def orchestrate(
 
     # Create orchestration
     try:
-        response = httpx.post(
-            f"{url}/api/v1/orchestrations", json=orchestration_data, timeout=30.0
-        )
+        response = httpx.post(f"{url}/api/v1/orchestrations", json=orchestration_data, timeout=30.0)
         response.raise_for_status()
         result = response.json()
 
@@ -769,9 +711,7 @@ def orchestrate(
             delay = task.get("initial_delay", 0)
             dep_str = f" <- {deps}" if deps else ""
             delay_str = f" (delay: {delay}s)" if delay else ""
-            console.print(
-                f"  • {task['identifier']} (#{task['task_id']}){dep_str}{delay_str}"
-            )
+            console.print(f"  • {task['identifier']} (#{task['task_id']}){dep_str}{delay_str}")
 
         # Wait for completion if requested
         if wait:
@@ -788,9 +728,7 @@ def orchestrate(
                     time.sleep(poll_interval)
 
                     # Check status
-                    status_response = httpx.get(
-                        f"{url}/api/v1/orchestrations/{orch_id}"
-                    )
+                    status_response = httpx.get(f"{url}/api/v1/orchestrations/{orch_id}")
                     if status_response.status_code == 200:
                         status_data = status_response.json()
 
@@ -813,13 +751,9 @@ def orchestrate(
 
                             # Display final results
                             if status_data["status"] == "completed":
-                                console.print(
-                                    "\n[green]✓ Orchestration completed successfully![/green]"
-                                )
+                                console.print("\n[green]✓ Orchestration completed successfully![/green]")
                             else:
-                                console.print(
-                                    f"\n[red]✗ Orchestration {status_data['status']}[/red]"
-                                )
+                                console.print(f"\n[red]✗ Orchestration {status_data['status']}[/red]")
 
                             # Show task summary
                             console.print("\n[bold cyan]Task Summary:[/bold cyan]")
@@ -838,9 +772,7 @@ def orchestrate(
                                 )
 
                                 if task_info.get("error_message"):
-                                    console.print(
-                                        f"    Error: {task_info['error_message']}"
-                                    )
+                                    console.print(f"    Error: {task_info['error_message']}")
 
                             break
 
@@ -852,12 +784,8 @@ def orchestrate(
 @app.command()
 def orchestration_status(
     orchestration_id: int = typer.Argument(..., help="Orchestration ID"),
-    server_url: str = typer.Option(
-        None, "--server-url", help="Override the default server URL"
-    ),
-    watch: bool = typer.Option(
-        False, "--watch", "-w", help="Watch status until completion"
-    ),
+    server_url: str = typer.Option(None, "--server-url", help="Override the default server URL"),
+    watch: bool = typer.Option(False, "--watch", "-w", help="Watch status until completion"),
 ):
     """Check the status of an orchestration."""
     url = server_url or get_server_url()
@@ -878,9 +806,7 @@ def orchestration_status(
                 console.clear()
 
                 # Display header
-                console.print(
-                    f"[bold cyan]Orchestration #{orchestration_id}[/bold cyan]"
-                )
+                console.print(f"[bold cyan]Orchestration #{orchestration_id}[/bold cyan]")
                 console.print("=" * 50)
 
                 # Display summary
@@ -910,14 +836,10 @@ def orchestration_status(
                         "pending": "○",
                     }.get(task["status"], "?")
 
-                    console.print(
-                        f"  {status_icon} {task['identifier']} (#{task['task_id']}): {task['status']}"
-                    )
+                    console.print(f"  {status_icon} {task['identifier']} (#{task['task_id']}): {task['status']}")
 
                     if task["depends_on"]:
-                        console.print(
-                            f"    Dependencies: {', '.join(task['depends_on'])}"
-                        )
+                        console.print(f"    Dependencies: {', '.join(task['depends_on'])}")
                     if task["error_message"]:
                         console.print(f"    Error: {task['error_message']}")
 
@@ -951,12 +873,8 @@ def list_orchestrations(
         "--status",
         help="Filter by status (pending, running, completed, failed, cancelled)",
     ),
-    limit: int = typer.Option(
-        10, "--limit", help="Maximum number of orchestrations to display"
-    ),
-    server_url: str = typer.Option(
-        None, "--server-url", help="Override the default server URL"
-    ),
+    limit: int = typer.Option(10, "--limit", help="Maximum number of orchestrations to display"),
+    server_url: str = typer.Option(None, "--server-url", help="Override the default server URL"),
 ):
     """List all orchestrations."""
     url = server_url or get_server_url()
@@ -1026,9 +944,7 @@ Use this command only if you need manual control.[/dim]
 def server_start(
     host: Annotated[str, typer.Option("--host", "-h", help="Server host")] = "0.0.0.0",
     port: Annotated[int, typer.Option("--port", "-p", help="Server port")] = 8000,
-    reload: Annotated[
-        bool, typer.Option("--reload", "-r", help="Enable auto-reload")
-    ] = False,
+    reload: Annotated[bool, typer.Option("--reload", "-r", help="Enable auto-reload")] = False,
     auto_port: Annotated[
         bool,
         typer.Option(
@@ -1064,9 +980,7 @@ def server_start(
             if is_port_available(host, port):
                 break
             if attempt == 0:
-                console.print(
-                    f"[yellow]⚠️  Port {port} is in use, trying alternatives...[/yellow]"
-                )
+                console.print(f"[yellow]⚠️  Port {port} is in use, trying alternatives...[/yellow]")
             port += 1
         else:
             console.print(
@@ -1113,9 +1027,7 @@ def server_start(
 
         # Check if process is still running
         if process.poll() is None:
-            console.print(
-                f"\n[green]✓ Server started successfully![/green] (PID: {process.pid})"
-            )
+            console.print(f"\n[green]✓ Server started successfully![/green] (PID: {process.pid})")
             console.print(f"[green]✓ API ready at:[/green] http://{host}:{port}\n")
 
             # Create informative panel about what this server does
@@ -1132,15 +1044,11 @@ def server_start(
 
             info_text.append("📝 How to submit tasks:\n", style="bold cyan")
             info_text.append("   Quick task:     ", style="dim")
-            info_text.append(
-                'claude-cto run "Your prompt here"\n', style="bright_white"
-            )
+            info_text.append('claude-cto run "Your prompt here"\n', style="bright_white")
             info_text.append("   From file:      ", style="dim")
             info_text.append("claude-cto run prompt.txt\n", style="bright_white")
             info_text.append("   With watching:  ", style="dim")
-            info_text.append(
-                'claude-cto run "Your prompt" --watch\n', style="bright_white"
-            )
+            info_text.append('claude-cto run "Your prompt" --watch\n', style="bright_white")
             info_text.append("   From pipe:      ", style="dim")
             info_text.append(
                 'git diff | claude-cto run "Review these changes"\n\n',
@@ -1154,9 +1062,7 @@ def server_start(
             info_text.append("claude-cto status <task-id>\n\n", style="bright_white")
 
             info_text.append("💡 When to use:\n", style="bold magenta")
-            info_text.append(
-                "   • Complex refactoring or code generation tasks\n", style="dim"
-            )
+            info_text.append("   • Complex refactoring or code generation tasks\n", style="dim")
             info_text.append("   • Running multiple tasks in parallel\n", style="dim")
             info_text.append("   • Tasks that might take 5+ minutes\n", style="dim")
             info_text.append(
@@ -1173,26 +1079,18 @@ def server_start(
                 )
             )
 
-            console.print(
-                f"\n[dim]To stop server: kill {process.pid} or Ctrl+C in the terminal[/dim]"
-            )
-            console.print(
-                "[dim]Server logs: Check your terminal or ~/.claude-cto/logs/[/dim]"
-            )
+            console.print(f"\n[dim]To stop server: kill {process.pid} or Ctrl+C in the terminal[/dim]")
+            console.print("[dim]Server logs: Check your terminal or ~/.claude-cto/logs/[/dim]")
 
             # If using a non-default port, suggest setting environment variable
             if port != 8000:
-                console.print(
-                    f"\n[yellow]⚠️  Note: Server running on non-default port {port}[/yellow]"
-                )
+                console.print(f"\n[yellow]⚠️  Note: Server running on non-default port {port}[/yellow]")
                 console.print(
                     f"[dim]Set CLAUDE_CTO_SERVER_URL=http://localhost:{port} to use this server with the CLI[/dim]"
                 )
             console.print()
         else:
-            stderr = (
-                process.stderr.read().decode() if process.stderr else "Unknown error"
-            )
+            stderr = process.stderr.read().decode() if process.stderr else "Unknown error"
             console.print(f"[red]Failed to start server: {stderr}[/red]")
             raise typer.Exit(1)
 
@@ -1275,9 +1173,7 @@ def migrate():
         if manager.check_schema_compatibility():
             console.print("[green]✓ Schema compatibility check passed[/green]")
         else:
-            console.print(
-                "[yellow]⚠ Schema compatibility check failed - manual intervention may be required[/yellow]"
-            )
+            console.print("[yellow]⚠ Schema compatibility check failed - manual intervention may be required[/yellow]")
 
     except Exception as e:
         console.print(f"[red]✗ Migration failed: {e}[/red]")

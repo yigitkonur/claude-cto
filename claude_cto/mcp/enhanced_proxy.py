@@ -4,7 +4,6 @@ Uses identifier-based task management for better tracking and dependency resolut
 """
 
 import os
-import json
 from typing import Optional, Dict, Any, List
 from datetime import datetime, timedelta
 
@@ -82,12 +81,8 @@ def create_enhanced_proxy_server(api_url: Optional[str] = None) -> FastMCP:
         system_prompt: Optional[str] = None,
         model: str = "sonnet",
         depends_on: Optional[List[str]] = None,  # Optional task identifiers to wait for
-        wait_after_dependencies: Optional[
-            float
-        ] = None,  # Optional delay in seconds after deps complete
-        orchestration_group: Optional[
-            str
-        ] = None,  # Optional group identifier for related tasks
+        wait_after_dependencies: Optional[float] = None,  # Optional delay in seconds after deps complete
+        orchestration_group: Optional[str] = None,  # Optional group identifier for related tasks
     ) -> Dict[str, Any]:
         """
         Create a task with optional dependencies and delays - the ultimate delegation tool.
@@ -215,10 +210,7 @@ def create_enhanced_proxy_server(api_url: Optional[str] = None) -> FastMCP:
 
             # Validate dependencies exist in the same orchestration group
             if depends_on:
-                existing_identifiers = [
-                    t["identifier"]
-                    for t in _active_orchestrations[orchestration_group]["tasks"]
-                ]
+                existing_identifiers = [t["identifier"] for t in _active_orchestrations[orchestration_group]["tasks"]]
                 for dep in depends_on:
                     if dep not in existing_identifiers:
                         return {
@@ -374,9 +366,7 @@ def create_enhanced_proxy_server(api_url: Optional[str] = None) -> FastMCP:
                 "hint": "Create tasks with this orchestration_group first",
             }
 
-        orchestration_data = {
-            "tasks": _active_orchestrations[orchestration_group]["tasks"]
-        }
+        orchestration_data = {"tasks": _active_orchestrations[orchestration_group]["tasks"]}
 
         async with httpx.AsyncClient() as client:
             response = await client.post(
@@ -390,18 +380,14 @@ def create_enhanced_proxy_server(api_url: Optional[str] = None) -> FastMCP:
 
                 # Store task ID mappings
                 for task in result["tasks"]:
-                    _active_orchestrations[orchestration_group]["identifier_map"][
-                        task["identifier"]
-                    ] = task["task_id"]
+                    _active_orchestrations[orchestration_group]["identifier_map"][task["identifier"]] = task["task_id"]
 
                 return {
                     "status": "submitted",
                     "orchestration_id": result["orchestration_id"],
                     "orchestration_group": orchestration_group,
                     "total_tasks": len(result["tasks"]),
-                    "task_mappings": _active_orchestrations[orchestration_group][
-                        "identifier_map"
-                    ],
+                    "task_mappings": _active_orchestrations[orchestration_group]["identifier_map"],
                     "message": f"Orchestration submitted with {len(result['tasks'])} tasks",
                 }
             else:

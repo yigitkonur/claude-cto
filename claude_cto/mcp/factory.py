@@ -9,20 +9,11 @@ from typing import Optional, Literal
 
 from fastmcp import FastMCP
 from .standalone import create_standalone_server
-from .proxy import create_proxy_server
 from .enhanced_proxy import create_enhanced_proxy_server
 
 
 def is_rest_api_available(api_url: str = None) -> bool:
-    """
-    Check if REST API server is available.
-
-    Args:
-        api_url: URL to check (defaults to environment or localhost)
-
-    Returns:
-        True if API is available, False otherwise
-    """
+    """Simple health check to detect running server."""
     if not api_url:
         api_url = os.getenv("CLAUDE_CTO_API_URL", "http://localhost:8000")
 
@@ -39,24 +30,7 @@ def create_mcp_server(
     db_path: Optional[str] = None,
     log_dir: Optional[str] = None,
 ) -> FastMCP:
-    """
-    Create MCP server with intelligent mode detection.
-
-    Args:
-        mode: Server mode - "auto" (detect), "standalone", or "proxy"
-        api_url: REST API URL for proxy mode
-        db_path: Database path for standalone mode
-        log_dir: Log directory for standalone mode
-
-    Returns:
-        FastMCP server instance
-
-    Environment Variables:
-        CLAUDE_CTO_MODE: Override mode (standalone/proxy/auto)
-        CLAUDE_CTO_API_URL: REST API URL for proxy mode
-        CLAUDE_CTO_DB: Database path for standalone mode
-        CLAUDE_CTO_LOG_DIR: Log directory for standalone mode
-    """
+    """Main factory with intelligent mode detection."""
 
     # Check environment for mode override
     env_mode = os.getenv("CLAUDE_CTO_MODE", "").lower()
@@ -68,14 +42,12 @@ def create_mcp_server(
         # Check if REST API is available
         if is_rest_api_available(api_url):
             mode = "proxy"
-            # Silent mode - MCP servers should not print to stdout
         else:
             mode = "standalone"
-            # Silent mode - MCP servers should not print to stdout
 
     # Create appropriate server
     if mode == "proxy":
-        # Use enhanced proxy with dependency support
+        # Return enhanced proxy with dependency support
         return create_enhanced_proxy_server(api_url)
     else:  # standalone
         # Get paths from environment if not provided
@@ -108,7 +80,7 @@ def create_proxy(**kwargs) -> FastMCP:
 
 
 def run_stdio():
-    """Entry point for claude-cto-mcp command."""
+    """Entry point for claude-cto-mcp CLI command."""
     import asyncio
 
     server = create_mcp_server()

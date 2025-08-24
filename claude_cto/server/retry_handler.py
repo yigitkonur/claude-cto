@@ -13,8 +13,6 @@ from datetime import datetime
 import logging
 
 from .circuit_breaker_persistence import (
-    CircuitBreakerPersistence,
-    CircuitBreakerState,
     get_circuit_breaker_persistence,
 )
 
@@ -99,10 +97,8 @@ class CircuitBreaker:
             self.success_count = persisted_state.success_count
             if persisted_state.last_failure_time:
                 try:
-                    self.last_failure_time = datetime.fromisoformat(
-                        persisted_state.last_failure_time
-                    )
-                except:
+                    self.last_failure_time = datetime.fromisoformat(persisted_state.last_failure_time)
+                except (ValueError, TypeError):
                     self.last_failure_time = None
             else:
                 self.last_failure_time = None
@@ -138,9 +134,7 @@ class CircuitBreaker:
 
         if self.state == CircuitState.CLOSED:
             if self.failure_count >= self.config.circuit_breaker_threshold:
-                logger.warning(
-                    f"Circuit breaker opening after {self.failure_count} failures"
-                )
+                logger.warning(f"Circuit breaker opening after {self.failure_count} failures")
                 self.state = CircuitState.OPEN
         elif self.state == CircuitState.HALF_OPEN:
             # Failed while testing, go back to open
@@ -188,9 +182,7 @@ class CircuitBreaker:
             "state": self.state.value,
             "failure_count": self.failure_count,
             "success_count": self.success_count,
-            "last_failure": (
-                self.last_failure_time.isoformat() if self.last_failure_time else None
-            ),
+            "last_failure": (self.last_failure_time.isoformat() if self.last_failure_time else None),
         }
 
 
@@ -214,9 +206,7 @@ class RetryHandler:
         if error_type and error_type in config.error_configs:
             error_config = config.error_configs[error_type]
             initial_delay = error_config.get("initial_delay", config.initial_delay)
-            exponential_base = error_config.get(
-                "exponential_base", config.exponential_base
-            )
+            exponential_base = error_config.get("exponential_base", config.exponential_base)
         else:
             initial_delay = config.initial_delay
             exponential_base = config.exponential_base
@@ -251,9 +241,7 @@ class RetryHandler:
 
         if "rate limit" in error_msg or "429" in error_msg:
             return "rate_limit"
-        elif isinstance(
-            error, (ConnectionError, ConnectionRefusedError, ConnectionResetError)
-        ):
+        elif isinstance(error, (ConnectionError, ConnectionRefusedError, ConnectionResetError)):
             return "connection"
         elif isinstance(error, (TimeoutError, asyncio.TimeoutError)):
             return "timeout"
@@ -280,9 +268,7 @@ class RetryHandler:
         # Check attempt limit
         error_type = self._classify_error(error)
         if error_type and error_type in self.config.error_configs:
-            max_attempts = self.config.error_configs[error_type].get(
-                "max_attempts", self.config.max_attempts
-            )
+            max_attempts = self.config.error_configs[error_type].get("max_attempts", self.config.max_attempts)
         else:
             max_attempts = self.config.max_attempts
 
@@ -317,9 +303,7 @@ class RetryHandler:
         for attempt in range(self.config.max_attempts):
             # Check circuit breaker
             if not circuit_breaker.should_attempt():
-                logger.warning(
-                    f"Circuit breaker open for {circuit_key}, skipping attempt"
-                )
+                logger.warning(f"Circuit breaker open for {circuit_key}, skipping attempt")
                 raise RuntimeError(f"Circuit breaker open for {circuit_key}")
 
             try:
@@ -342,9 +326,7 @@ class RetryHandler:
                     raise
 
                 if attempt + 1 >= self.config.max_attempts:
-                    logger.error(
-                        f"Max retry attempts ({self.config.max_attempts}) exhausted"
-                    )
+                    logger.error(f"Max retry attempts ({self.config.max_attempts}) exhausted")
                     raise
 
                 # Calculate delay
@@ -353,8 +335,7 @@ class RetryHandler:
 
                 # Log retry attempt
                 logger.warning(
-                    f"Attempt {attempt + 1}/{self.config.max_attempts} failed: {e}. "
-                    f"Retrying in {delay:.1f}s..."
+                    f"Attempt {attempt + 1}/{self.config.max_attempts} failed: {e}. " f"Retrying in {delay:.1f}s..."
                 )
 
                 # Call retry callback if provided
@@ -386,9 +367,7 @@ class RetryHandler:
         for attempt in range(self.config.max_attempts):
             # Check circuit breaker
             if not circuit_breaker.should_attempt():
-                logger.warning(
-                    f"Circuit breaker open for {circuit_key}, skipping attempt"
-                )
+                logger.warning(f"Circuit breaker open for {circuit_key}, skipping attempt")
                 raise RuntimeError(f"Circuit breaker open for {circuit_key}")
 
             try:
@@ -411,9 +390,7 @@ class RetryHandler:
                     raise
 
                 if attempt + 1 >= self.config.max_attempts:
-                    logger.error(
-                        f"Max retry attempts ({self.config.max_attempts}) exhausted"
-                    )
+                    logger.error(f"Max retry attempts ({self.config.max_attempts}) exhausted")
                     raise
 
                 # Calculate delay
@@ -422,8 +399,7 @@ class RetryHandler:
 
                 # Log retry attempt
                 logger.warning(
-                    f"Attempt {attempt + 1}/{self.config.max_attempts} failed: {e}. "
-                    f"Retrying in {delay:.1f}s..."
+                    f"Attempt {attempt + 1}/{self.config.max_attempts} failed: {e}. " f"Retrying in {delay:.1f}s..."
                 )
 
                 # Call retry callback if provided
@@ -445,9 +421,7 @@ class RetryHandler:
                 "initial_delay": self.config.initial_delay,
                 "max_delay": self.config.max_delay,
             },
-            "circuit_breakers": {
-                key: cb.get_status() for key, cb in self.circuit_breakers.items()
-            },
+            "circuit_breakers": {key: cb.get_status() for key, cb in self.circuit_breakers.items()},
         }
 
 

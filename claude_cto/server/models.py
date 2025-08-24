@@ -48,15 +48,11 @@ class TaskDB(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     started_at: Optional[datetime] = None
     ended_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = Field(
-        default=None, sa_column_kwargs={"onupdate": datetime.utcnow}
-    )
+    updated_at: Optional[datetime] = Field(default=None, sa_column_kwargs={"onupdate": datetime.utcnow})
 
     # Orchestration fields
     orchestration_id: Optional[int] = Field(default=None, index=True)
-    identifier: Optional[str] = Field(
-        default=None, index=True
-    )  # User-defined identifier within orchestration
+    identifier: Optional[str] = Field(default=None, index=True)  # User-defined identifier within orchestration
     depends_on: Optional[str] = None  # JSON array of task identifiers
     initial_delay: Optional[float] = None  # Seconds to wait after dependencies complete
     dependency_failed_at: Optional[datetime] = None  # When marked as skipped
@@ -68,9 +64,7 @@ class OrchestrationDB(SQLModel, table=True):
     __tablename__ = "orchestrations"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    status: str = Field(
-        default="pending", index=True
-    )  # pending, running, completed, failed, cancelled
+    status: str = Field(default="pending", index=True)  # pending, running, completed, failed, cancelled
     created_at: datetime = Field(default_factory=datetime.utcnow)
     started_at: Optional[datetime] = None
     ended_at: Optional[datetime] = None
@@ -148,17 +142,13 @@ class TaskRead(BaseModel):
 class TaskOrchestrationItem(BaseModel):
     """Single task definition within an orchestration."""
 
-    identifier: str = Field(
-        ..., min_length=1, max_length=100
-    )  # User-defined task identifier
+    identifier: str = Field(..., min_length=1, max_length=100)  # User-defined task identifier
     execution_prompt: str = Field(..., min_length=10)
     working_directory: str = Field(..., min_length=1)
     system_prompt: Optional[str] = Field(None, max_length=1000)
     model: Optional[ClaudeModel] = ClaudeModel.SONNET
     depends_on: Optional[List[str]] = None  # List of identifiers
-    initial_delay: Optional[float] = Field(
-        None, ge=0, le=3600
-    )  # 0-3600 seconds (1 hour max)
+    initial_delay: Optional[float] = Field(None, ge=0, le=3600)  # 0-3600 seconds (1 hour max)
 
     @field_validator("identifier")
     @classmethod
@@ -169,9 +159,7 @@ class TaskOrchestrationItem(BaseModel):
         import re
 
         if not re.match(r"^[a-zA-Z0-9_-]+$", v):
-            raise ValueError(
-                "Identifier can only contain letters, numbers, underscore, and hyphen"
-            )
+            raise ValueError("Identifier can only contain letters, numbers, underscore, and hyphen")
         return v.strip()
 
     @field_validator("execution_prompt")
@@ -196,9 +184,7 @@ class OrchestrationCreate(BaseModel):
 
     @field_validator("tasks")
     @classmethod
-    def validate_tasks(
-        cls, v: List[TaskOrchestrationItem]
-    ) -> List[TaskOrchestrationItem]:
+    def validate_tasks(cls, v: List[TaskOrchestrationItem]) -> List[TaskOrchestrationItem]:
         if not v:
             raise ValueError("At least one task is required")
 

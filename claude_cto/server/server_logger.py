@@ -56,9 +56,7 @@ def setup_server_logger(debug: bool = False) -> logging.Logger:
         logger.removeHandler(handler)
 
     # Main server log (10MB max, keep 5 backups)
-    server_handler = RotatingFileHandler(
-        log_dir / "server.log", maxBytes=10 * 1024 * 1024, backupCount=5  # 10MB
-    )
+    server_handler = RotatingFileHandler(log_dir / "server.log", maxBytes=10 * 1024 * 1024, backupCount=5)  # 10MB
     server_handler.setLevel(logging.INFO)
     server_formatter = logging.Formatter(
         "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -68,9 +66,7 @@ def setup_server_logger(debug: bool = False) -> logging.Logger:
     logger.addHandler(server_handler)
 
     # Error log (5MB max, keep 10 backups)
-    error_handler = RotatingFileHandler(
-        log_dir / "error.log", maxBytes=5 * 1024 * 1024, backupCount=10  # 5MB
-    )
+    error_handler = RotatingFileHandler(log_dir / "error.log", maxBytes=5 * 1024 * 1024, backupCount=10)  # 5MB
     error_handler.setLevel(logging.ERROR)
     error_formatter = logging.Formatter(
         "%(asctime)s - %(name)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s\n%(exc_info)s",
@@ -104,12 +100,8 @@ def setup_access_logger() -> logging.Logger:
         logger.removeHandler(handler)
 
     # Access log (20MB max, keep 3 backups)
-    access_handler = RotatingFileHandler(
-        log_dir / "access.log", maxBytes=20 * 1024 * 1024, backupCount=3  # 20MB
-    )
-    access_formatter = logging.Formatter(
-        "%(asctime)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
-    )
+    access_handler = RotatingFileHandler(log_dir / "access.log", maxBytes=20 * 1024 * 1024, backupCount=3)  # 20MB
+    access_formatter = logging.Formatter("%(asctime)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
     access_handler.setFormatter(access_formatter)
     logger.addHandler(access_handler)
 
@@ -138,11 +130,7 @@ def log_crash(error: Exception, context: Optional[Dict[str, Any]] = None):
         "python_version": sys.version,
         "platform": sys.platform,
         "context": context or {},
-        "environment": {
-            k: v
-            for k, v in os.environ.items()
-            if k.startswith("CLAUDE_") or k == "ANTHROPIC_API_KEY"
-        },
+        "environment": {k: v for k, v in os.environ.items() if k.startswith("CLAUDE_") or k == "ANTHROPIC_API_KEY"},
     }
 
     # Sanitize sensitive data
@@ -181,20 +169,16 @@ async def log_request_response(request, call_next):
 
         # Log response
         duration = (datetime.now(timezone.utc) - start_time).total_seconds()
-        access_logger.info(
-            f"RESPONSE [{request_id}] {response.status_code} " f"in {duration:.3f}s"
-        )
+        access_logger.info(f"RESPONSE [{request_id}] {response.status_code} " f"in {duration:.3f}s")
 
         # Log errors
         if response.status_code >= 500:
             server_logger.error(
-                f"Server error on {request.method} {request.url.path}: "
-                f"Status {response.status_code}"
+                f"Server error on {request.method} {request.url.path}: " f"Status {response.status_code}"
             )
         elif response.status_code >= 400:
             server_logger.warning(
-                f"Client error on {request.method} {request.url.path}: "
-                f"Status {response.status_code}"
+                f"Client error on {request.method} {request.url.path}: " f"Status {response.status_code}"
             )
 
         return response
@@ -213,8 +197,7 @@ async def log_request_response(request, call_next):
         )
 
         access_logger.error(
-            f"CRASH [{request_id}] 500 Internal Server Error "
-            f"(crash_id: {crash_id}) in {duration:.3f}s"
+            f"CRASH [{request_id}] 500 Internal Server Error " f"(crash_id: {crash_id}) in {duration:.3f}s"
         )
 
         raise
@@ -230,9 +213,7 @@ def setup_exception_handler():
             return
 
         logger = logging.getLogger("claude_cto.server")
-        logger.critical(
-            "Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback)
-        )
+        logger.critical("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
 
         # Log crash
         log_crash(exc_value, {"type": "uncaught_exception"})
@@ -272,9 +253,7 @@ async def log_lifecycle(app_name: str = "claude-cto"):
 
 
 # Database operation logging
-def log_database_operation(
-    operation: str, details: Dict[str, Any], error: Optional[Exception] = None
-):
+def log_database_operation(operation: str, details: Dict[str, Any], error: Optional[Exception] = None):
     """Log database operations for debugging."""
     logger = logging.getLogger("claude_cto.server.db")
 

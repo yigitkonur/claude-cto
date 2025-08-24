@@ -3,16 +3,11 @@ Database migration manager for claude-cto.
 Handles schema versioning and automatic migrations.
 """
 
-import os
 import logging
 from pathlib import Path
 from typing import Optional
 from datetime import datetime
 
-from alembic import command
-from alembic.config import Config
-from alembic.runtime.migration import MigrationContext
-from alembic.operations import Operations
 from sqlalchemy import (
     create_engine,
     text,
@@ -52,7 +47,7 @@ class MigrationManager:
         """Create migration tracking table if it doesn't exist."""
         metadata = MetaData()
 
-        migration_table = Table(
+        Table(
             "schema_migrations",
             metadata,
             Column("version", Integer, primary_key=True),
@@ -66,9 +61,7 @@ class MigrationManager:
         """Get current schema version from database."""
         try:
             with self.engine.connect() as conn:
-                result = conn.execute(
-                    text("SELECT MAX(version) FROM schema_migrations")
-                ).scalar()
+                result = conn.execute(text("SELECT MAX(version) FROM schema_migrations")).scalar()
                 return result or 0
         except OperationalError:
             # Table doesn't exist yet
