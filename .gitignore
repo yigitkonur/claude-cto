@@ -173,14 +173,16 @@ mcp_server_*.py
 claude_cto_mcp.py
 files-to-read/
 scripts/
+!scripts/bump_version.py
 
 # Ignore all markdown, text, and log files
 *.md
 *.txt
 *.log
 
-# Exception: Keep README.md
+# Exception: Keep README.md and VERSION_MANAGEMENT.md
 !README.md
+!VERSION_MANAGEMENT.md
 
 # Homebrew tap (separate repository - don't commit)
 homebrew-claude-cto/
