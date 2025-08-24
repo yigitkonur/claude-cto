@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.6.2] - 2025-08-24
+
+- style: apply black formatting and fix syntax errors
+- chore: bump version to 0.6.1 [skip ci]
+- refactor: remove all tests and simplify CI workflow
+- fix: disable pytest coverage in CI workflow
+- fix: resolve GitHub Actions workflow issues
+
+
 ## [0.6.1] - 2025-08-24
 
 - refactor: remove all tests and simplify CI workflow
