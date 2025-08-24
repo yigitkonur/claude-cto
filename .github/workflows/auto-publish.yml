@@ -140,6 +140,13 @@ jobs:
         username: yigitkonur35
         password: ${{ secrets.DOCKER_TOKEN }}
     
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.HOMEBREW_GITHUB_API_TOKEN }}
+    
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
       with:
@@ -149,6 +156,8 @@ jobs:
         tags: |
           yigitkonur35/claude-cto:latest
           yigitkonur35/claude-cto:${{ env.NEW_VERSION }}
+          ghcr.io/${{ github.repository }}:latest
+          ghcr.io/${{ github.repository }}:${{ env.NEW_VERSION }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
@@ -168,6 +177,8 @@ jobs:
           Docker Images:
           - `yigitkonur35/claude-cto:${{ env.NEW_VERSION }}`
           - `yigitkonur35/claude-cto:latest`
+          - `ghcr.io/${{ github.repository }}:${{ env.NEW_VERSION }}`
+          - `ghcr.io/${{ github.repository }}:latest`
         draft: false
         prerelease: false
 
