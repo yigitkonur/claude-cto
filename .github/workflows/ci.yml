@@ -57,7 +57,7 @@ jobs:
     
     - name: Run tests
       run: |
-        poetry run pytest tests/test_basic.py tests/unit/server/test_models.py -v
+        poetry run pytest tests/test_basic.py tests/unit/server/test_models.py -v --no-cov
     
     - name: Check code quality
       run: |
