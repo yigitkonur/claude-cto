@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.7.4] - 2025-08-24
+
+- fix: use HOMEBREW_TAP_TOKEN for GHCR authentication
+- chore: bump version to 0.7.3 [skip ci]
+- fix: use HOMEBREW_GITHUB_API_TOKEN for GHCR publishing to enable dual registry support
+- chore: bump version to 0.7.2 [skip ci]
+- fix: remove GHCR push due to permission issues, focus on Docker Hub
+
+
 ## [0.7.3] - 2025-08-24
 
 - fix: use HOMEBREW_GITHUB_API_TOKEN for GHCR publishing to enable dual registry support
