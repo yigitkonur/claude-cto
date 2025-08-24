@@ -26,6 +26,7 @@ classifiers = [
 dependencies = [
     "sqlmodel>=0.0.14",
     "claude-code-sdk>=0.0.19",
+    "alembic>=1.13.0",
 ]
 
 [project.optional-dependencies]
@@ -129,6 +130,7 @@ python = "^3.10"
 # Core dependencies (always needed)
 sqlmodel = ">=0.0.14"
 claude-code-sdk = ">=0.0.19"
+alembic = ">=1.13.0"
 
 # Optional dependencies for different installation modes
 fastapi = {version = ">=0.100.0", optional = true}
