@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.6.0] - 2025-08-24
+
+- feat: major infrastructure improvements and Docker multi-registry support
+- update illustrative examples
+- update readme graph
+- chore: bump version to 0.5.1 [skip ci]
+- rename: claude-cto
+
+
 ## [0.5.1] - 2025-08-21
 
 - rename: claude-cto
