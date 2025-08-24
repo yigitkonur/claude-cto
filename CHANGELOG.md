@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.7.5] - 2025-08-24
+
+- docs: add comprehensive inline comments across entire codebase
+- chore: bump version to 0.7.4 [skip ci]
+- fix: use HOMEBREW_TAP_TOKEN for GHCR authentication
+- chore: bump version to 0.7.3 [skip ci]
+- fix: use HOMEBREW_GITHUB_API_TOKEN for GHCR publishing to enable dual registry support
+
+
 ## [0.7.4] - 2025-08-24
 
 - fix: use HOMEBREW_TAP_TOKEN for GHCR authentication
