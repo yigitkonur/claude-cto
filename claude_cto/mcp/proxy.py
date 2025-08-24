@@ -21,14 +21,14 @@ def create_proxy_server(api_url: Optional[str] = None) -> FastMCP:
         FastMCP server instance
     """
 
-    # Get API URL from parameter, environment, or default
+    # API URL resolution: discovers server endpoint using parameter > environment > default
     if not api_url:
         api_url = os.getenv("CLAUDE_CTO_API_URL", "http://localhost:8000")
 
-    # Ensure URL doesn't have trailing slash
+    # URL normalization: removes trailing slash for consistent endpoint construction
     api_url = api_url.rstrip("/")
 
-    # Create MCP server
+    # MCP server initialization: creates stateless proxy with HTTP client dependency
     mcp = FastMCP(name="claude-cto-proxy", dependencies=["httpx>=0.25.0"])
 
     @mcp.tool()
@@ -109,9 +109,10 @@ def create_proxy_server(api_url: Optional[str] = None) -> FastMCP:
                 "hint": "Use 'sonnet' for most tasks, 'opus' for complex planning, 'haiku' for simple tasks",
             }
 
-        # Submit to REST API (using MCP endpoint for strict validation)
+        # Direct HTTP API forwarding: translates MCP call to REST API request with validation
         async with httpx.AsyncClient() as client:
             try:
+                # MCP-to-REST translation: forwards request to specialized MCP endpoint
                 response = await client.post(
                     f"{api_url}/api/v1/mcp/tasks",
                     json={
@@ -123,6 +124,7 @@ def create_proxy_server(api_url: Optional[str] = None) -> FastMCP:
                     timeout=30.0,
                 )
 
+                # Success response formatting: extracts key task data for MCP client
                 if response.status_code == 200:
                     data = response.json()
                     return {
@@ -137,6 +139,7 @@ def create_proxy_server(api_url: Optional[str] = None) -> FastMCP:
                         "detail": response.text,
                     }
 
+            # Connection error handling: provides actionable troubleshooting guidance
             except httpx.ConnectError:
                 return {
                     "error": "Cannot connect to REST API server",
@@ -171,10 +174,13 @@ def create_proxy_server(api_url: Optional[str] = None) -> FastMCP:
         Returns:
             Task status and details
         """
+        # Status query forwarding: requests task information from centralized API server
         async with httpx.AsyncClient() as client:
             try:
+                # REST API status request: retrieves current task state and metadata
                 response = await client.get(f"{api_url}/api/v1/tasks/{task_id}", timeout=10.0)
 
+                # Status response processing: formats task data for MCP consumption
                 if response.status_code == 200:
                     data = response.json()
                     return {
@@ -195,6 +201,7 @@ def create_proxy_server(api_url: Optional[str] = None) -> FastMCP:
                         "detail": response.text,
                     }
 
+            # Connection resilience: handles server unavailability gracefully
             except httpx.ConnectError:
                 return {
                     "error": "Cannot connect to REST API server",

@@ -33,7 +33,7 @@ def sanitize_filename(filename: str, max_length: int = 50) -> str:
     # Convert to ASCII, removing accents
     filename = filename.encode("ascii", "ignore").decode("ascii")
 
-    # Replace common problematic characters
+    # character replacement map for cross-platform safety: removes Windows forbidden chars, Unix specials, and shell metacharacters
     replacements = {
         " ": "_",  # Spaces to underscores
         "-": "_",  # Hyphens to underscores
@@ -102,7 +102,7 @@ def extract_directory_context(working_directory: str) -> str:
         Safe, meaningful directory context string
     """
     try:
-        # Handle Windows UNC paths and normal paths
+        # Windows UNC path handling: extracts meaningful share names from \\server\share\path format
         if working_directory.startswith("\\\\"):
             # UNC path: \\server\share\path
             parts = working_directory.split("\\")
@@ -124,7 +124,7 @@ def extract_directory_context(working_directory: str) -> str:
             # Get the last meaningful directory name
             directory_name = path.name
 
-            # If it's just a single character or common names, get parent too
+            # meaningful name extraction: avoids generic folder names by combining with parent directory
             if len(directory_name) <= 2 or directory_name.lower() in [
                 "src",
                 "app",
@@ -191,7 +191,7 @@ def generate_log_filename(
     # Sanitize log type
     safe_log_type = sanitize_filename(log_type, max_length=20)
 
-    # Build filename: task_{id}_{context}_{timestamp}_{type}.log
+    # collision-resistant naming: combines task ID, directory context, timestamp, and type for uniqueness
     filename = f"task_{task_id}_{dir_context}_{time_str}_{safe_log_type}.log"
 
     return filename
@@ -276,7 +276,7 @@ def get_safe_log_directory(base_dir: Optional[Path] = None) -> Path:
         Path to logs directory
     """
     if base_dir is None:
-        # Use platform-appropriate home directory
+        # platform-specific directory resolution: Windows LOCALAPPDATA vs Unix home directory
         import os
 
         if os.name == "nt":  # Windows

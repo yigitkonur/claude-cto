@@ -37,18 +37,18 @@ def create_standalone_server(db_path: Optional[str] = None, log_dir: Optional[st
         FastMCP server instance
     """
 
-    # Initialize database
+    # Embedded database initialization: creates local SQLite with all tables and migrations
     engine = init_database(db_path)
     SessionLocal = create_session_maker(engine)
 
-    # Setup log directory
+    # Log directory setup: creates filesystem structure for task output storage
     if log_dir:
         log_path = Path(log_dir)
     else:
         log_path = Path.home() / ".claude-cto" / "logs"
     log_path.mkdir(parents=True, exist_ok=True)
 
-    # Create MCP server
+    # Self-contained MCP server: no external API dependencies, direct SDK integration
     mcp = FastMCP(
         name="claude-cto-standalone",
         dependencies=["claude-code-sdk>=0.0.19", "sqlmodel>=0.0.14"],
@@ -123,7 +123,7 @@ def create_standalone_server(db_path: Optional[str] = None, log_dir: Optional[st
             "haiku": ClaudeModel.HAIKU,
         }[model_lower]
 
-        # Create task in database
+        # Direct database task creation: bypasses API layer, writes directly to SQLite
         with SessionLocal() as session:
             task_data = TaskCreate(
                 execution_prompt=execution_prompt,
@@ -132,14 +132,15 @@ def create_standalone_server(db_path: Optional[str] = None, log_dir: Optional[st
                 model=model_enum,
             )
 
-            # Create log file path
+            # Log file organization: creates date-based directory structure
             task_log_dir = log_path / datetime.utcnow().strftime("%Y%m%d")
             task_log_dir.mkdir(parents=True, exist_ok=True)
 
+            # Task record insertion: creates database entry and assigns ID
             db_task = create_task_record(session, task_data, task_log_dir)
             task_id = db_task.id
 
-        # Submit task for async execution
+        # Background task execution: starts async processing without blocking MCP response
         asyncio.create_task(_execute_task_background(task_id, log_path))
 
         return {
@@ -175,12 +176,14 @@ def create_standalone_server(db_path: Optional[str] = None, log_dir: Optional[st
         Returns:
             Task status and details
         """
+        # Direct database query: retrieves task status without API layer
         with SessionLocal() as session:
             task = get_task_by_id(session, task_id)
 
             if not task:
                 return {"error": f"Task {task_id} not found"}
 
+            # Status response assembly: formats database record for MCP client
             return {
                 "id": task.id,
                 "status": task.status.value,

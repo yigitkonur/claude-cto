@@ -26,160 +26,182 @@ from .memory_monitor import get_memory_monitor
 
 class TaskExecutor:
     """
-    Executes a single claude-cto task in an isolated process.
-    Manages the entire lifecycle: status updates, SDK communication, and result finalization.
+    Core task execution engine: orchestrates complete lifecycle from SDK call to database finalization.
+    Bridges the gap between HTTP requests and Claude SDK with robust error handling and status tracking.
+    Critical for system reliability - handles transient errors, resource cleanup, and monitoring integration.
     """
 
     def __init__(self, task_id: int):
         """
-        Minimal constructor - only stores task ID.
-        Does NOT acquire database session (object will be pickled for worker process).
+        Lightweight constructor: stores task ID without heavyweight resource acquisition.
+        Defers database sessions and file handles until execution to support async context switching.
         """
+        # Task identifier: primary key for status tracking and resource association
         self.task_id = task_id
 
     async def run(self) -> None:
         """
-        Main execution method for the task with simple retry logic for transient errors.
+        Complete task execution orchestration: SDK call → status tracking → resource cleanup.
+        Implements retry logic for transient failures while maintaining database state consistency.
+        Critical path that determines task success/failure and triggers dependent task scheduling.
         """
-        # Set SDK environment variable for subprocess
+        # SDK process identification: marks subprocess calls for telemetry and debugging
         os.environ["CLAUDE_CODE_ENTRYPOINT"] = "sdk-py"
 
-        # Get initial task info and mark as running
+        # Database state transition: PENDING → RUNNING with process tracking
+        # Critical for orchestration dependency resolution and monitoring systems
         for session in get_session():
             task_record = crud.get_task(session, self.task_id)
             if not task_record:
-                return
+                return  # Task deleted or corrupted - abort silently
 
-            # Update status to running and set PID
+            # Atomic status transition: marks task as actively executing with process metadata
             task_record.status = models.TaskStatus.RUNNING
-            task_record.pid = os.getpid()
-            task_record.started_at = datetime.utcnow()
+            task_record.pid = os.getpid()  # Process tracking for kill operations
+            task_record.started_at = datetime.utcnow()  # Execution timestamp for duration calculations
             session.add(task_record)
             session.commit()
 
-            # Store task data for use outside session
+            # Task parameter extraction: copies data out of session scope for async processing
             working_directory = task_record.working_directory
             system_prompt = task_record.system_prompt
             execution_prompt = task_record.execution_prompt
             log_file_path = task_record.log_file_path
             model = task_record.model
 
-        # Configure SDK options
+        # Claude SDK configuration: assembles execution context with security bypass
+        # bypassPermissions: eliminates user prompts for autonomous task execution
         options = ClaudeCodeOptions(
-            cwd=working_directory,
-            system_prompt=system_prompt,
-            model=model,
-            permission_mode="bypassPermissions",
+            cwd=working_directory,  # File system sandbox boundary
+            system_prompt=system_prompt,  # Behavioral constraints and persona
+            model=model,  # AI model selection (haiku/sonnet/opus)
+            permission_mode="bypassPermissions",  # Critical: enables headless execution
         )
 
-        # Simple timeout based on model
+        # Model-specific timeout matrix: prevents hung tasks while accommodating model complexity
+        # Higher intelligence models get longer timeouts for complex reasoning tasks
         timeout_seconds = {
-            "haiku": 600,  # 10 minutes
-            "sonnet": 1800,  # 30 minutes
-            "opus": 3600,  # 60 minutes
-        }.get(model.value, 1800)
+            "haiku": 600,   # 10 minutes - fast model, simple tasks
+            "sonnet": 1800, # 30 minutes - balanced model, standard timeout
+            "opus": 3600,   # 60 minutes - complex model, extended reasoning
+        }.get(model.value, 1800)  # Default to sonnet timeout for unknown models
 
-        # Create task logger for structured logging
-        task_logger = create_task_logger(self.task_id, working_directory)
+        # Resource initialization: establishes monitoring and logging infrastructure
+        # Critical for debugging failed tasks and preventing resource leaks
+        task_logger = create_task_logger(self.task_id, working_directory)  # Structured logging
+        memory_monitor = get_memory_monitor()  # System resource tracking
+        memory_monitor.start_task_monitoring(self.task_id)  # Begin resource monitoring
 
-        # CRITICAL FIX: Start memory monitoring for this task
-        memory_monitor = get_memory_monitor()
-        memory_monitor.start_task_monitoring(self.task_id)
-
-        # Execute with simple retry logic (3 attempts for transient errors only)
-        max_attempts = 3
+        # Retry orchestration: implements exponential backoff for transient failures only
+        # Distinguishes between recoverable network issues and permanent configuration errors
+        max_attempts = 3  # Conservative retry count to prevent infinite loops
         attempt = 0
         last_error = None
-        start_time = datetime.utcnow()
+        start_time = datetime.utcnow()  # Execution duration tracking
 
         try:
             while attempt < max_attempts:
                 attempt += 1
 
                 try:
-                    # Initialize structured logging on first attempt
+                    # Structured logging initialization: captures task parameters for debugging
                     if attempt == 1:
+                        # First attempt: log complete task context for troubleshooting
                         task_logger.log_task_start(
                             execution_prompt=execution_prompt,
                             model=model.value,
                             system_prompt=system_prompt,
                         )
                     else:
+                        # Retry attempt: log error context and retry progression
                         task_logger.log_task_progress(
                             f"Retry attempt {attempt}/{max_attempts} after error: {last_error}",
                             "RETRY",
                         )
 
-                    # Open legacy log file for backward compatibility
+                    # Legacy log compatibility: maintains backward compatibility with existing log parsing
+                    # Raw log format preserved for external monitoring tools and manual debugging
                     with open(log_file_path, "a") as raw_log:
                         if attempt > 1:
+                            # Retry header: clearly marks retry attempts for log analysis
                             raw_log.write(f"[RETRY] Attempt {attempt}/{max_attempts}\n")
                         else:
+                            # Initial execution metadata: comprehensive context for debugging
                             raw_log.write(f"[INFO] Starting task {self.task_id}\n")
                             raw_log.write(f"[INFO] Working directory: {working_directory}\n")
                             raw_log.write(f"[INFO] Prompt: {execution_prompt}\n")
                             raw_log.write(f"[INFO] System prompt: {system_prompt}\n")
                             raw_log.write(f"[INFO] Timeout: {timeout_seconds}s\n")
-                        raw_log.flush()
+                        raw_log.flush()  # Immediate disk write for crash resilience
 
-                    # Execute with timeout
-                    message_count = 0
+                    # Core SDK execution: streams messages from Claude with real-time processing
+                    # Message processing maintains database state and structured logs throughout execution
+                    message_count = 0  # Conversation turn counter for completion metrics
 
                     async def execute_query():
+                        """Async generator wrapper: processes SDK message stream with logging and state updates"""
                         nonlocal message_count
+                        # Claude SDK query: main AI interaction with streaming response processing
                         async for message in query(prompt=execution_prompt, options=options):
                             message_count += 1
+                            # Real-time progress logging: timestamps each message for performance analysis
                             raw_log.write(
                                 f"[{datetime.utcnow().isoformat()}] Message {message_count}: {type(message).__name__}\n"
                             )
                             raw_log.flush()
 
-                            # Process message for summary and database updates
+                            # Message processing pipeline: extracts actionable data and updates task state
                             await self._process_message(message, task_logger)
                         return message_count
 
-                    # Run with timeout
+                    # Timeout enforcement: prevents hung tasks from consuming resources indefinitely
+                    # Critical for system stability - terminates runaway AI interactions
                     try:
                         await asyncio.wait_for(execute_query(), timeout=timeout_seconds)
                     except asyncio.TimeoutError:
+                        # Transform asyncio timeout to standard timeout for consistent error handling
                         raise TimeoutError(f"Task exceeded {timeout_seconds}s timeout")
 
+                    # Successful completion logging: records final metrics and status
                     raw_log.write(f"[INFO] Task completed with {message_count} messages\n")
                     if attempt > 1:
                         raw_log.write(f"[INFO] Succeeded after {attempt} attempts\n")
                     raw_log.flush()
 
-                    # Task completed successfully
+                    # Success metrics calculation: duration and message count for performance analysis
                     duration = (datetime.utcnow() - start_time).total_seconds()
                     success_msg = f"Task completed successfully ({message_count} messages)"
                     if attempt > 1:
-                        success_msg += f" after {attempt} attempts"
+                        success_msg += f" after {attempt} attempts"  # Retry success indicator
 
-                    # Log completion with structured logger
+                    # Completion logging: structured format for monitoring and analytics
                     task_logger.log_task_completion(True, success_msg, duration)
 
+                    # Database finalization: atomic status transition to COMPLETED with summary
                     for session in get_session():
                         crud.finalize_task(session, self.task_id, models.TaskStatus.COMPLETED, success_msg)
 
-                    # CRITICAL FIX: End memory monitoring for successful task
+                    # Resource cleanup: stops monitoring and releases task-specific resources
                     memory_monitor.end_task_monitoring(self.task_id, success=True)
-                    return  # Success - exit retry loop
+                    return  # Success path: exit retry loop and complete execution
 
                 except (CLIConnectionError, ConnectionError, TimeoutError) as e:
-                    # These are transient errors - retry with exponential backoff
+                    # Transient error recovery: network issues and timeouts warrant retry with backoff
+                    # Prevents cascading failures from temporary service disruptions
                     last_error = e
 
                     if attempt < max_attempts:
-                        # Check if it's a rate limit error (special handling)
+                        # Rate limiting detection: API quota errors need extended delay
                         if "rate limit" in str(e).lower() or "429" in str(e).lower():
-                            wait_time = 60  # Rate limit gets longer wait
+                            wait_time = 60  # Rate limit recovery: longer wait for quota reset
                         else:
-                            wait_time = 2 ** (attempt - 1)  # Exponential: 1s, 2s, 4s
+                            wait_time = 2 ** (attempt - 1)  # Exponential backoff: 1s, 2s, 4s
 
-                        # Log retry attempt
+                        # Retry logging: records attempt progression for debugging
                         with open(log_file_path, "a") as raw_log:
                             raw_log.write(f"[RETRY] {type(e).__name__}: {e}. Waiting {wait_time}s before retry...\n")
 
+                        # Database retry tracking: maintains retry history for monitoring
                         for session in get_session():
                             crud.append_to_summary_log(
                                 session,
@@ -187,10 +209,11 @@ class TaskExecutor:
                                 f"[retry] Attempt {attempt} failed, retrying in {wait_time}s",
                             )
 
+                        # Backoff delay: prevents overwhelming failing services
                         await asyncio.sleep(wait_time)
-                        continue
+                        continue  # Retry loop continuation
                     else:
-                        # Max attempts reached - fall through to error handling
+                        # Retry exhaustion: all attempts failed, proceed to error handling
                         break
 
                 except (
@@ -200,72 +223,83 @@ class TaskExecutor:
                     MessageParseError,
                     ClaudeSDKError,
                 ) as e:
-                    # These are permanent errors - don't retry
+                    # Permanent error identification: configuration and parsing issues are non-recoverable
+                    # Prevents infinite retry loops on systematic problems (missing CLI, auth failures, etc.)
                     last_error = e
-                    break
+                    break  # Immediate failure path - no retry attempts
 
                 except Exception as e:
-                    # Unexpected error - don't retry
+                    # Unknown error classification: treats unexpected exceptions as permanent failures
+                    # Conservative approach prevents retry storms on unknown error conditions
                     last_error = e
-                    break
+                    break  # Safety break - unknown errors are not retried
 
-            # If we get here, task failed
+            # Failure path execution: processes all error conditions with comprehensive logging
+            # Critical for debugging, monitoring, and user feedback on task failures
             if last_error:
                 duration = (datetime.utcnow() - start_time).total_seconds()
 
-                # Log error with structured logger
+                # Error logging: structured format for automated analysis and debugging
                 task_logger.log_error(last_error, "Task execution failed")
 
-                # Handle error with ErrorHandler
+                # Comprehensive error processing: generates debugging information and recovery suggestions
                 error_info = ErrorHandler.handle_error(last_error, self.task_id, log_file_path)
-                ErrorHandler.log_error(error_info, log_file_path)
-                error_msg = ErrorHandler.format_error_message(error_info)
+                ErrorHandler.log_error(error_info, log_file_path)  # Detailed error context
+                error_msg = ErrorHandler.format_error_message(error_info)  # User-friendly summary
 
+                # Retry exhaustion indicator: clarifies failure after multiple attempts
                 if attempt >= max_attempts and isinstance(
                     last_error, (CLIConnectionError, ConnectionError, TimeoutError)
                 ):
                     error_msg += f" | Failed after {max_attempts} attempts"
 
-                # Log completion with failure status
+                # Failure completion logging: records final status with error details
                 task_logger.log_task_completion(False, error_msg, duration)
 
+                # Database failure finalization: atomic status transition to FAILED with error message
                 for session in get_session():
                     crud.finalize_task(session, self.task_id, models.TaskStatus.FAILED, error_msg)
 
-                # CRITICAL FIX: End memory monitoring for failed task
+                # Failed task cleanup: stops monitoring and releases resources
                 memory_monitor.end_task_monitoring(self.task_id, success=False)
         finally:
-            # CRITICAL FIX: Always clean up task logger to prevent memory leak
-            task_logger.close()
+            # Critical resource cleanup: prevents file handle leaks and memory accumulation
+            # MUST execute regardless of success/failure to maintain system stability
+            task_logger.close()  # Closes file handlers and releases structured logging resources
 
     async def _process_message(self, message: Message, task_logger) -> None:
         """
-        Process individual messages from the SDK stream.
-        Extracts relevant information and updates both structured and legacy logs.
+        Message stream processor: extracts actionable data from Claude SDK responses.
+        Maintains real-time status updates and structured logging throughout task execution.
+        Critical for progress tracking and debugging failed or stuck tasks.
         """
         summary_line = None
 
-        # Process AssistantMessage with content blocks
+        # AssistantMessage processing: extracts meaningful content from AI responses
+        # Content blocks contain tool usage, text responses, and system interactions
         if isinstance(message, AssistantMessage) and message.content:
             for block in message.content:
+                # Content formatting: converts SDK blocks to human-readable strings
                 formatted = format_content_block(block)
                 if formatted:
                     summary_line = formatted
 
-                    # Enhanced logging for tool usage
+                    # Tool usage tracking: monitors AI agent actions for debugging and metrics
                     if isinstance(block, ToolUseBlock):
                         task_logger.log_tool_usage(
-                            tool_name=block.name,
-                            tool_input=block.input,
-                            success=True,  # We'll update this when we get the result
+                            tool_name=block.name,  # Tool identifier (bash, edit, read, etc.)
+                            tool_input=block.input,  # Tool parameters for debugging
+                            success=True,  # Optimistic success (updated on tool response)
                         )
                     else:
-                        # Log other types of progress
+                        # General progress logging: captures AI reasoning and status updates
                         task_logger.log_task_progress(formatted, "SDK_MESSAGE")
 
-                    break  # Log the first significant block
+                    break  # First significant block: prevents log spam from verbose responses
 
-        # If we have something to log, update the database (legacy)
+        # Legacy database integration: maintains backward compatibility with existing log consumers
+        # Real-time status updates enable progress tracking and dependency resolution
         if summary_line:
             for session in get_session():
+                # Summary log update: appends latest progress to database for external monitoring
                 crud.append_to_summary_log(session, self.task_id, summary_line)

@@ -16,7 +16,10 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class TaskMetrics:
-    """Metrics for a single task execution."""
+    """
+    Individual task performance metrics: tracks resource consumption throughout task lifecycle.
+    Critical for identifying resource-intensive tasks and optimizing system performance.
+    """
 
     task_id: int
     start_time: datetime
@@ -32,32 +35,41 @@ class TaskMetrics:
 
     @property
     def duration_seconds(self) -> Optional[float]:
-        """Get task duration in seconds."""
+        """
+        Task duration calculation: provides execution time for performance analysis.
+        Returns None for active tasks, seconds for completed tasks.
+        """
         if self.end_time:
             return (self.end_time - self.start_time).total_seconds()
-        return None
+        return None  # Task still running
 
     def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary for logging/storage."""
+        """
+        Serialization for logging and monitoring: converts metrics to JSON-compatible format.
+        Used by monitoring dashboards, alerting systems, and performance analysis tools.
+        """
         return {
             "task_id": self.task_id,
             "start_time": self.start_time.isoformat(),
             "end_time": self.end_time.isoformat() if self.end_time else None,
             "duration_seconds": self.duration_seconds,
-            "peak_memory_mb": round(self.peak_memory_mb, 2),
+            "peak_memory_mb": round(self.peak_memory_mb, 2),  # Rounded for readability
             "avg_memory_mb": round(self.avg_memory_mb, 2),
             "cpu_percent": round(self.cpu_percent, 2),
             "io_reads": self.io_reads,
             "io_writes": self.io_writes,
             "error_count": self.error_count,
             "retry_count": self.retry_count,
-            "messages_processed": self.messages_processed,
+            "messages_processed": self.messages_processed,  # AI conversation turns
         }
 
 
 @dataclass
 class SystemMetrics:
-    """System-wide metrics."""
+    """
+    System-wide performance metrics: captures server health and resource utilization.
+    Essential for capacity planning, alerting, and identifying system bottlenecks.
+    """
 
     timestamp: datetime = field(default_factory=datetime.now)
     cpu_percent: float = 0.0
@@ -89,58 +101,81 @@ class SystemMetrics:
 
 
 class MemoryMonitor:
-    """Monitor memory and resource usage for tasks and system.
-
-    ⚠️ WARNING: This monitor MUST be started with start_global_monitoring() in the
-    server lifespan context or memory tracking will be non-functional. The monitor
-    also MUST call cleanup_old_metrics() periodically to prevent unbounded memory growth.
+    """
+    Comprehensive resource monitoring system: tracks memory, CPU, and I/O for tasks and system.
+    
+    CRITICAL LIFECYCLE REQUIREMENTS:
+    1. MUST call start_global_monitoring() during server startup
+    2. MUST call stop_global_monitoring() during server shutdown
+    3. MUST call cleanup_old_metrics() periodically to prevent memory leaks
+    
+    Failure to follow lifecycle requirements results in:
+    - Non-functional monitoring (missing start_global_monitoring)
+    - Resource exhaustion (missing cleanup_old_metrics)
+    - Hung background tasks (missing stop_global_monitoring)
     """
 
     def __init__(self, check_interval: float = 5.0):
         """
-        Initialize memory monitor.
+        Monitor initialization: establishes monitoring infrastructure without starting background tasks.
+        Lightweight constructor - actual monitoring begins when start_monitoring() is called.
 
-        ⚠️ CRITICAL: After initialization, you MUST:
-        1. Call start_global_monitoring() to begin tracking
-        2. Call stop_global_monitoring() on shutdown
-        3. Call cleanup_old_metrics() periodically (handled by monitoring loop)
+        CRITICAL: This constructor only prepares monitoring - you MUST call lifecycle methods:
+        1. start_global_monitoring() - begins background monitoring loop
+        2. stop_global_monitoring() - stops monitoring and cleans up tasks
+        3. cleanup_old_metrics() - prevents memory accumulation (auto-called by monitoring loop)
 
         Args:
-            check_interval: Seconds between memory checks
+            check_interval: Seconds between monitoring cycles (affects monitoring granularity)
         """
+        # Monitoring configuration: determines sampling rate and data collection frequency
         self.check_interval = check_interval
+        # Task metrics storage: accumulates performance data for all tasks (MUST be cleaned up)
         self.task_metrics: Dict[int, TaskMetrics] = {}
+        # System metrics history: rolling window of system performance (auto-cleaned hourly)
         self.system_metrics_history: List[SystemMetrics] = []
+        # Monitoring state control: prevents duplicate monitoring loops
         self.monitoring = False
-        self._monitor_task: Optional[asyncio.Task] = None
+        self._monitor_task: Optional[asyncio.Task] = None  # Background monitoring task
 
-        # Memory thresholds for alerting
-        self.memory_warning_threshold = 80.0  # percent
-        self.memory_critical_threshold = 95.0  # percent
+        # Alerting thresholds: configurable limits for system resource warnings
+        self.memory_warning_threshold = 80.0   # Warning level - log alerts
+        self.memory_critical_threshold = 95.0  # Critical level - may trigger cleanup
 
-        # Track process
+        # Process tracking: monitors current server process for resource usage
         self.process = psutil.Process(os.getpid())
 
     def start_task_monitoring(self, task_id: int) -> TaskMetrics:
-        """Start monitoring a task."""
+        """
+        Task monitoring initiation: begins tracking resource consumption for specific task.
+        Called by TaskExecutor when task execution starts - establishes baseline metrics.
+        """
+        # Metrics object creation: initializes performance tracking for task lifecycle
         metrics = TaskMetrics(task_id=task_id, start_time=datetime.now())
-        self.task_metrics[task_id] = metrics
+        self.task_metrics[task_id] = metrics  # Register in monitoring system
         logger.info(f"Started monitoring task {task_id}")
-        return metrics
+        return metrics  # Return metrics object for potential direct updates
 
     def end_task_monitoring(self, task_id: int, success: bool = True) -> Optional[TaskMetrics]:
-        """End monitoring a task."""
+        """
+        Task monitoring completion: finalizes resource tracking and records final metrics.
+        Called by TaskExecutor when task completes (success or failure) - calculates final statistics.
+        """
+        # Metrics validation: ensures task was being monitored
         if task_id not in self.task_metrics:
-            return None
+            return None  # Task not being monitored - silent failure
 
+        # Task completion processing: finalize metrics and record end state
         metrics = self.task_metrics[task_id]
-        metrics.end_time = datetime.now()
+        metrics.end_time = datetime.now()  # Completion timestamp for duration calculation
 
+        # Error tracking: increments failure count for system reliability metrics
         if not success:
             metrics.error_count += 1
 
+        # Completion logging: records final task performance data
         logger.info(f"Ended monitoring task {task_id}: {metrics.to_dict()}")
-        return metrics
+        return metrics  # Return final metrics for logging or analysis
 
     def update_task_metrics(
         self,
@@ -149,70 +184,92 @@ class MemoryMonitor:
         errors: Optional[int] = None,
         retries: Optional[int] = None,
     ) -> None:
-        """Update task metrics during execution."""
+        """
+        Real-time task metrics update: allows TaskExecutor to report progress during execution.
+        Enables monitoring of AI conversation progress, error accumulation, and retry patterns.
+        """
+        # Task existence validation: silently ignores updates for non-monitored tasks
         if task_id not in self.task_metrics:
-            return
+            return  # Task not being monitored - skip update
 
+        # Metrics update: selectively updates provided parameters
         metrics = self.task_metrics[task_id]
 
+        # Progress indicators: tracks AI conversation turns and system interactions
         if messages is not None:
-            metrics.messages_processed = messages
+            metrics.messages_processed = messages  # Claude SDK message count
         if errors is not None:
-            metrics.error_count = errors
+            metrics.error_count = errors  # Accumulated error count
         if retries is not None:
-            metrics.retry_count = retries
+            metrics.retry_count = retries  # Retry attempt count
 
     async def start_monitoring(self) -> None:
-        """Start the background monitoring loop."""
+        """
+        Background monitoring initiation: starts continuous system and task resource tracking.
+        Creates asyncio task for monitoring loop - CRITICAL for system health visibility.
+        """
+        # Duplicate monitoring prevention: ensures only one monitoring loop per instance
         if self.monitoring:
-            return
+            return  # Already monitoring - avoid duplicate background tasks
 
+        # Monitoring activation: starts background data collection
         self.monitoring = True
-        self._monitor_task = asyncio.create_task(self._monitor_loop())
+        self._monitor_task = asyncio.create_task(self._monitor_loop())  # Background monitoring task
         logger.info("Started memory monitoring")
 
     async def stop_monitoring(self) -> None:
-        """Stop the background monitoring loop."""
+        """
+        Background monitoring shutdown: cleanly stops monitoring loop and cancels background task.
+        CRITICAL for server shutdown - prevents hung tasks and resource leaks.
+        """
+        # Monitoring deactivation: signals monitoring loop to exit
         self.monitoring = False
 
+        # Background task cleanup: cancels monitoring loop and waits for completion
         if self._monitor_task:
-            self._monitor_task.cancel()
+            self._monitor_task.cancel()  # Signal cancellation to monitoring loop
             try:
-                await self._monitor_task
+                await self._monitor_task  # Wait for graceful shutdown
             except asyncio.CancelledError:
-                pass
-            self._monitor_task = None
+                pass  # Expected exception from cancellation - safe to ignore
+            self._monitor_task = None  # Clear task reference
 
         logger.info("Stopped memory monitoring")
 
     async def _monitor_loop(self) -> None:
-        """Background monitoring loop."""
-        while self.monitoring:
+        """
+        Core monitoring loop: continuous data collection, analysis, and cleanup cycle.
+        Runs in background until monitoring is disabled - handles all system monitoring functions.
+        CRITICAL: Includes automatic cleanup to prevent memory leaks in long-running servers.
+        """
+        while self.monitoring:  # Continue until monitoring is disabled
             try:
-                # Collect metrics
+                # System metrics collection: gathers current resource usage statistics
                 metrics = self._collect_system_metrics()
-                self.system_metrics_history.append(metrics)
+                self.system_metrics_history.append(metrics)  # Add to historical data
 
-                # Update task metrics
+                # Active task monitoring: updates resource usage for running tasks
                 self._update_active_task_metrics()
 
-                # Check thresholds
+                # Threshold monitoring: checks for resource usage alerts
                 self._check_memory_thresholds(metrics)
 
-                # Cleanup old history (keep last hour)
+                # Historical data cleanup: maintains 1-hour rolling window to prevent memory growth
                 cutoff = datetime.now() - timedelta(hours=1)
                 self.system_metrics_history = [m for m in self.system_metrics_history if m.timestamp > cutoff]
 
-                # Cleanup old task metrics periodically (every 10 iterations)
+                # Task metrics cleanup: prevents unbounded memory growth from completed tasks
+                # Triggered when task count exceeds threshold - critical for long-running servers
                 if len(self.task_metrics) > 100:
-                    self.cleanup_old_metrics(older_than_hours=24)
+                    self.cleanup_old_metrics(older_than_hours=24)  # Remove 24+ hour old tasks
 
-                # Wait for next check
+                # Monitoring interval: controls data collection frequency
                 await asyncio.sleep(self.check_interval)
 
             except Exception as e:
+                # Error resilience: continues monitoring despite individual collection failures
                 logger.error(f"Error in monitoring loop: {e}")
-                await asyncio.sleep(self.check_interval)
+                await asyncio.sleep(self.check_interval)  # Wait before retry
 
     def _collect_system_metrics(self) -> SystemMetrics:
         """Collect current system metrics."""
@@ -340,42 +397,62 @@ class MemoryMonitor:
         return self.task_metrics.get(task_id)
 
     def cleanup_old_metrics(self, older_than_hours: int = 24) -> int:
-        """Clean up old task metrics to prevent memory leak."""
+        """
+        Critical memory leak prevention: removes old completed task metrics from memory.
+        MUST be called periodically (auto-called by monitoring loop) to prevent memory exhaustion.
+        Targets completed tasks only - preserves active task monitoring data.
+        """
+        # Cleanup threshold: defines age limit for task metrics retention
         cutoff = datetime.now() - timedelta(hours=older_than_hours)
+        
+        # Old task identification: finds completed tasks older than threshold
         old_tasks = [
             task_id
             for task_id, metrics in self.task_metrics.items()
+            # Only remove completed tasks (end_time is not None) older than cutoff
             if metrics.start_time < cutoff and metrics.end_time is not None
         ]
 
+        # Memory cleanup: removes old task metrics from tracking dictionary
         for task_id in old_tasks:
-            del self.task_metrics[task_id]
+            del self.task_metrics[task_id]  # Free memory by removing metrics object
 
+        # Cleanup logging: reports memory reclamation for monitoring
         if old_tasks:
             logger.info(f"Cleaned up {len(old_tasks)} old task metrics")
 
-        return len(old_tasks)
+        return len(old_tasks)  # Return count for monitoring and testing
 
 
-# Global memory monitor instance
+# Global singleton instance for the monitor
 _monitor = None
 
 
 def get_memory_monitor() -> MemoryMonitor:
-    """Get the global memory monitor instance."""
+    """
+    Global monitor singleton: provides system-wide access to memory monitoring instance.
+    Lazy initialization ensures single monitor instance across entire server process.
+    """
+    # Lazily initialize the singleton on first request
     global _monitor
     if _monitor is None:
-        _monitor = MemoryMonitor()
+        _monitor = MemoryMonitor()  # Lazy initialization on first access
     return _monitor
 
 
 async def start_global_monitoring() -> None:
-    """Start global memory monitoring."""
-    monitor = get_memory_monitor()
-    await monitor.start_monitoring()
+    """
+    Global monitoring activation: starts system-wide resource tracking for server lifecycle.
+    MUST be called during server startup to enable monitoring functionality.
+    """
+    monitor = get_memory_monitor()  # Get singleton instance
+    await monitor.start_monitoring()  # Begin background monitoring loop
 
 
 async def stop_global_monitoring() -> None:
-    """Stop global memory monitoring."""
-    monitor = get_memory_monitor()
-    await monitor.stop_monitoring()
+    """
+    Global monitoring shutdown: cleanly stops system-wide resource tracking during server shutdown.
+    MUST be called during server shutdown to prevent hung background tasks.
+    """
+    monitor = get_memory_monitor()  # Get singleton instance
+    await monitor.stop_monitoring()  # Stop background monitoring loop

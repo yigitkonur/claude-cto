@@ -30,115 +30,133 @@ from .server_logger import (
 logger = initialize_logging(debug=False)
 
 
-# Entry point for executing a task in the main server process (OAuth requirement)
+# Core task execution wrapper: manages TaskExecutor lifecycle within server process
+# CRITICAL: Runs in main process due to Claude SDK OAuth requirements
 async def run_task_async(task_id: int):
     """
-    Run task in the main process as an async task.
-    This is needed because Claude SDK OAuth authentication
-    doesn't work properly in subprocess/ProcessPoolExecutor.
+    Task execution orchestration: delegates to TaskExecutor while handling server integration.
+    MUST run in main process - Claude SDK OAuth authentication fails in subprocesses.
+    Provides comprehensive logging and error handling for server stability.
     """
     try:
+        # Task execution lifecycle logging: tracks execution phases for monitoring
         log_task_event(task_id, "execution_started")
+        # Core task delegation: TaskExecutor handles SDK interaction and task lifecycle
         executor = TaskExecutor(task_id)
-        await executor.run()
+        await executor.run()  # Complete task execution with full error handling
         log_task_event(task_id, "execution_completed")
     except Exception as e:
-        # Log error but don't crash the server
+        # Server resilience: logs errors without crashing main server process
         logger.error(f"Task {task_id} failed: {e}", exc_info=True)
         log_task_event(task_id, "execution_failed", {"error": str(e), "type": type(e).__name__})
 
-        # Log crash if it's an unexpected error
+        # Crash reporting: differentiates expected vs unexpected errors for alerting
         if not isinstance(e, (KeyboardInterrupt, SystemExit, asyncio.CancelledError)):
             log_crash(e, {"task_id": task_id, "phase": "task_execution"})
 
 
 async def _periodic_circuit_breaker_cleanup():
-    """Background task to prevent disk space leaks from old circuit breaker states."""
+    """
+    Background maintenance: prevents disk space accumulation from stale circuit breaker data.
+    CRITICAL: Runs continuously to prevent unbounded disk growth in long-running servers.
+    Cleans up circuit breaker state files older than 7 days to maintain system health.
+    """
     from .circuit_breaker_persistence import get_circuit_breaker_persistence
 
-    while True:
+    while True:  # Continuous background maintenance loop
         try:
-            await asyncio.sleep(3600)  # Run hourly
+            await asyncio.sleep(3600)  # Hourly cleanup cycle - balances freshness vs overhead
+            # Disk cleanup: removes old circuit breaker state files
             persistence = get_circuit_breaker_persistence()
-            removed = persistence.cleanup_old_states(max_age_days=7)
+            removed = persistence.cleanup_old_states(max_age_days=7)  # 7-day retention policy
             if removed > 0:
                 logger.info(f"Cleaned up {removed} old circuit breaker states")
         except Exception as e:
+            # Cleanup resilience: logs errors but continues cleanup loop
             logger.error(f"Circuit breaker cleanup failed: {e}")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """FastAPI lifespan manager for server startup and shutdown."""
-    # Logs server lifecycle events (start/stop)
+    """
+    Server lifecycle orchestration: manages startup initialization and graceful shutdown.
+    CRITICAL: Initializes monitoring systems and ensures clean resource cleanup.
+    Failure in startup phases prevents server from accepting requests.
+    """
+    # Structured lifecycle logging: enables monitoring of server health transitions
     async with log_lifecycle("claude-cto"):
         try:
-            # Startup sequence
+            # Phase 1: Database initialization - establishes data persistence layer
             logger.info("Initializing database...")
-            create_db_and_tables()
+            create_db_and_tables()  # Creates SQLite database and applies migrations
             logger.info("Database initialized successfully")
 
-            # Create log directory if it doesn't exist
+            # Phase 2: File system setup - ensures log directory exists for task outputs
             log_dir = app_dir / "logs"
-            log_dir.mkdir(exist_ok=True)
+            log_dir.mkdir(exist_ok=True)  # Idempotent directory creation
             logger.info(f"Task log directory: {log_dir}")
 
-            # Start memory monitoring to prevent memory leaks
+            # Phase 3: Memory monitoring activation - prevents resource leaks in long-running server
             logger.info("Starting memory monitoring...")
             from .memory_monitor import start_global_monitoring
-
+            # Background monitoring: tracks system resources and task performance
             asyncio.create_task(start_global_monitoring())
             logger.info("Memory monitoring started")
 
-            # Start circuit breaker cleanup to prevent disk space leaks
+            # Phase 4: Circuit breaker maintenance - prevents disk space accumulation
             logger.info("Starting circuit breaker cleanup...")
+            # Background cleanup: maintains circuit breaker state file hygiene
             asyncio.create_task(_periodic_circuit_breaker_cleanup())
             logger.info("Circuit breaker cleanup started")
 
             logger.info("Server startup complete - ready to accept requests")
 
-            # Yield control to FastAPI - server runs here
-            yield
+            # Server operation phase: yields control to FastAPI for request handling
+            yield  # Server runs here - handles HTTP requests until shutdown
 
         except Exception as e:
+            # Startup failure handling: logs errors and prevents incomplete server initialization
             logger.error(f"Startup failed: {e}", exc_info=True)
             log_crash(e, {"phase": "startup"})
-            raise
+            raise  # Propagate error to prevent server start with incomplete initialization
         finally:
-            # Shutdown sequence
+            # Graceful shutdown sequence: ensures clean resource cleanup
             logger.info("Beginning shutdown sequence...")
 
-            # Stop memory monitoring
+            # Resource cleanup: stops background monitoring to prevent resource leaks
             from .memory_monitor import stop_global_monitoring
-
-            await stop_global_monitoring()
+            await stop_global_monitoring()  # Gracefully stops monitoring background task
 
             logger.info("Server shutdown complete")
 
 
-# Main FastAPI application instance
+# Main FastAPI application instance: central HTTP server with lifecycle management
 app = FastAPI(
     title="Claude CTO Server",
-    description="Fire-and-forget task execution for Claude Code SDK",
+    description="Fire-and-forget task execution for Claude Code SDK",  # Async task delegation pattern
     version="0.1.0",
-    lifespan=lifespan,
+    lifespan=lifespan,  # Server startup/shutdown orchestration
 )
 
 
-# HTTP middleware that intercepts and logs all requests/responses
+# HTTP request/response logging middleware: captures all API interactions for monitoring
 @app.middleware("http")
 async def logging_middleware(request: Request, call_next):
-    """Log all HTTP requests and responses."""
-    return await log_request_response(request, call_next)
+    """
+    Request/response logging: captures API usage patterns and performance metrics.
+    Critical for debugging, monitoring, and security audit trails.
+    """
+    return await log_request_response(request, call_next)  # Structured logging wrapper
 
 
-# Enable cross-origin requests for web clients
+# CORS middleware: enables browser-based clients to access the API
+# Configured for development - should be restricted in production environments
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=["*"],      # Development setting - restrict in production
+    allow_credentials=True,    # Supports authenticated requests
+    allow_methods=["*"],      # Allows all HTTP methods
+    allow_headers=["*"],      # Allows all request headers
 )
 
 
@@ -147,19 +165,24 @@ app.add_middleware(
 
 @app.post("/api/v1/tasks", response_model=models.TaskRead)
 async def create_task(task_in: models.TaskCreate, session: Session = Depends(get_session)):
-    """REST API endpoint for creating and executing tasks."""
+    """
+    Task creation endpoint: creates database record and starts asynchronous execution.
+    Fire-and-forget pattern: returns immediately while task executes in background.
+    Core API endpoint for single task execution without dependencies.
+    """
     try:
-        # Apply default system prompt if not provided
+        # Default system prompt injection: ensures consistent AI behavior across tasks
         if not task_in.system_prompt:
             task_in.system_prompt = (
                 "You are a helpful assistant following John Carmack's principles "
                 "of simplicity and minimalism in software development."
             )
 
-        # Persist task in database
+        # Database persistence: creates task record with initial state
         log_dir = app_dir / "logs"
-        db_task = crud.create_task(session, task_in, log_dir)
+        db_task = crud.create_task(session, task_in, log_dir)  # CRUD layer maintains SOLE principle
 
+        # Task creation logging: records task parameters for monitoring and debugging
         logger.info(f"Created task {db_task.id} with model {db_task.model}")
         log_task_event(
             db_task.id,
@@ -167,58 +190,68 @@ async def create_task(task_in: models.TaskCreate, session: Session = Depends(get
             {"model": db_task.model, "working_directory": db_task.working_directory},
         )
 
-        # Submit to process pool for execution
-        # Note: Using asyncio.create_task instead of ProcessPoolExecutor
-        # because Claude SDK needs to run in the main process for OAuth auth
+        # Background task execution: starts async execution without blocking HTTP response
+        # CRITICAL: Uses asyncio.create_task (not ProcessPoolExecutor) due to Claude SDK OAuth requirements
         asyncio.create_task(run_task_async(db_task.id))
 
-        # Return task info (fire-and-forget)
+        # Immediate response: fire-and-forget pattern returns task info without waiting for completion
         return models.TaskRead(
             id=db_task.id,
-            status=db_task.status,
+            status=db_task.status,                    # Initial status (PENDING)
             working_directory=db_task.working_directory,
             created_at=db_task.created_at,
-            started_at=db_task.started_at,
-            ended_at=db_task.ended_at,
+            started_at=db_task.started_at,            # Will be None initially
+            ended_at=db_task.ended_at,                # Will be None initially
             last_action_cache=db_task.last_action_cache,
             final_summary=db_task.final_summary,
             error_message=db_task.error_message,
         )
     except Exception as e:
+        # Error handling: logs errors and converts to HTTP exceptions
         logger.error(f"Failed to create task: {e}", exc_info=True)
         if not isinstance(e, HTTPException):
-            log_crash(e, {"endpoint": "/api/v1/tasks", "method": "POST"})
+            log_crash(e, {"endpoint": "/api/v1/tasks", "method": "POST"})  # Unexpected error reporting
         raise HTTPException(status_code=500, detail=f"Failed to create task: {str(e)}")
 
 
 @app.get("/api/v1/tasks/{task_id}", response_model=models.TaskRead)
 def get_task(task_id: int, session: Session = Depends(get_session)):
-    """Get task status and details."""
+    """
+    Task status retrieval: returns current task state and execution details.
+    Primary endpoint for monitoring task progress and retrieving final results.
+    """
+    # Database query: retrieves task record through CRUD layer
     task = crud.get_task(session, task_id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
 
+    # Task state serialization: converts database record to API response format
     return models.TaskRead(
         id=task.id,
-        status=task.status,
+        status=task.status,                    # Current execution status
         working_directory=task.working_directory,
         created_at=task.created_at,
-        started_at=task.started_at,
-        ended_at=task.ended_at,
-        last_action_cache=task.last_action_cache,
-        final_summary=task.final_summary,
-        error_message=task.error_message,
+        started_at=task.started_at,            # When execution began (if started)
+        ended_at=task.ended_at,                # When execution completed (if finished)
+        last_action_cache=task.last_action_cache,  # Latest progress summary
+        final_summary=task.final_summary,      # Completion summary
+        error_message=task.error_message,      # Error details (if failed)
     )
 
 
 @app.get("/api/v1/tasks", response_model=List[models.TaskRead])
 def list_tasks(session: Session = Depends(get_session)):
-    """List all tasks."""
+    """
+    Task list endpoint: returns all tasks with current status and metadata.
+    Used for dashboard views, bulk monitoring, and task history analysis.
+    """
+    # Database query: retrieves all task records through CRUD layer
     tasks = crud.get_all_tasks(session)
+    # Bulk serialization: converts all task records to API response format
     return [
         models.TaskRead(
             id=task.id,
-            status=task.status,
+            status=task.status,                    # Current status for each task
             working_directory=task.working_directory,
             created_at=task.created_at,
             started_at=task.started_at,
@@ -227,7 +260,7 @@ def list_tasks(session: Session = Depends(get_session)):
             final_summary=task.final_summary,
             error_message=task.error_message,
         )
-        for task in tasks
+        for task in tasks  # List comprehension for efficient serialization
     ]
 
 
@@ -237,26 +270,26 @@ def list_tasks(session: Session = Depends(get_session)):
 @app.post("/api/v1/mcp/tasks", response_model=models.TaskRead)
 async def create_mcp_task(payload: models.MCPCreateTaskPayload, session: Session = Depends(get_session)):
     """
-    Create and execute a new task (machine-friendly API).
-    Strict validation enforced by Pydantic.
+    MCP task creation endpoint: machine-to-machine API with strict validation.
+    Used by MCP proxy servers - enforces stricter input validation than standard REST API.
+    Identical execution logic to create_task but with enhanced input constraints.
     """
-    # Convert strict MCP payload to common TaskCreate model
+    # Payload transformation: converts MCP-specific payload to standard task format
     task_in = models.TaskCreate(
         execution_prompt=payload.execution_prompt,
         working_directory=payload.working_directory,
-        system_prompt=payload.system_prompt,
+        system_prompt=payload.system_prompt,  # Required in MCP payload
     )
 
-    # Create task in database (same logic as REST API)
+    # Database persistence: uses same logic as standard REST API for consistency
     log_dir = app_dir / "logs"
     db_task = crud.create_task(session, task_in, log_dir)
 
-    # Submit to process pool for execution
-    # Note: Using asyncio.create_task instead of ProcessPoolExecutor
-    # because Claude SDK needs to run in the main process for OAuth auth
+    # Background execution: identical async task pattern
+    # CRITICAL: Main process execution required for Claude SDK OAuth
     asyncio.create_task(run_task_async(db_task.id))
 
-    # Return task info
+    # Response formatting: identical structure to standard endpoint
     return models.TaskRead(
         id=db_task.id,
         status=db_task.status,

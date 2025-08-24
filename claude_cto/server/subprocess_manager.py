@@ -77,6 +77,7 @@ class SubprocessManager:
             logger.debug(f"Command completed: {description} (rc={result.returncode})")
             return result.returncode, result.stdout, result.stderr
 
+        # timeout enforcement and process cleanup: prevents hung processes by force-killing after TimeoutExpired
         except subprocess.TimeoutExpired as e:
             self.timeout_count += 1
             logger.warning(f"Command timed out after {timeout}s: {description}")
@@ -142,6 +143,7 @@ class SubprocessManager:
 
             if attempt < max_retries:
                 logger.info(f"Retrying command (attempt {attempt + 2}/{max_retries + 1})")
+                # exponential backoff retry logic: doubles delay each attempt to handle transient failures gracefully
                 time.sleep(retry_delay * (2**attempt))  # Exponential backoff
 
         return rc, stdout, stderr
@@ -156,6 +158,7 @@ class SubprocessManager:
         Returns:
             True if command exists, False otherwise
         """
+        # cross-platform command detection: Unix 'which' vs Windows 'where' for PATH lookup
         check_cmd = ["which", command] if sys.platform != "win32" else ["where", command]
         rc, _, _ = self.run_command(check_cmd, timeout=2, capture_output=True)
         return rc == 0
@@ -206,6 +209,7 @@ def get_subprocess_manager(default_timeout: int = 30, notify_on_timeout: bool = 
     Returns:
         SubprocessManager instance
     """
+    # singleton instance for consistent timeout policies: ensures all subprocess calls use same configuration
     global _subprocess_manager
     if _subprocess_manager is None:
         _subprocess_manager = SubprocessManager(default_timeout, notify_on_timeout)

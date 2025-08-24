@@ -11,15 +11,16 @@ import typer
 
 def get_server_url() -> str:
     """
-    Discover server URL using layered configuration.
-    Priority: Environment variable > Config file > Default
+    Determines API server URL using three-tier configuration priority.
+    Critical for CLI-to-server communication - must resolve to active server.
+    Priority: Environment variable > Config file > Default localhost
     """
-    # 1. Check environment variable (highest priority)
+    # Layer 1: Environment variable override (highest priority for deployment flexibility)
     env_url = os.environ.get("CLAUDE_CTO_SERVER_URL")
     if env_url:
         return env_url
 
-    # 2. Check config file
+    # Layer 2: JSON config file in user app directory (persistent user preference)
     config_dir = Path(typer.get_app_dir("claude-cto"))
     config_file = config_dir / "config.json"
 
@@ -32,5 +33,5 @@ def get_server_url() -> str:
         except (json.JSONDecodeError, IOError):
             pass  # Fall through to default
 
-    # 3. Return default value
+    # Layer 3: Default localhost fallback (development mode)
     return "http://localhost:8000"

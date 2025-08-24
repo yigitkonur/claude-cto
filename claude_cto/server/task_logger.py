@@ -13,103 +13,132 @@ from .path_utils import generate_log_filename, get_safe_log_directory
 
 
 class TaskLogger:
-    """Advanced logger for individual tasks with multiple log levels."""
+    """
+    Multi-level task logging system: creates structured, comprehensive logs for task execution.
+    Critical for debugging, monitoring, and audit trails - must be properly closed to prevent resource leaks.
+    Generates summary (concise) and detailed (verbose) logs plus global aggregation for system monitoring.
+    """
 
     def __init__(self, task_id: int, working_directory: str, timestamp: Optional[datetime] = None):
+        # Task identification: establishes logging context and resource tracking
         self.task_id = task_id
         self.working_directory = working_directory
-        self.timestamp = timestamp or datetime.now()
-        self.log_dir = self._setup_log_directory()
+        self.timestamp = timestamp or datetime.now()  # Execution timestamp for log organization
+        self.log_dir = self._setup_log_directory()  # Base directory for all task logs
 
-        # Create enhanced log file paths with directory context
+        # Log file path generation: creates unique, collision-free filenames with context
+        # Pattern: task_{id}_{dir_hash}_{timestamp}_{level}.log
         summary_filename = generate_log_filename(task_id, working_directory, "summary", self.timestamp)
         detailed_filename = generate_log_filename(task_id, working_directory, "detailed", self.timestamp)
 
-        self.summary_log_path = self.log_dir / summary_filename
-        self.detailed_log_path = self.log_dir / detailed_filename
+        self.summary_log_path = self.log_dir / summary_filename  # Concise progress log
+        self.detailed_log_path = self.log_dir / detailed_filename  # Verbose debugging log
 
-        # Setup loggers with unique names to avoid conflicts
+        # Logger instance creation: unique names prevent cross-task interference
+        # Time suffix ensures logger uniqueness across rapid task creation
         logger_suffix = f"{task_id}_{self.timestamp.strftime('%H%M%S')}"
         self.summary_logger = self._create_logger(f"summary_{logger_suffix}", self.summary_log_path)
         self.detailed_logger = self._create_logger(f"detailed_{logger_suffix}", self.detailed_log_path)
 
-        # Global summary logger
+        # System-wide aggregation logger: consolidates all task events for monitoring
         self.global_logger = self._get_global_logger()
 
     def _setup_log_directory(self) -> Path:
-        """Create and return the .claude-cto directory structure."""
-        return get_safe_log_directory()
+        """
+        Log directory initialization: ensures .claude-cto directory exists with proper permissions.
+        Critical for task isolation and log organization across system operations.
+        """
+        return get_safe_log_directory()  # Cross-platform directory creation with safety checks
 
     def _create_logger(self, name: str, log_file: Path) -> logging.Logger:
-        """Create a logger with rich formatting."""
-        # Check if logger already exists and clean it up
+        """
+        Logger factory: creates isolated file loggers with cleanup to prevent resource leaks.
+        Critical - removes existing handlers to prevent duplicate logging and file handle accumulation.
+        """
+        # Existing logger cleanup: prevents handler accumulation from previous task executions
         if name in logging.Logger.manager.loggerDict:
             existing_logger = logging.getLogger(name)
-            # Remove all existing handlers
+            # Handler cleanup: closes file handles and removes references
             for handler in existing_logger.handlers[:]:
-                handler.close()
+                handler.close()  # Critical: releases file system resources
                 existing_logger.removeHandler(handler)
 
+        # Fresh logger creation: establishes clean logging instance
         logger = logging.getLogger(name)
-        logger.setLevel(logging.INFO)
+        logger.setLevel(logging.INFO)  # Standard logging level for task operations
 
-        # Remove any remaining handlers to avoid duplicates
+        # Handler deduplication: ensures no duplicate file writing
         for handler in logger.handlers[:]:
-            handler.close()
+            handler.close()  # Resource cleanup before removal
             logger.removeHandler(handler)
 
-        # File handler with rich formatting
-        handler = logging.FileHandler(log_file, mode="w")
+        # File handler setup: creates new log file with structured formatting
+        handler = logging.FileHandler(log_file, mode="w")  # Overwrite mode for fresh logs
+        # Rich formatting: timestamp │ level │ message for easy parsing
         formatter = logging.Formatter("%(asctime)s │ %(levelname)-8s │ %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
         handler.setFormatter(formatter)
         logger.addHandler(handler)
-        logger.propagate = False
+        logger.propagate = False  # Prevents duplicate logging to parent loggers
 
         return logger
 
     def _get_global_logger(self) -> logging.Logger:
-        """Get or create the global claude-cto summary logger."""
+        """
+        Global logger acquisition: creates or reuses system-wide aggregation logger.
+        Consolidates all task events into single log file for monitoring and alerting systems.
+        Critical for system observability and troubleshooting across multiple tasks.
+        """
+        # Global log file: central aggregation point for all task activity
         global_log_file = Path.home() / ".claude-cto" / "claude-cto.log"
 
+        # Singleton logger pattern: reuses existing global logger instance
         logger = logging.getLogger("claude_cto_global")
 
-        # Always check for and remove stale handlers
+        # Handler validation: ensures global logger points to correct file
+        # Prevents stale handlers from pointing to moved or deleted files
         needs_handler = True
         for handler in logger.handlers[:]:
             if isinstance(handler, logging.FileHandler):
-                # Check if handler is still valid and pointing to the right file
+                # File path validation: confirms handler targets correct global log
                 if hasattr(handler, "baseFilename") and handler.baseFilename == str(global_log_file):
-                    needs_handler = False
+                    needs_handler = False  # Valid handler found - reuse it
                 else:
-                    # Remove stale handler
-                    handler.close()
+                    # Stale handler cleanup: removes handlers pointing to wrong files
+                    handler.close()  # Release file system resources
                     logger.removeHandler(handler)
 
+        # Handler creation: establishes new global log handler if needed
         if needs_handler:
             logger.setLevel(logging.INFO)
 
+            # Append mode: preserves historical log data across server restarts
             handler = logging.FileHandler(global_log_file, mode="a")
+            # Task-aware formatting: includes task ID for multi-task correlation
             formatter = logging.Formatter(
                 "%(asctime)s │ TASK-%(extra_task_id)-3s │ %(levelname)-8s │ %(message)s",
                 datefmt="%Y-%m-%d %H:%M:%S",
             )
             handler.setFormatter(formatter)
             logger.addHandler(handler)
-            logger.propagate = False
+            logger.propagate = False  # Prevents duplicate system logging
 
         return logger
 
     def log_task_start(self, execution_prompt: str, model: str, system_prompt: str = None):
-        """Log task initialization with full context."""
+        """
+        Task initialization logging: captures complete execution context for debugging and audit.
+        Critical for understanding task configuration and troubleshooting failed executions.
+        """
         start_time = datetime.now()
 
-        # Summary log
+        # Summary log: concise task startup information for quick scanning
         self.summary_logger.info(f"🚀 Task {self.task_id} STARTED")
         self.summary_logger.info(f"📁 Working Directory: {self.working_directory}")
         self.summary_logger.info(f"🤖 Model: {model}")
+        # Prompt preview: truncated for summary readability
         self.summary_logger.info(f"📝 Prompt: {execution_prompt[:100]}{'...' if len(execution_prompt) > 100 else ''}")
 
-        # Detailed log
+        # Detailed log: comprehensive task configuration for deep debugging
         self.detailed_logger.info("=" * 80)
         self.detailed_logger.info(f"TASK {self.task_id} EXECUTION LOG")
         self.detailed_logger.info("=" * 80)
@@ -117,10 +146,11 @@ class TaskLogger:
         self.detailed_logger.info(f"Working Directory: {self.working_directory}")
         self.detailed_logger.info(f"Model: {model}")
         self.detailed_logger.info(f"System Prompt: {system_prompt or 'Default'}")
+        # Full prompt: complete text for exact reproduction
         self.detailed_logger.info(f"Execution Prompt:\n{execution_prompt}")
         self.detailed_logger.info("-" * 80)
 
-        # Global log
+        # Global aggregation: system-wide task tracking for monitoring dashboards
         self._log_global("STARTED", f"Model: {model} | Dir: {Path(self.working_directory).name}")
 
     def log_task_progress(self, message: str, action_type: str = "ACTION"):
@@ -259,64 +289,84 @@ class TaskLogger:
 
     def close(self):
         """
-        CRITICAL: Close and clean up the task logger to prevent memory leaks.
-        Must be called when the task completes to free resources.
+        CRITICAL RESOURCE CLEANUP: Prevents file handle leaks and logger accumulation.
+        MUST be called when task completes to avoid system resource exhaustion.
+        Failure to call leads to: file handle exhaustion, memory leaks, logging conflicts.
         """
-        self._cleanup_loggers()
+        self._cleanup_loggers()  # Immediate resource cleanup to prevent system degradation
 
     def _cleanup_loggers(self):
-        """Clean up logger handlers and remove loggers to prevent resource leaks."""
+        """
+        Logger resource cleanup: prevents critical system resource leaks in long-running servers.
+        Three-phase cleanup: flush data → close file handles → remove logger registry entries.
+        CRITICAL for system stability - prevents file handle exhaustion and memory accumulation.
+        """
+        # Phase 1: File system resource cleanup for each task-specific logger
         for logger in [self.summary_logger, self.detailed_logger]:
-            # Close and remove all handlers
+            # Handler cleanup loop: ensures all file handles are properly closed
             for handler in logger.handlers[:]:
-                handler.flush()
-                handler.close()
-                logger.removeHandler(handler)
+                handler.flush()  # Force pending data to disk before closing
+                handler.close()  # Release file system resources (file handles)
+                logger.removeHandler(handler)  # Remove handler reference from logger
 
-            # Clear the logger reference
+            # Handler list cleanup: prevents stale handler references
             logger.handlers.clear()
 
-        # Remove loggers from the registry to prevent accumulation
+        # Phase 2: Logger registry cleanup - prevents memory leaks in long-running processes
+        # Critical: removes logger entries from Python's global logger dictionary
         logger_names = [self.summary_logger.name, self.detailed_logger.name]
         for name in logger_names:
+            # Registry entry removal: prevents logger accumulation over multiple tasks
             if name in logging.Logger.manager.loggerDict:
                 del logging.Logger.manager.loggerDict[name]
 
 
 def create_task_logger(task_id: int, working_directory: str, timestamp: Optional[datetime] = None) -> TaskLogger:
-    """Factory function to create a task logger."""
-    return TaskLogger(task_id, working_directory, timestamp)
+    """
+    TaskLogger factory: creates properly configured logger instance for task execution.
+    Critical entry point - ensures consistent logger setup across all task executions.
+    """
+    return TaskLogger(task_id, working_directory, timestamp)  # Standard logger instantiation
 
 
 def get_log_directory() -> Path:
-    """Get the main logging directory."""
-    return Path.home() / ".claude-cto"
+    """
+    Log directory accessor: returns standardized logging directory path.
+    Central location for all claude-cto system logs and configuration.
+    """
+    return Path.home() / ".claude-cto"  # User home-based logging directory
 
 
 def get_task_logs(task_id: int) -> Optional[Dict[str, str]]:
-    """Get log file paths for a specific task (finds newest logs)."""
-
+    """
+    Task log discovery: locates log files for specific task ID across log directory.
+    Returns all log levels (summary, detailed, global) for comprehensive task analysis.
+    Critical for debugging failed tasks and retrieving execution history.
+    """
+    # Log directory scanning: searches for task-specific log files
     log_dir = get_safe_log_directory()
 
-    # Find all log files for this task ID
+    # Log pair discovery: finds matching summary and detailed logs for task
     task_logs = {"summary": None, "detailed": None}
 
+    # Summary log scanning: searches for task's concise progress log
     for log_file in log_dir.glob(f"task_{task_id}_*_summary.log"):
-        if not task_logs["summary"]:  # Take the first one found
+        if not task_logs["summary"]:  # First match wins - handles multiple executions
             task_logs["summary"] = str(log_file)
 
-            # Look for corresponding detailed log
+            # Paired detailed log discovery: finds corresponding verbose log
             detailed_pattern = log_file.name.replace("_summary.log", "_detailed.log")
             detailed_path = log_dir / detailed_pattern
             if detailed_path.exists():
                 task_logs["detailed"] = str(detailed_path)
-            break
+            break  # Stop after finding first valid log pair
 
+    # Global log inclusion: adds system-wide log for complete task context
     if task_logs["summary"]:
         task_logs["global"] = str(get_log_directory() / "claude-cto.log")
         return task_logs
 
-    return None
+    return None  # No logs found for this task ID
 
 
 def list_all_task_logs() -> Dict[int, Dict[str, str]]:

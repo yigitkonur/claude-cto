@@ -11,29 +11,29 @@ import httpx
 from fastmcp import FastMCP
 
 
-# Global orchestration tracker (in-memory for this session)
+# In-memory orchestration staging: tracks task groups before submission to API server
 _active_orchestrations: Dict[str, Dict[str, Any]] = {}
-# Track last cleanup time
+# Cleanup timer: tracks last memory cleanup to prevent resource leaks
 _last_cleanup: datetime = datetime.utcnow()
 
 
 def _cleanup_old_orchestrations(max_age_hours: int = 24) -> None:
     """
-    Clean up old orchestration data to prevent memory leaks.
-    Removes orchestrations older than max_age_hours.
+    Periodic memory cleanup to prevent orchestration data accumulation.
+    Critical for long-running MCP sessions - removes orchestrations older than max_age_hours.
     """
     global _active_orchestrations, _last_cleanup
 
     current_time = datetime.utcnow()
 
-    # Only run cleanup every hour
+    # Rate limiting: only cleanup once per hour to avoid excessive processing
     if (current_time - _last_cleanup).total_seconds() < 3600:
         return
 
     _last_cleanup = current_time
     cutoff_time = current_time - timedelta(hours=max_age_hours)
 
-    # Find old orchestrations to remove
+    # Timestamp-based pruning: identifies stale orchestration entries for removal
     to_remove = []
     for key, value in _active_orchestrations.items():
         if isinstance(value, dict):
@@ -47,7 +47,7 @@ def _cleanup_old_orchestrations(max_age_hours: int = 24) -> None:
                 # Assume submitted orchestrations older than 24h can be cleaned
                 to_remove.append(key)
 
-    # Remove old entries
+    # Memory reclamation: removes stale entries from global dictionary
     for key in to_remove:
         del _active_orchestrations[key]
 
@@ -190,17 +190,18 @@ def create_enhanced_proxy_server(api_url: Optional[str] = None) -> FastMCP:
                 "hint": "Mention specific files or directories in your prompt",
             }
 
-        # Periodically clean up old orchestrations
+        # Proactive memory management: ensures long-running sessions don't leak memory
         _cleanup_old_orchestrations()
 
-        # Check if this is part of an orchestration or standalone
+        # Orchestration vs standalone decision: determines whether task needs dependency management
         if depends_on or orchestration_group:
-            # This task has dependencies or is part of a group - use orchestration
+            # Complex workflow path: task has dependencies or belongs to a group
 
-            # Get or create orchestration group
+            # Auto-group generation: creates unique group ID if not specified
             if not orchestration_group:
                 orchestration_group = f"auto_group_{datetime.utcnow().isoformat()}"
 
+            # Group initialization: creates new orchestration entry if doesn't exist
             if orchestration_group not in _active_orchestrations:
                 _active_orchestrations[orchestration_group] = {
                     "tasks": [],
@@ -208,7 +209,7 @@ def create_enhanced_proxy_server(api_url: Optional[str] = None) -> FastMCP:
                     "created_at": datetime.utcnow().isoformat(),
                 }
 
-            # Validate dependencies exist in the same orchestration group
+            # Dependency validation: ensures all referenced tasks exist in same group
             if depends_on:
                 existing_identifiers = [t["identifier"] for t in _active_orchestrations[orchestration_group]["tasks"]]
                 for dep in depends_on:
@@ -219,7 +220,7 @@ def create_enhanced_proxy_server(api_url: Optional[str] = None) -> FastMCP:
                             "existing_tasks": existing_identifiers,
                         }
 
-            # Add this task to the orchestration
+            # Task definition assembly: builds complete task specification for orchestration
             task_def = {
                 "identifier": task_identifier,
                 "execution_prompt": execution_prompt,
@@ -230,10 +231,10 @@ def create_enhanced_proxy_server(api_url: Optional[str] = None) -> FastMCP:
                 "initial_delay": wait_after_dependencies,
             }
 
+            # In-memory staging: adds task to orchestration queue (not yet submitted to API)
             _active_orchestrations[orchestration_group]["tasks"].append(task_def)
 
-            # Don't auto-submit orchestrations - wait for explicit submit or batch completion
-            # Store the task for later submission
+            # Deferred submission strategy: waits for explicit submit_orchestration call
             return {
                 "status": "queued",
                 "task_identifier": task_identifier,
@@ -350,7 +351,8 @@ def create_enhanced_proxy_server(api_url: Optional[str] = None) -> FastMCP:
     @mcp.tool()
     async def submit_orchestration(orchestration_group: str) -> Dict[str, Any]:
         """
-        Submit all tasks in an orchestration group for execution.
+        Batch submission: sends all staged tasks in group to API server as complete orchestration.
+        Critical step that transitions from in-memory staging to active execution.
 
         Use this after adding all tasks with the same orchestration_group.
 
@@ -360,14 +362,17 @@ def create_enhanced_proxy_server(api_url: Optional[str] = None) -> FastMCP:
         Returns:
             Orchestration details with all task mappings
         """
+        # Group existence validation: ensures orchestration was properly staged
         if orchestration_group not in _active_orchestrations:
             return {
                 "error": f"Orchestration group '{orchestration_group}' not found",
                 "hint": "Create tasks with this orchestration_group first",
             }
 
+        # Orchestration payload preparation: formats staged tasks for API submission
         orchestration_data = {"tasks": _active_orchestrations[orchestration_group]["tasks"]}
 
+        # HTTP orchestration submission: sends complete DAG to API server
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 f"{api_url}/api/v1/orchestrations",
@@ -378,7 +383,7 @@ def create_enhanced_proxy_server(api_url: Optional[str] = None) -> FastMCP:
             if response.status_code == 200:
                 result = response.json()
 
-                # Store task ID mappings
+                # Task ID mapping storage: stores server-assigned IDs for status tracking
                 for task in result["tasks"]:
                     _active_orchestrations[orchestration_group]["identifier_map"][task["identifier"]] = task["task_id"]
 

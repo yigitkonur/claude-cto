@@ -24,44 +24,44 @@ class ErrorHandler:
     @classmethod
     def is_transient_error(cls, error: Exception) -> bool:
         """
-        Determine if an error is transient (worth retrying) or permanent.
-        Following Carmack's philosophy: simple, explicit categorization.
+        Critical error classification: determines retry-worthiness to prevent infinite loops.
+        Follows Carmack's philosophy - simple, explicit categorization with clear boundaries.
         Enhanced with better error classification logic.
         """
         import asyncio
 
-        # Connection and timeout errors are transient
+        # Network connectivity errors: always transient, worth retrying with backoff
         if isinstance(
             error,
             (CLIConnectionError, ConnectionError, TimeoutError, asyncio.TimeoutError),
         ):
             return True
 
-        # Rate limiting is transient but needs special handling
+        # Rate limiting detection: API quota exceeded, should retry with longer delay
         error_msg = str(error).lower()
         if "rate limit" in error_msg or "429" in error_msg:
             return True
 
-        # CLIJSONDecodeError can be transient (corrupted stream)
+        # JSON parsing failure analysis: distinguishes corruption vs malformed data
         if isinstance(error, CLIJSONDecodeError):
-            # Check if it's a network-related JSON error
+            # Network-induced corruption: likely transient stream interruption
             if hasattr(error, "original_error"):
                 orig_msg = str(error.original_error).lower()
                 if "timeout" in orig_msg or "connection" in orig_msg:
                     return True
-            # Simple truncation/corruption is often transient
+            # Data truncation indicators: often caused by network interruptions
             if "incomplete" in error_msg or "truncated" in error_msg:
                 return True
-            # Otherwise it's likely a permanent parsing issue
+            # Structural JSON errors: permanent parsing issues, don't retry
             return False
 
-        # ProcessError - check exit codes for transient conditions
+        # Process execution failure analysis: examines exit codes and stderr patterns
         if isinstance(error, ProcessError):
             exit_code = getattr(error, "exit_code", None)
-            # Network/timeout related exit codes
+            # System signal exit codes: process killed by timeout or system resource limits
             if exit_code in [124, 137, 143]:  # timeout, SIGKILL, SIGTERM
                 return True
-            # Check stderr for transient conditions
+            # Error message pattern matching: identifies transient system conditions
             stderr = getattr(error, "stderr", "")
             if stderr:
                 stderr_lower = stderr.lower()
@@ -76,7 +76,7 @@ class ErrorHandler:
                     ]
                 ):
                     return True
-            # Most ProcessErrors are permanent
+            # Most ProcessErrors are permanent code/environment issues
             return False
 
         # Explicitly permanent errors
@@ -90,7 +90,7 @@ class ErrorHandler:
         # Everything else is permanent (auth errors, parse errors, etc.)
         return False
 
-    # Error type to HTTP status code mapping
+    # Map specific exceptions to HTTP status codes
     ERROR_STATUS_CODES = {
         CLINotFoundError: 503,  # Service Unavailable - CLI not installed
         CLIConnectionError: 502,  # Bad Gateway - Can't connect to CLI
@@ -100,7 +100,7 @@ class ErrorHandler:
         ClaudeSDKError: 500,  # Internal Server Error - Generic SDK error
     }
 
-    # Recovery suggestions for each error type
+    # Provide actionable, human-readable recovery steps for users
     RECOVERY_SUGGESTIONS = {
         CLINotFoundError: [
             "Install Claude CLI: npm install -g @anthropic-ai/claude-code",

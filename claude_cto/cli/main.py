@@ -92,8 +92,12 @@ def main(ctx: typer.Context):
 
 
 def is_server_running(server_url: str) -> bool:
-    """Check if the server is running by making a health check request."""
+    """
+    Health check to determine if API server is running and responsive.
+    Critical for auto-start logic - prevents duplicate server processes.
+    """
     try:
+        # Fast health check with short timeout to avoid blocking CLI
         with httpx.Client() as client:
             response = client.get(f"{server_url}/health", timeout=1.0)
             return response.status_code == 200
@@ -103,7 +107,8 @@ def is_server_running(server_url: str) -> bool:
 
 def start_server_in_background() -> bool:
     """
-    Start the server in the background automatically.
+    Auto-starts API server when not running - enables zero-config CLI usage.
+    Handles port conflicts and process management automatically.
     Returns True if successfully started, False otherwise.
     """
     import socket
@@ -111,7 +116,7 @@ def start_server_in_background() -> bool:
 
     console.print("[yellow]⚠️  Server not running. Starting Claude CTO server...[/yellow]")
 
-    # Find available port
+    # Port discovery logic: finds next available port starting from 8000
     def is_port_available(host: str, port: int) -> bool:
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -123,7 +128,7 @@ def start_server_in_background() -> bool:
     host = "0.0.0.0"
     port = 8000
 
-    # Find available port
+    # Scan for available port (prevents conflicts with existing services)
     for attempt in range(10):
         if is_port_available(host, port):
             break
@@ -131,7 +136,7 @@ def start_server_in_background() -> bool:
     else:
         return False
 
-    # Start server
+    # Background process creation: spawns detached uvicorn server with suppressed output
     cmd = [
         sys.executable,
         "-m",
@@ -144,6 +149,7 @@ def start_server_in_background() -> bool:
     ]
 
     try:
+        # Detached subprocess: continues running after CLI exits
         process = subprocess.Popen(
             cmd,
             stdout=subprocess.DEVNULL,
@@ -151,14 +157,14 @@ def start_server_in_background() -> bool:
             start_new_session=True,
         )
 
-        # Wait for server to start
+        # Server startup wait: allows FastAPI to initialize before health checks
         time.sleep(2)
 
-        # Check if process is still running
+        # Process health verification: ensures server didn't crash during startup
         if process.poll() is None:
             console.print(f"[green]✓ Server started on port {port} (PID: {process.pid})[/green]")
 
-            # Update environment variable for this session if using non-default port
+            # Dynamic URL configuration: updates config when using non-default port
             if port != 8000:
                 os.environ["CLAUDE_CTO_SERVER_URL"] = f"http://localhost:{port}"
 
@@ -236,33 +242,34 @@ def run(
     ] = False,
 ):
     """
-    Submit a new task to Claude CTO.
-
+    Main CLI command: creates and executes Claude Code SDK tasks via REST API.
+    Handles multiple input sources (args, files, stdin) and auto-starts server.
+    
     Prompt can be provided as:
     - Command line argument
     - File path (if argument is a readable file)
     - Piped from stdin
     """
-    # Determine prompt source
+    # Input source resolution: prioritizes stdin > file path > direct argument
     execution_prompt = None
 
-    # Check if data is being piped from stdin
+    # Stdin detection: handles piped input from other commands
     if not sys.stdin.isatty():
         execution_prompt = sys.stdin.read().strip()
     elif prompt:
-        # Check if it's a file path
+        # File vs string disambiguation: checks if argument is readable file
         prompt_path = Path(prompt)
         if prompt_path.exists() and prompt_path.is_file():
             with open(prompt_path, "r") as f:
                 execution_prompt = f.read().strip()
         else:
-            # Treat as raw prompt string
+            # Direct prompt string
             execution_prompt = prompt
     else:
         console.print("[red]Error: No prompt provided[/red]")
         raise typer.Exit(1)
 
-    # Prepare request data
+    # API request payload construction: builds task creation data
     task_data = {
         "execution_prompt": execution_prompt,
         "working_directory": str(Path(working_dir).resolve()),
@@ -270,17 +277,17 @@ def run(
     if system_prompt:
         task_data["system_prompt"] = system_prompt
 
-    # Validate and add model
+    # Model validation: ensures valid Claude model selection
     model_lower = model.lower()
     if model_lower not in ["sonnet", "opus", "haiku"]:
         console.print(f"[red]❌ Invalid model: {model}. Must be one of: sonnet, opus, haiku[/red]")
         raise typer.Exit(1)
     task_data["model"] = model_lower
 
-    # Get server URL and check if server is running
+    # Server connectivity check: determines if API server is accessible
     server_url = get_server_url()
 
-    # Auto-start server if not running
+    # Zero-config server management: automatically starts server if needed
     if not is_server_running(server_url):
         if not start_server_in_background():
             console.print("\n[red]❌ Could not start the server automatically.[/red]\n")
@@ -293,17 +300,17 @@ def run(
             console.print("     [bright_white]$ pkill -f claude_cto.server[/bright_white]\n")
             raise typer.Exit(1)
 
-        # Update server_url if it changed
+        # URL refresh: updates server_url after dynamic port assignment
         server_url = get_server_url()
 
-    # Submit task to server
+    # HTTP API request: submits task to /api/v1/tasks endpoint with timeout
     with httpx.Client() as client:
         try:
             response = client.post(f"{server_url}/api/v1/tasks", json=task_data, timeout=30.0)
             response.raise_for_status()
             result = response.json()
 
-            # Display task info
+            # Success feedback: displays task ID and status to user
             console.print(f"\n[green]✓[/green] Task created with ID: [bold cyan]{result['id']}[/bold cyan]")
             console.print(f"Status: [yellow]{result['status']}[/yellow]")
 
@@ -315,7 +322,7 @@ def run(
                     '[dim]    Or watch live with:[/dim] [bright_white]claude-cto run "your task" --watch[/bright_white]'
                 )
 
-            # Watch if requested
+            # Live monitoring: starts real-time progress watching if requested
             if watch:
                 asyncio.run(watch_status(result["id"]))
 
@@ -642,7 +649,8 @@ def orchestrate(
     poll_interval: int = typer.Option(5, "--poll-interval", help="Polling interval in seconds when waiting"),
 ):
     """
-    Create and execute a task orchestration from a JSON file.
+    Complex multi-task orchestration from JSON file with dependency management.
+    Creates DAG of interconnected tasks with automatic execution ordering.
 
     Example JSON structure:
     {
@@ -670,7 +678,7 @@ def orchestrate(
       ]
     }
     """
-    # Load orchestration from file
+    # JSON file loading: reads and validates orchestration definition
     if not tasks_file.exists():
         console.print(f"[red]File not found: {tasks_file}[/red]")
         raise typer.Exit(1)
@@ -682,20 +690,20 @@ def orchestrate(
         console.print(f"[red]Invalid JSON: {e}[/red]")
         raise typer.Exit(1)
 
-    # Validate structure
+    # Schema validation: ensures required 'tasks' array exists
     if "tasks" not in orchestration_data:
         console.print("[red]JSON must contain 'tasks' array[/red]")
         raise typer.Exit(1)
 
-    # Use provided server URL or default
+    # Server resolution: uses override URL or discovers default
     url = server_url or get_server_url()
 
-    # Auto-start server if needed
+    # Auto-server management: ensures API is available for orchestration
     if not is_server_running(url):
         start_server_in_background()
         time.sleep(2)  # Give server time to start
 
-    # Create orchestration
+    # Orchestration API request: submits entire DAG to /api/v1/orchestrations
     try:
         response = httpx.post(f"{url}/api/v1/orchestrations", json=orchestration_data, timeout=30.0)
         response.raise_for_status()
@@ -704,7 +712,7 @@ def orchestrate(
         orch_id = result["orchestration_id"]
         console.print(f"[green]✓ Orchestration created with ID: {orch_id}[/green]")
 
-        # Display task graph
+        # Dependency visualization: displays task execution graph to user
         console.print("\n[bold cyan]Task Dependency Graph:[/bold cyan]")
         for task in result["tasks"]:
             deps = task.get("depends_on", [])
@@ -713,7 +721,7 @@ def orchestrate(
             delay_str = f" (delay: {delay}s)" if delay else ""
             console.print(f"  • {task['identifier']} (#{task['task_id']}){dep_str}{delay_str}")
 
-        # Wait for completion if requested
+        # Live progress monitoring: optional polling loop with Rich progress bar
         if wait:
             console.print("\n[yellow]Waiting for orchestration to complete...[/yellow]")
 
@@ -727,7 +735,7 @@ def orchestrate(
                 while True:
                     time.sleep(poll_interval)
 
-                    # Check status
+                    # Status polling: checks orchestration completion via API
                     status_response = httpx.get(f"{url}/api/v1/orchestrations/{orch_id}")
                     if status_response.status_code == 200:
                         status_data = status_response.json()

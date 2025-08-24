@@ -23,7 +23,7 @@ T = TypeVar("T")
 
 class RetryStrategy(Enum):
     """Retry strategy types."""
-
+    # Defines available backoff algorithms
     EXPONENTIAL = "exponential"  # Exponential backoff
     LINEAR = "linear"  # Linear backoff
     FIBONACCI = "fibonacci"  # Fibonacci backoff
@@ -75,10 +75,10 @@ class RetryConfig:
 
 class CircuitState(Enum):
     """Circuit breaker states."""
-
-    CLOSED = "closed"  # Normal operation
-    OPEN = "open"  # Failing, reject all
-    HALF_OPEN = "half_open"  # Testing if recovered
+    # Represents the three states of the circuit breaker FSM
+    CLOSED = "closed"  # Normal operation: requests flow through normally
+    OPEN = "open"  # Failing state: reject all requests to prevent cascading failures
+    HALF_OPEN = "half_open"  # Testing state: allow limited requests to test recovery
 
 
 class CircuitBreaker:
@@ -112,6 +112,7 @@ class CircuitBreaker:
     def record_success(self) -> None:
         """Record a successful operation."""
         if self.state == CircuitState.HALF_OPEN:
+            # Logic: transition from HALF_OPEN back to CLOSED after 2 consecutive successes
             self.success_count += 1
             if self.success_count >= 2:  # Need 2 successes to close
                 logger.info("Circuit breaker closing after successful recovery")
@@ -133,6 +134,7 @@ class CircuitBreaker:
         self.success_count = 0
 
         if self.state == CircuitState.CLOSED:
+            # Logic: trip circuit to OPEN when failure threshold is exceeded
             if self.failure_count >= self.config.circuit_breaker_threshold:
                 logger.warning(f"Circuit breaker opening after {self.failure_count} failures")
                 self.state = CircuitState.OPEN
@@ -153,6 +155,7 @@ class CircuitBreaker:
             return True
 
         if self.state == CircuitState.OPEN:
+            # Critical state transition: OPEN to HALF_OPEN based on timeout to test recovery
             # Check if enough time has passed to try again
             if self.last_failure_time:
                 elapsed = (datetime.now() - self.last_failure_time).total_seconds()
@@ -213,22 +216,26 @@ class RetryHandler:
 
         # Calculate base delay based on strategy
         if config.strategy == RetryStrategy.EXPONENTIAL:
+            # Exponential backoff: delay grows exponentially (1x, 2x, 4x, 8x, ...)
             delay = initial_delay * (exponential_base**attempt)
         elif config.strategy == RetryStrategy.LINEAR:
+            # Linear backoff: delay grows linearly (1x, 2x, 3x, 4x, ...)
             delay = initial_delay * attempt
         elif config.strategy == RetryStrategy.FIBONACCI:
+            # Fibonacci backoff: delay follows Fibonacci sequence for smoother progression
             # Fibonacci sequence: 1, 1, 2, 3, 5, 8, 13...
             fib = [1, 1]
             for _ in range(attempt):
                 fib.append(fib[-1] + fib[-2])
             delay = initial_delay * fib[min(attempt, len(fib) - 1)]
         else:  # FIXED
+            # Fixed backoff: consistent delay between all retry attempts
             delay = initial_delay
 
         # Cap at max delay
         delay = min(delay, config.max_delay)
 
-        # Add jitter if enabled (±25% randomization)
+        # Jitter application: add randomization (±25%) to prevent thundering herd
         if config.jitter:
             jitter_range = delay * 0.25
             delay += random.uniform(-jitter_range, jitter_range)
@@ -301,11 +308,12 @@ class RetryHandler:
         last_error = None
 
         for attempt in range(self.config.max_attempts):
-            # Check circuit breaker
+            # Initial circuit breaker check: prevent execution if circuit is open
             if not circuit_breaker.should_attempt():
                 logger.warning(f"Circuit breaker open for {circuit_key}, skipping attempt")
                 raise RuntimeError(f"Circuit breaker open for {circuit_key}")
 
+            # try block: successful execution path with circuit breaker success recording
             try:
                 # Execute function
                 result = await func(*args, **kwargs)
@@ -316,6 +324,7 @@ class RetryHandler:
                     logger.info(f"Retry successful after {attempt + 1} attempts")
                 return result
 
+            # except block: failure path with delay calculation and retry decision
             except Exception as e:
                 last_error = e
                 circuit_breaker.record_failure()
@@ -380,6 +389,7 @@ class RetryHandler:
                     logger.info(f"Retry successful after {attempt + 1} attempts")
                 return result
 
+            # except block: failure path with delay calculation and retry decision
             except Exception as e:
                 last_error = e
                 circuit_breaker.record_failure()

@@ -15,7 +15,7 @@ from .subprocess_manager import get_subprocess_manager
 
 logger = logging.getLogger(__name__)
 
-# Thread pool for non-blocking sound playback
+# Offload blocking sound playback to a separate thread pool
 sound_executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="sound")
 
 
@@ -64,7 +64,7 @@ class SoundNotifier:
 
     def _get_success_sound_path(self) -> Optional[str]:
         """Get success sound file path from environment or system defaults."""
-        # Check environment variable first
+        # sound path resolution priority: environment variables > custom directory > system defaults
         env_sound = os.getenv("CLAUDE_CTO_SUCCESS_SOUND")
         if env_sound and Path(env_sound).exists():
             return env_sound
@@ -118,7 +118,7 @@ class SoundNotifier:
 
     def _detect_sound_command(self) -> Optional[str]:
         """Detect available sound playback command for the platform."""
-        # Command priority order (optimized for cross-platform support)
+        # OS-specific command priority: Windows PowerShell > macOS afplay > Linux paplay, with universal fallbacks
         if sys.platform == "win32":
             # Windows-specific commands
             commands = ["powershell", "mpv", "ffplay"]
@@ -149,7 +149,7 @@ class SoundNotifier:
             return False
 
         try:
-            # Build command based on detected player
+            # command arguments tailored for each player: afplay direct vs mpv --no-video vs PowerShell .NET SoundPlayer
             if self.sound_command == "afplay":
                 cmd = [self.sound_command, sound_path]
             elif self.sound_command in ["paplay", "aplay"]:
@@ -208,6 +208,7 @@ class SoundNotifier:
             return
 
         try:
+            # background thread execution with async wrapper: prevents blocking the main event loop during sound playback
             loop = asyncio.get_event_loop()
             await loop.run_in_executor(sound_executor, self._play_sound_sync, self.success_sound)
         except Exception as e:

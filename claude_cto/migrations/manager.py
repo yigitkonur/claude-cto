@@ -44,7 +44,11 @@ class MigrationManager:
         self._ensure_migration_table()
 
     def _ensure_migration_table(self) -> None:
-        """Create migration tracking table if it doesn't exist."""
+        """
+        Creates schema_migrations table for version tracking - essential for migration state management.
+        This table serves as the single source of truth for applied database changes.
+        """
+        # Schema migration metadata: defines the version tracking table structure
         metadata = MetaData()
 
         Table(
@@ -55,16 +59,21 @@ class MigrationManager:
             Column("applied_at", DateTime, default=datetime.utcnow),
         )
 
+        # Table creation: idempotent operation that only creates if missing
         metadata.create_all(self.engine)
 
     def get_current_version(self) -> int:
-        """Get current schema version from database."""
+        """
+        Queries database for highest applied migration version - determines migration starting point.
+        Returns 0 for fresh databases with no migrations applied yet.
+        """
         try:
+            # Version query: finds the most recent migration that was successfully applied
             with self.engine.connect() as conn:
                 result = conn.execute(text("SELECT MAX(version) FROM schema_migrations")).scalar()
                 return result or 0
         except OperationalError:
-            # Table doesn't exist yet
+            # Fresh database: migration table doesn't exist yet, start from version 0
             return 0
 
     def apply_migration(self, version: int, description: str, upgrade_sql: str) -> bool:
@@ -86,14 +95,15 @@ class MigrationManager:
             return False
 
         try:
+            # Transactional migration execution: ensures atomicity of schema changes and version tracking
             with self.engine.begin() as conn:
-                # Execute migration SQL
+                # Raw SQL execution: processes multi-statement migrations by splitting on semicolon
                 for statement in upgrade_sql.split(";"):
                     statement = statement.strip()
                     if statement:
                         conn.execute(text(statement))
 
-                # Record migration
+                # Migration record insertion: permanently tracks successful application in database
                 conn.execute(
                     text(
                         """
@@ -117,15 +127,18 @@ class MigrationManager:
 
     def run_migrations(self) -> int:
         """
-        Run all pending migrations.
+        Orchestrates complete database migration process from current version to latest.
+        Handles both fresh installations and incremental upgrades seamlessly.
 
         Returns:
             Number of migrations applied
         """
+        # Migration discovery: loads all available schema changes from hardcoded definitions
         migrations = self._get_migrations()
         current_version = self.get_current_version()
         applied = 0
 
+        # Sequential migration application: processes versions in order to maintain consistency
         for version, description, upgrade_sql in migrations:
             if version > current_version:
                 if self.apply_migration(version, description, upgrade_sql):
@@ -140,11 +153,13 @@ class MigrationManager:
 
     def _get_migrations(self) -> list:
         """
-        Get list of migrations to apply.
+        Hardcoded migration definitions - single source of truth for all database schema changes.
+        Each migration is immutable once released to ensure consistent database evolution.
 
         Returns:
             List of (version, description, upgrade_sql) tuples
         """
+        # Migration registry: chronologically ordered schema changes with DDL statements
         migrations = []
 
         # Migration 1: Add orchestration support
