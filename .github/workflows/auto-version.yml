@@ -86,10 +86,20 @@ jobs:
       if: steps.bump.outputs.should_release == 'true'
       run: |
         NEW_VERSION="${{ steps.bump.outputs.new_version }}"
-        git tag "v$NEW_VERSION"
+        
+        # Check if tag already exists
+        if git tag -l | grep -q "^v$NEW_VERSION$"; then
+          echo "Tag v$NEW_VERSION already exists, skipping tag creation"
+        else
+          git tag "v$NEW_VERSION"
+          echo "Created tag v$NEW_VERSION"
+        fi
+        
         git push origin main
-        git push origin "v$NEW_VERSION"
-        echo "Created and pushed tag v$NEW_VERSION"
+        
+        # Push tag only if it was created or doesn't exist on remote
+        git push origin "v$NEW_VERSION" || echo "Tag v$NEW_VERSION already exists on remote"
+        echo "Pushed changes for version v$NEW_VERSION"
     
     - name: Push version-only changes
       if: steps.bump.outputs.should_release == 'false'
