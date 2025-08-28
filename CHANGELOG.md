@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.8.1] - 2025-08-28
+
+- fix: add missing psutil dependency to server and full extras
+- chore: update smithery.yaml to v0.8.0 [skip ci]
+- chore: bump version to v0.8.0
+- fix: handle existing tags gracefully in auto-version workflow
+- chore: bump version to v0.7.7
+
+
 ## [0.7.8] - 2025-08-24
 
 - critical: fix version bump script corruption bug + add version management infrastructure
