@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.8.3] - 2025-08-28
+
+- fix: update poetry.lock to include psutil dependency
+- chore: bump version to 0.8.2 [skip ci]
+- fix: prioritize prompt argument over stdin detection in CLI
+- chore: bump version to 0.8.1 [skip ci]
+- fix: add missing psutil dependency to server and full extras
+
+
 ## [0.8.2] - 2025-08-28
 
 - fix: prioritize prompt argument over stdin detection in CLI
