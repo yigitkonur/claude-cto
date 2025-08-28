@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.8.2] - 2025-08-28
+
+- fix: prioritize prompt argument over stdin detection in CLI
+- chore: bump version to 0.8.1 [skip ci]
+- fix: add missing psutil dependency to server and full extras
+- chore: update smithery.yaml to v0.8.0 [skip ci]
+- chore: bump version to v0.8.0
+
+
 ## [0.8.1] - 2025-08-28
 
 - fix: add missing psutil dependency to server and full extras
