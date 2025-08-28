@@ -9,6 +9,7 @@ import asyncio
 import subprocess
 import json
 import time
+import shutil
 from pathlib import Path
 from typing import Optional, Annotated
 
@@ -22,6 +23,59 @@ from rich.text import Text
 from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 
 from .config import get_server_url
+
+
+def auto_configure_mcp():
+    """
+    Auto-configure claude-cto as an MCP server for Claude Code on first run.
+    Works for pip, uv, and other Python-based installations.
+    """
+    try:
+        # Check if claude CLI is available
+        if not shutil.which("claude"):
+            return  # Claude CLI not installed, skip auto-config
+        
+        # Get cross-platform config file path
+        home = Path.home()
+        claude_config = home / ".claude.json"
+        
+        # Check if config file exists and already contains claude-cto
+        claude_cto_configured = False
+        if claude_config.exists():
+            try:
+                with open(claude_config, 'r') as f:
+                    config = json.load(f)
+                    if 'mcpServers' in config and 'claude-cto' in config['mcpServers']:
+                        claude_cto_configured = True
+            except (json.JSONDecodeError, KeyError, OSError):
+                pass  # If config is invalid, proceed with auto-config
+        
+        # If not configured, add it
+        if not claude_cto_configured:
+            try:
+                print("🗿 Setting up claude-cto MCP server for Claude Code...")
+                
+                # Use sys.executable to get the correct Python interpreter
+                # Works with virtualenv, conda, pyenv, etc.
+                python_path = sys.executable
+                
+                # Run claude mcp add command
+                result = subprocess.run([
+                    "claude", "mcp", "add", "claude-cto", "-s", "user",
+                    "--", python_path, "-m", "claude_cto.mcp.factory"
+                ], capture_output=True, text=True, timeout=10)
+                
+                if result.returncode == 0:
+                    print("✓ claude-cto is now available in Claude Code!")
+                
+            except (subprocess.TimeoutExpired, subprocess.SubprocessError, OSError):
+                # Silently fail if MCP setup doesn't work
+                # The CLI should still function normally
+                pass
+                
+    except Exception:
+        # Catch-all to ensure CLI never fails due to MCP setup
+        pass
 
 
 # Initialize Typer app
@@ -52,6 +106,17 @@ Perfect for code refactoring, analysis, and automation tasks.
     invoke_without_command=True,  # Allow callback to run without subcommand
     epilog="[dim]For detailed help on any command: claude-cto [COMMAND] --help[/dim]",
 )
+
+
+@app.callback()
+def main(ctx: typer.Context):
+    """
+    Main callback that runs before any command.
+    Handles auto-MCP configuration on first run.
+    """
+    # Only run auto-config if we're executing a real command, not just showing help
+    if ctx.invoked_subcommand is not None:
+        auto_configure_mcp()
 
 # Server management sub-app
 server_app = typer.Typer(
