@@ -264,13 +264,10 @@ def run(
     - File path (if argument is a readable file)
     - Piped from stdin
     """
-    # Input source resolution: prioritizes stdin > file path > direct argument
+    # Input source resolution: prioritizes prompt argument > stdin > error
     execution_prompt = None
 
-    # Stdin detection: handles piped input from other commands
-    if not sys.stdin.isatty():
-        execution_prompt = sys.stdin.read().strip()
-    elif prompt:
+    if prompt:
         # File vs string disambiguation: checks if argument is readable file
         prompt_path = Path(prompt)
         if prompt_path.exists() and prompt_path.is_file():
@@ -279,6 +276,9 @@ def run(
         else:
             # Direct prompt string
             execution_prompt = prompt
+    elif not sys.stdin.isatty():
+        # Stdin detection: handles piped input from other commands
+        execution_prompt = sys.stdin.read().strip()
     else:
         console.print("[red]Error: No prompt provided[/red]")
         raise typer.Exit(1)
