@@ -285,3 +285,47 @@ def get_all_orchestrations(
     statement = statement.order_by(models.OrchestrationDB.created_at.desc()).limit(limit)
     results = session.exec(statement)
     return list(results)
+
+
+def clear_completed_tasks(session: Session) -> int:
+    """
+    Clear all completed and failed tasks from the database.
+    Returns the number of tasks deleted.
+    
+    Follows Carmack's principle: simple, effective, no unnecessary complexity.
+    Only removes tasks that are in terminal states (COMPLETED or FAILED).
+    """
+    # Query for tasks in terminal states
+    statement = select(models.TaskDB).where(
+        models.TaskDB.status.in_([models.TaskStatus.COMPLETED, models.TaskStatus.FAILED])
+    )
+    tasks = session.exec(statement).all()
+    
+    # Count and delete
+    count = len(tasks)
+    for task in tasks:
+        session.delete(task)
+    
+    session.commit()
+    return count
+
+
+def delete_task(session: Session, task_id: int) -> bool:
+    """
+    Delete a single non-running task.
+    Returns True if deleted, False if not found or still running.
+    
+    Safety check: prevents deletion of RUNNING or PENDING tasks.
+    """
+    task = get_task(session, task_id)
+    
+    if not task:
+        return False
+    
+    # Safety: don't delete running tasks
+    if task.status in [models.TaskStatus.RUNNING, models.TaskStatus.PENDING]:
+        return False
+    
+    session.delete(task)
+    session.commit()
+    return True

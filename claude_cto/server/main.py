@@ -264,6 +264,38 @@ def list_tasks(session: Session = Depends(get_session)):
     ]
 
 
+@app.delete("/api/v1/tasks/{task_id}")
+async def delete_task(task_id: int, session: Session = Depends(get_session)):
+    """
+    Delete a single non-running task.
+    Safety: prevents deletion of running/pending tasks.
+    
+    Returns:
+        Success status
+    """
+    success = crud.delete_task(session, task_id)
+    if success:
+        return {"success": True, "message": f"Task {task_id} deleted"}
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Task not found or still running"
+        )
+
+
+@app.post("/api/v1/tasks/clear", status_code=200)
+async def clear_completed_tasks(session: Session = Depends(get_session)):
+    """
+    Clear all completed and failed tasks.
+    Alternative endpoint for bulk cleanup (POST for compatibility).
+    
+    Returns:
+        Count of tasks deleted
+    """
+    count = crud.clear_completed_tasks(session)
+    return {"deleted": count, "message": f"Cleared {count} completed/failed tasks"}
+
+
 # MCP-compatible endpoints (using strict validation)
 
 

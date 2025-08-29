@@ -271,6 +271,98 @@ def create_proxy_server(api_url: Optional[str] = None) -> FastMCP:
                 return {"error": f"Failed to list tasks: {str(e)}"}
 
     @mcp.tool()
+    async def clear_tasks() -> Dict[str, Any]:
+        """
+        Clear all completed and failed tasks from the system.
+        Bulk cleanup operation following Carmack's minimalism.
+        
+        Use this when:
+        - You have many completed tasks cluttering the list
+        - Starting a fresh batch of work
+        - Cleaning up after testing
+        
+        Safety: Only removes COMPLETED and FAILED tasks.
+        Running and pending tasks are preserved.
+        
+        Returns:
+            Number of tasks cleared
+        """
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.post(f"{api_url}/api/v1/tasks/clear", timeout=10.0)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    return {
+                        "success": True,
+                        "deleted": data.get("deleted", 0),
+                        "message": data.get("message", "Tasks cleared")
+                    }
+                else:
+                    return {
+                        "error": f"API error: {response.status_code}",
+                        "detail": response.text
+                    }
+                    
+            except httpx.ConnectError:
+                return {
+                    "error": "Cannot connect to REST API server",
+                    "api_url": api_url,
+                    "hint": "Ensure the server is running with: claude-cto server start"
+                }
+            except Exception as e:
+                return {"error": f"Failed to clear tasks: {str(e)}"}
+
+    @mcp.tool()
+    async def delete_task(task_id: int) -> Dict[str, Any]:
+        """
+        Delete a single non-running task.
+        
+        Use this when:
+        - Removing a specific failed task
+        - Cleaning up individual test tasks
+        - Managing task list selectively
+        
+        Safety: Cannot delete RUNNING or PENDING tasks.
+        
+        Args:
+            task_id: ID of the task to delete
+            
+        Returns:
+            Success status
+        """
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.delete(f"{api_url}/api/v1/tasks/{task_id}", timeout=10.0)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    return {
+                        "success": True,
+                        "message": data.get("message", f"Task {task_id} deleted")
+                    }
+                elif response.status_code == 400:
+                    return {
+                        "error": "Cannot delete task",
+                        "reason": "Task not found or still running",
+                        "task_id": task_id
+                    }
+                else:
+                    return {
+                        "error": f"API error: {response.status_code}",
+                        "detail": response.text
+                    }
+                    
+            except httpx.ConnectError:
+                return {
+                    "error": "Cannot connect to REST API server",
+                    "api_url": api_url,
+                    "hint": "Ensure the server is running with: claude-cto server start"
+                }
+            except Exception as e:
+                return {"error": f"Failed to delete task: {str(e)}"}
+
+    @mcp.tool()
     async def check_api_health() -> Dict[str, Any]:
         """
         Check if REST API server is available.

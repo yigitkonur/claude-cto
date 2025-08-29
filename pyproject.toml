@@ -1,6 +1,6 @@
 [project]
 name = "claude-cto"
-version = "0.9.0"
+version = "0.9.1"
 description = "Fire-and-forget task execution system for Claude Code SDK with CLI and MCP interfaces"
 authors = [{name = "Yigit Konur", email = "yigit@thinkbuddy.ai"}]
 readme = "README.md"

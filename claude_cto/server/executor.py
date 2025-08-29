@@ -98,8 +98,13 @@ class TaskExecutor:
         attempt = 0
         last_error = None
         start_time = datetime.utcnow()  # Execution duration tracking
-
+        
+        # Open raw log file once for entire execution lifetime
+        # Critical: Must remain open throughout all retry attempts and async operations
+        raw_log = None
         try:
+            raw_log = open(log_file_path, "a")
+            
             while attempt < max_attempts:
                 attempt += 1
 
@@ -121,18 +126,17 @@ class TaskExecutor:
 
                     # Legacy log compatibility: maintains backward compatibility with existing log parsing
                     # Raw log format preserved for external monitoring tools and manual debugging
-                    with open(log_file_path, "a") as raw_log:
-                        if attempt > 1:
-                            # Retry header: clearly marks retry attempts for log analysis
-                            raw_log.write(f"[RETRY] Attempt {attempt}/{max_attempts}\n")
-                        else:
-                            # Initial execution metadata: comprehensive context for debugging
-                            raw_log.write(f"[INFO] Starting task {self.task_id}\n")
-                            raw_log.write(f"[INFO] Working directory: {working_directory}\n")
-                            raw_log.write(f"[INFO] Prompt: {execution_prompt}\n")
-                            raw_log.write(f"[INFO] System prompt: {system_prompt}\n")
-                            raw_log.write(f"[INFO] Timeout: {timeout_seconds}s\n")
-                        raw_log.flush()  # Immediate disk write for crash resilience
+                    if attempt > 1:
+                        # Retry header: clearly marks retry attempts for log analysis
+                        raw_log.write(f"[RETRY] Attempt {attempt}/{max_attempts}\n")
+                    else:
+                        # Initial execution metadata: comprehensive context for debugging
+                        raw_log.write(f"[INFO] Starting task {self.task_id}\n")
+                        raw_log.write(f"[INFO] Working directory: {working_directory}\n")
+                        raw_log.write(f"[INFO] Prompt: {execution_prompt}\n")
+                        raw_log.write(f"[INFO] System prompt: {system_prompt}\n")
+                        raw_log.write(f"[INFO] Timeout: {timeout_seconds}s\n")
+                    raw_log.flush()  # Immediate disk write for crash resilience
 
                     # Core SDK execution: streams messages from Claude with real-time processing
                     # Message processing maintains database state and structured logs throughout execution
@@ -198,8 +202,8 @@ class TaskExecutor:
                             wait_time = 2 ** (attempt - 1)  # Exponential backoff: 1s, 2s, 4s
 
                         # Retry logging: records attempt progression for debugging
-                        with open(log_file_path, "a") as raw_log:
-                            raw_log.write(f"[RETRY] {type(e).__name__}: {e}. Waiting {wait_time}s before retry...\n")
+                        raw_log.write(f"[RETRY] {type(e).__name__}: {e}. Waiting {wait_time}s before retry...\n")
+                        raw_log.flush()
 
                         # Database retry tracking: maintains retry history for monitoring
                         for session in get_session():
@@ -244,7 +248,20 @@ class TaskExecutor:
 
                 # Comprehensive error processing: generates debugging information and recovery suggestions
                 error_info = ErrorHandler.handle_error(last_error, self.task_id, log_file_path)
-                ErrorHandler.log_error(error_info, log_file_path)  # Detailed error context
+                
+                # Write error info through existing raw_log handle to avoid file conflicts
+                raw_log.write(f"\n{'='*60}\n")
+                raw_log.write(f"[ERROR] {error_info['timestamp']}\n")
+                raw_log.write(f"Type: {error_info['error_type']}\n")
+                raw_log.write(f"Message: {error_info['error_message']}\n")
+                raw_log.write(f"\nRecovery Suggestions:\n")
+                for i, suggestion in enumerate(error_info['recovery_suggestions'], 1):
+                    raw_log.write(f"  {i}. {suggestion}\n")
+                if error_info.get('stack_trace'):
+                    raw_log.write(f"\nStack Trace:\n{error_info['stack_trace']}\n")
+                raw_log.write(f"{'='*60}\n\n")
+                raw_log.flush()
+                
                 error_msg = ErrorHandler.format_error_message(error_info)  # User-friendly summary
 
                 # Retry exhaustion indicator: clarifies failure after multiple attempts
@@ -265,6 +282,8 @@ class TaskExecutor:
         finally:
             # Critical resource cleanup: prevents file handle leaks and memory accumulation
             # MUST execute regardless of success/failure to maintain system stability
+            if raw_log:
+                raw_log.close()  # Close raw log file handle to prevent resource leak
             task_logger.close()  # Closes file handlers and releases structured logging resources
 
     async def _process_message(self, message: Message, task_logger) -> None:

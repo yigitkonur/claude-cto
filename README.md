@@ -201,6 +201,8 @@ once installed, claude gets these shiny new toys to whip your ai team into shape
 | **`submit_orchestration`**<br/>🏁 | **the big red button**: launches entire task groups in one go |
 | **`get_task_status`**<br/>📊 | **spy mode**: checks up on a single worker's progress |
 | **`list_tasks`**<br/>📋 | **mission control**: shows what the whole squad's cooking |
+| **`clear_tasks`**<br/>🧹 | **spring cleaning**: wipes all completed & failed tasks in one sweep |
+| **`delete_task`**<br/>🗑️ | **surgical removal**: deletes a single non-running task by id |
 | **`check_api_health`**<br/>❤️ | **pulse check**: makes sure the engine's purring |
 
 </details>
@@ -501,9 +503,9 @@ pro tip: mix these commands like a devops bartender. your ai team's always on ca
 
 ## 📦 get cooking in 60 seconds
 
-### 🚀 Quick Start
+### 🚀 Quick Start (Platform-Optimized)
 
-#### Option 1: Homebrew (macOS/Linux) - Recommended
+#### 🍎 macOS: Homebrew (Recommended)
 ```bash
 # Install via Homebrew (includes auto-MCP configuration)
 brew tap yigitkonur/claude-cto
@@ -513,7 +515,7 @@ brew install claude-cto
 claude-cto server start
 ```
 
-#### Option 2: pip/uv (All platforms)
+#### 🪟 Windows: pip/uv (Recommended)
 ```bash
 # Install with pip (includes auto-MCP configuration)
 pip install "claude-cto[full]"
@@ -522,7 +524,19 @@ pip install "claude-cto[full]"
 claude-cto server start
 ```
 
-> **✨ Auto-Configuration:** Both installation methods automatically configure claude-cto as an MCP server for Claude Desktop on first use. No manual setup required!
+#### 🐧 Linux: pip/uv or Homebrew
+```bash
+# Option A: pip/uv (Universal, works everywhere)
+pip install "claude-cto[full]"
+
+# Option B: Homebrew (if you prefer package managers)
+brew tap yigitkonur/claude-cto && brew install claude-cto
+
+# Start the server (MCP auto-configures on first use)
+claude-cto server start
+```
+
+> **✨ Auto-Configuration:** All installation methods automatically configure claude-cto as an MCP server for Claude Code on first use. No manual setup required!
 
 ### Prerequisites
 -  **Python** (v3.10+) & **Node.js** (v16+)
@@ -531,11 +545,12 @@ claude-cto server start
 
 ### Installation Methods
 
-> **🎯 Recommendations:** 
-> - **macOS/Linux:** Homebrew is the easiest (zero-config setup)
-> - **Windows/Modern Python:** UV is blazing fast with automatic venv handling
-> - **Universal:** pip with `[full]` extra works everywhere
-> - **MCP-only:** Use Smithery for Claude Desktop integration without CLI/server
+> **🎯 Platform-Specific Recommendations:** 
+> - **🍎 macOS:** Homebrew is the easiest (zero-config setup, native integration)
+> - **🪟 Windows:** pip/uv recommended (Claude Code works via WSL/native, no Homebrew needed)
+> - **🐧 Linux:** Both pip/uv and Homebrew work great - choose your preference
+> - **⚡ Speed demons:** UV is 10-100x faster than pip on all platforms
+> - **🧠 MCP-only:** Use Smithery for Claude Code integration without CLI/server
 
 <div align="center">
   
@@ -607,23 +622,37 @@ UV is Rust-powered and **10-100x faster** than pip. It also handles virtual envi
 
 </details>
 
-### 4. Installation Notes
+### 4. Installation Notes & Cross-Platform Compatibility
 
-**🎯 Homebrew Users (macOS/Linux):**
-- Includes wrapper script that automatically configures MCP on first use
-- Zero manual configuration required
+**🍎 macOS Users:**
+- **Homebrew (Recommended):** Includes wrapper script with zero-config MCP setup
+- **pip/uv:** Auto-configures on first command, works with any Python environment
+- Both methods play nicely together (first-run-wins, no conflicts)
 
-**🐍 Pip/UV Users (All Platforms):**
-- Auto-configures MCP server on first command execution
-- Uses correct Python interpreter (works with virtualenv, conda, pyenv)
+**🪟 Windows Users:**
+- **pip/uv (Recommended):** Full native support with auto-MCP configuration
+- Claude Code works via WSL or native Windows installation
+- Auto-configures using correct Python interpreter (virtualenv, conda, pyenv compatible)
 - Shows friendly setup message: "🗿 Setting up claude-cto MCP server..."
 
-**🔄 Cross-Platform Compatibility:**
-- Windows: Full support with pip/uv installation  
-- macOS: Homebrew (recommended) or pip/uv
-- Linux: Homebrew or pip/uv
+**🐧 Linux Users:**
+- **Both pip/uv and Homebrew:** Equally reliable options
+- Choose based on your preference (package manager vs Python ecosystem)
+- Auto-configures MCP server using system Claude CLI
 
-> **✨ No Manual MCP Setup Required:** Both installation methods detect Claude CLI and automatically configure the MCP server using the correct Python environment.
+**⚡ UV Users (All Platforms):**
+- Rust-powered speed (10-100x faster than pip)
+- Automatic virtual environment handling
+- Lock file generation for reproducible builds
+- Same auto-MCP configuration as pip
+
+**🔒 Security & Safety:**
+- Cross-platform subprocess handling with proper timeouts
+- Graceful fallback if Claude CLI not available
+- No conflicts between installation methods
+- Safe path handling for Windows/Linux/macOS
+
+> **✨ Zero Manual Setup:** All installation methods automatically detect Claude Code and configure the MCP server using your correct Python environment. No `.claude.json` editing required!
 
 ---
 
