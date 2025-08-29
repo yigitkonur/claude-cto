@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.10.2] - 2025-08-29
+
+- fix: bump to v0.10.1 to rebuild PyPI package with correct version
+- chore: bump version to 0.10.1 [skip ci]
+- fix: synchronize version to 0.10.0 across all platforms
+- chore: bump version to 0.10.0 [skip ci]
+- feat: add clear_tasks and delete_task MCP tools
+
+
 ## [0.10.1] - 2025-08-29
 
 - fix: synchronize version to 0.10.0 across all platforms
