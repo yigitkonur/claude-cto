@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.10.1] - 2025-08-29
+
+- fix: synchronize version to 0.10.0 across all platforms
+- chore: bump version to 0.10.0 [skip ci]
+- feat: add clear_tasks and delete_task MCP tools
+- chore: bump version to 0.9.0 [skip ci]
+- feat: implement universal auto-MCP configuration for all installation methods
+
+
 ## [0.10.0] - 2025-08-29
 
 - feat: add clear_tasks and delete_task MCP tools
