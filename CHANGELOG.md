@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.9.0] - 2025-08-29
+
+- feat: implement universal auto-MCP configuration for all installation methods
+- feat: add auto-MCP configuration for pip/uv installations
+- chore: bump version to 0.8.3 [skip ci]
+- fix: update poetry.lock to include psutil dependency
+- chore: bump version to 0.8.2 [skip ci]
+
+
 ## [0.8.3] - 2025-08-28
 
 - fix: update poetry.lock to include psutil dependency
