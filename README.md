@@ -501,14 +501,41 @@ pro tip: mix these commands like a devops bartender. your ai team's always on ca
 
 ## 📦 get cooking in 60 seconds
 
-### 1. prep work
--  **python** (v3.10+) & **node.js** (v16+)
--  **claude code sdk**: `npm install -g @anthropic-ai/claude-code`
--  **auth**: just `claude auth login` - no api key circus
+### 🚀 Quick Start
 
-### 2. installation options
+#### Option 1: Homebrew (macOS/Linux) - Recommended
+```bash
+# Install via Homebrew (includes auto-MCP configuration)
+brew tap yigitkonur/claude-cto
+brew install claude-cto
 
-> I've laid out a bunch of options here. Honestly, if you're on a Mac, installing it with `brew` is probably the easiest and best way to go. If not, `uv` is the new hotness – blazing fast and handles everything including extras. Still solid with `pip` too – it'll handle everything, including the CLI's `/bin` setup. Docker, I'd say, should be your very last choice. And just so you know, Smithery won't help for installing the full service (CLI, server, etc.) – it's just for quickly setting up the MCP integration with Claude Desktop.
+# Start the server (MCP auto-configures on first use)
+claude-cto server start
+```
+
+#### Option 2: pip/uv (All platforms)
+```bash
+# Install with pip (includes auto-MCP configuration)
+pip install "claude-cto[full]"
+
+# Start the server (MCP auto-configures on first use)
+claude-cto server start
+```
+
+> **✨ Auto-Configuration:** Both installation methods automatically configure claude-cto as an MCP server for Claude Desktop on first use. No manual setup required!
+
+### Prerequisites
+-  **Python** (v3.10+) & **Node.js** (v16+)
+-  **Claude Code SDK**: `npm install -g @anthropic-ai/claude-code`
+-  **Authentication**: `claude auth login` - no API key needed with Claude subscription
+
+### Installation Methods
+
+> **🎯 Recommendations:** 
+> - **macOS/Linux:** Homebrew is the easiest (zero-config setup)
+> - **Windows/Modern Python:** UV is blazing fast with automatic venv handling
+> - **Universal:** pip with `[full]` extra works everywhere
+> - **MCP-only:** Use Smithery for Claude Desktop integration without CLI/server
 
 <div align="center">
   
@@ -519,9 +546,9 @@ pro tip: mix these commands like a devops bartender. your ai team's always on ca
 <th width="35%">Best For</th>
 </tr>
 <tr>
-<td align="center"><b>🍺 Homebrew</b><br/><sub>macOS/Linux</sub></td>
-<td><code>brew install yigitkonur/claude-cto/claude-cto</code></td>
-<td>One-command install</td>
+<td align="center"><b>🍺 Homebrew</b><br/><sub>Recommended</sub></td>
+<td><code>brew tap yigitkonur/claude-cto<br/>brew install claude-cto</code></td>
+<td>Zero-config setup + auto-MCP</td>
 </tr>
 <tr>
 <td align="center"><b>⚡ UV</b><br/><sub>blazing fast</sub></td>
@@ -536,7 +563,7 @@ pro tip: mix these commands like a devops bartender. your ai team's always on ca
 <tr>
 <td align="center"><b>👑 Full Monty</b></td>
 <td><code>pip install "claude-cto[full]"</code></td>
-<td>CLI + API + MCP combo</td>
+<td>CLI + API + MCP + auto-config</td>
 </tr>
 <tr>
 <td align="center"><b>🧠 MCP Only</b></td>
@@ -580,14 +607,23 @@ UV is Rust-powered and **10-100x faster** than pip. It also handles virtual envi
 
 </details>
 
-### 4. claude config (pip/uv users only)
+### 4. Installation Notes
 
-> [!IMPORTANT]
-> If you went the pip or uv route, wire up claude and fully restart claude desktop/vscode after this:
+**🎯 Homebrew Users (macOS/Linux):**
+- Includes wrapper script that automatically configures MCP on first use
+- Zero manual configuration required
 
-```bash
-claude mcp add claude-cto -s user -- python -m claude_cto.mcp.factory
-```
+**🐍 Pip/UV Users (All Platforms):**
+- Auto-configures MCP server on first command execution
+- Uses correct Python interpreter (works with virtualenv, conda, pyenv)
+- Shows friendly setup message: "🗿 Setting up claude-cto MCP server..."
+
+**🔄 Cross-Platform Compatibility:**
+- Windows: Full support with pip/uv installation  
+- macOS: Homebrew (recommended) or pip/uv
+- Linux: Homebrew or pip/uv
+
+> **✨ No Manual MCP Setup Required:** Both installation methods detect Claude CLI and automatically configure the MCP server using the correct Python environment.
 
 ---
 

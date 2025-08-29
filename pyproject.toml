@@ -74,7 +74,7 @@ Smithery = "https://smithery.ai/@yigitkonur/claude-cto"
 
 [project.scripts]
 # CLI entry point (requires 'server' or 'full' extra)
-claude-cto = "claude_cto.cli.main:app"
+claude-cto = "claude_cto.cli.main:cli_entry"
 # MCP entry point (requires 'mcp' or 'full' extra)
 claude-cto-mcp = "claude_cto.mcp.factory:run_stdio"
 
@@ -160,7 +160,7 @@ full = ["fastapi", "uvicorn", "typer", "httpx", "fastmcp", "psutil"]
 
 [tool.poetry.scripts]
 # CLI entry point (requires 'server' or 'full' extra)
-claude-cto = "claude_cto.cli.main:app"
+claude-cto = "claude_cto.cli.main:cli_entry"
 # MCP entry point (requires 'mcp' or 'full' extra)  
 claude-cto-mcp = "claude_cto.mcp.factory:run_stdio"
 

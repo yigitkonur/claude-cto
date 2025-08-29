@@ -211,11 +211,9 @@ jobs:
         fi
     
     - name: Trigger Homebrew tap update
-      # HOMEBREW_TAP_TOKEN must be a PAT with 'repo' scope for the homebrew-claude-cto repository
-      # Create at: https://github.com/settings/tokens/new?scopes=repo&description=Homebrew%20tap%20updates
       uses: peter-evans/repository-dispatch@v2
       with:
-        token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        token: ${{ secrets.HOMEBREW_TAP_TOKEN || secrets.GITHUB_TOKEN }}
         repository: yigitkonur/homebrew-claude-cto
         event-type: update-formula
         client-payload: '{"version": "${{ steps.version.outputs.version }}"}'

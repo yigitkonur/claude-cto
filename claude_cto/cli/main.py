@@ -103,20 +103,20 @@ Perfect for code refactoring, analysis, and automation tasks.
 """,
     rich_markup_mode="rich",
     no_args_is_help=True,  # Show help when no args provided
-    invoke_without_command=True,  # Allow callback to run without subcommand
+    invoke_without_command=True,  # CRITICAL: Allow callback to run with commands
     epilog="[dim]For detailed help on any command: claude-cto [COMMAND] --help[/dim]",
 )
 
 
 @app.callback()
-def main(ctx: typer.Context):
+def main():
     """
     Main callback that runs before any command.
     Handles auto-MCP configuration on first run.
     """
-    # Only run auto-config if we're executing a real command, not just showing help
-    if ctx.invoked_subcommand is not None:
-        auto_configure_mcp()
+    # The auto_configure_mcp() is also called in individual commands
+    # as a fallback in case the callback doesn't work
+    auto_configure_mcp()
 
 # Server management sub-app
 server_app = typer.Typer(
@@ -567,6 +567,9 @@ Shows task IDs, status, creation time, and last actions.
 )
 def list():
     """List all tasks."""
+    # Ensure MCP is configured on first run
+    auto_configure_mcp()
+    
     server_url = get_server_url()
 
     # Auto-start server if not running
@@ -1266,6 +1269,11 @@ def migrate():
         console.print(f"[red]✗ Migration failed: {e}[/red]")
         raise typer.Exit(1)
 
+
+# Entry point function for setuptools/pip
+def cli_entry():
+    """Entry point for the CLI executable."""
+    app()
 
 # Entry point for the CLI
 if __name__ == "__main__":
