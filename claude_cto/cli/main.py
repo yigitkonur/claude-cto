@@ -28,50 +28,64 @@ from .config import get_server_url
 def auto_configure_mcp():
     """
     Auto-configure claude-cto as an MCP server for Claude Code on first run.
-    Works for pip, uv, and other Python-based installations.
+    Works with both legacy and new Claude Code configurations.
     """
     try:
-        # Check if claude CLI is available
-        if not shutil.which("claude"):
-            return  # Claude CLI not installed, skip auto-config
+        # Try the robust auto-configuration first
+        from ..mcp.auto_config import auto_configure
         
-        # Get cross-platform config file path
+        # Run silently to avoid cluttering CLI output
+        import sys
+        from io import StringIO
+        
+        # Capture output to avoid spamming user
+        old_stdout = sys.stdout
+        old_stderr = sys.stderr
+        sys.stdout = StringIO()
+        sys.stderr = StringIO()
+        
+        try:
+            success = auto_configure()
+            if success:
+                # Restore output and show success message
+                sys.stdout = old_stdout
+                sys.stderr = old_stderr
+                print("🗿 claude-cto is now configured for Claude Code!")
+                return
+        except Exception:
+            pass
+        finally:
+            # Always restore output
+            sys.stdout = old_stdout  
+            sys.stderr = old_stderr
+        
+        # Fallback to legacy claude CLI method
+        if not shutil.which("claude"):
+            return  # Neither method available
+        
+        # Check if already configured via legacy method
         home = Path.home()
         claude_config = home / ".claude.json"
         
-        # Check if config file exists and already contains claude-cto
-        claude_cto_configured = False
         if claude_config.exists():
             try:
                 with open(claude_config, 'r') as f:
                     config = json.load(f)
                     if 'mcpServers' in config and 'claude-cto' in config['mcpServers']:
-                        claude_cto_configured = True
+                        return  # Already configured
             except (json.JSONDecodeError, KeyError, OSError):
-                pass  # If config is invalid, proceed with auto-config
-        
-        # If not configured, add it
-        if not claude_cto_configured:
-            try:
-                print("🗿 Setting up claude-cto MCP server for Claude Code...")
-                
-                # Use sys.executable to get the correct Python interpreter
-                # Works with virtualenv, conda, pyenv, etc.
-                python_path = sys.executable
-                
-                # Run claude mcp add command
-                result = subprocess.run([
-                    "claude", "mcp", "add", "claude-cto", "-s", "user",
-                    "--", python_path, "-m", "claude_cto.mcp.factory"
-                ], capture_output=True, text=True, timeout=10)
-                
-                if result.returncode == 0:
-                    print("✓ claude-cto is now available in Claude Code!")
-                
-            except (subprocess.TimeoutExpired, subprocess.SubprocessError, OSError):
-                # Silently fail if MCP setup doesn't work
-                # The CLI should still function normally
                 pass
+        
+        # Try legacy claude CLI setup
+        print("🗿 Setting up claude-cto MCP server for Claude Code...")
+        
+        result = subprocess.run([
+            "claude", "mcp", "add", "claude-cto", "-s", "user",
+            "--", sys.executable, "-m", "claude_cto.mcp.factory"
+        ], capture_output=True, text=True, timeout=10)
+        
+        if result.returncode == 0:
+            print("✓ claude-cto is now available in Claude Code!")
                 
     except Exception:
         # Catch-all to ensure CLI never fails due to MCP setup
@@ -640,6 +654,59 @@ def upgrade(
             console.print(f"[green]Package reinstalled successfully![/green]")
     else:
         console.print(f"[red]❌ Upgrade failed: {message}[/red]")
+        raise typer.Exit(1)
+
+
+@app.command(help="""[bold yellow]Configure MCP server for Claude Code[/bold yellow] ⚙️
+
+Set up claude-cto as an MCP server for seamless Claude Code integration.
+This enables powerful task orchestration directly from Claude Code.
+
+[bold]What it does:[/bold]
+  • Auto-detects Claude Code configuration directory
+  • Adds claude-cto MCP server entry to settings
+  • Configures auto-mode (standalone/proxy detection)
+  • Sets up proper database and log paths
+
+[bold]Example:[/bold]
+  $ claude-cto configure-mcp
+  
+[bold]After configuration:[/bold]
+  • Restart Claude Code
+  • Use MCP tools like create_task, get_task_status
+  • Enjoy seamless AI task orchestration
+
+[dim]Note: Requires Claude Code to be installed and configured[/dim]
+""")
+def configure_mcp():
+    """Set up claude-cto MCP server for Claude Code integration."""
+    console = Console()
+    
+    try:
+        from ..mcp.auto_config import auto_configure
+        
+        console.print("🗿 [bold]Claude CTO MCP Configuration[/bold]")
+        console.print("=" * 50)
+        
+        with console.status("[yellow]Configuring MCP server...[/yellow]"):
+            success = auto_configure()
+        
+        if success:
+            console.print("\n[green]✅ MCP server configured successfully![/green]")
+            console.print("\n[bold]Next steps:[/bold]")
+            console.print("1. Restart Claude Code")
+            console.print("2. The 'claude-cto' MCP server will be available")
+            console.print("3. Use tools like create_task, orchestrate_tasks, etc.")
+        else:
+            console.print("\n[red]❌ MCP configuration failed[/red]")
+            console.print("Please check Claude Code installation and try again")
+            raise typer.Exit(1)
+            
+    except ImportError:
+        console.print("[red]❌ MCP configuration module not available[/red]")
+        raise typer.Exit(1)
+    except Exception as e:
+        console.print(f"[red]❌ Configuration error: {e}[/red]")
         raise typer.Exit(1)
 
 

@@ -4,12 +4,18 @@ Automatically selects standalone or proxy mode based on environment.
 """
 
 import os
+import sys
+import logging
+import asyncio
 import httpx
 from typing import Optional, Literal
 
 from fastmcp import FastMCP
 from .standalone import create_standalone_server
 from .enhanced_proxy import create_enhanced_proxy_server
+
+# Set up logging for better debugging
+logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 def is_rest_api_available(api_url: str = None) -> bool:
@@ -80,13 +86,75 @@ def create_proxy(**kwargs) -> FastMCP:
 
 
 def run_stdio():
-    """Entry point for claude-cto-mcp CLI command."""
-    import asyncio
+    """Entry point for claude-cto-mcp CLI command with robust error handling."""
+    try:
+        # Initialize database and perform migrations
+        from ..migrations.manager import run_migrations
+        from pathlib import Path
+        
+        # Get database path (default to ~/.claude-cto/tasks.db)
+        db_path = os.getenv("CLAUDE_CTO_DB_PATH", str(Path.home() / ".claude-cto" / "tasks.db"))
+        db_url = f"sqlite:///{db_path}"
+        
+        run_migrations(db_url)
+        
+        # Create and run server
+        server = create_mcp_server()
+        asyncio.run(server.run_stdio_async())
+        
+    except Exception as e:
+        logging.error(f"MCP server failed to start: {e}")
+        
+        # Try to provide helpful error information
+        print(f"❌ Claude CTO MCP Server Error: {e}", file=sys.stderr)
+        
+        if "database" in str(e).lower() or "migration" in str(e).lower():
+            print("🔧 Database issue detected. Try:", file=sys.stderr)
+            print("   1. Delete ~/.claude-cto/tasks.db to recreate database", file=sys.stderr)
+            print("   2. Check file permissions in ~/.claude-cto/", file=sys.stderr)
+        
+        if "import" in str(e).lower() or "module" in str(e).lower():
+            print("🔧 Import issue detected. Try:", file=sys.stderr)
+            print("   1. pip install --upgrade claude-cto", file=sys.stderr)
+            print("   2. Check Python environment", file=sys.stderr)
+        
+        sys.exit(1)
 
-    server = create_mcp_server()
-    asyncio.run(server.run_stdio_async())
+
+def main():
+    """Main entry point with argument parsing and auto-configuration."""
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="Claude CTO MCP Server")
+    parser.add_argument("--mode", choices=["auto", "standalone", "proxy"], 
+                       default="auto", help="Server mode")
+    parser.add_argument("--api-url", help="REST API URL for proxy mode")
+    parser.add_argument("--db-path", help="Database path for standalone mode") 
+    parser.add_argument("--log-dir", help="Log directory for standalone mode")
+    parser.add_argument("--configure", action="store_true", 
+                       help="Run auto-configuration for Claude Code")
+    
+    args = parser.parse_args()
+    
+    if args.configure:
+        from .auto_config import auto_configure
+        success = auto_configure()
+        sys.exit(0 if success else 1)
+    
+    # Set environment variables from args
+    if args.api_url:
+        os.environ["CLAUDE_CTO_API_URL"] = args.api_url
+    if args.db_path:
+        os.environ["CLAUDE_CTO_DB_PATH"] = args.db_path
+    if args.log_dir:
+        os.environ["CLAUDE_CTO_LOG_DIR"] = args.log_dir
+    
+    run_stdio()
 
 
 if __name__ == "__main__":
     # Run with auto-detection when executed directly
-    run_stdio()
+    if len(sys.argv) > 1:
+        main()  # Use argument parsing
+    else:
+        run_stdio()  # Direct execution
