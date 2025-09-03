@@ -4,6 +4,6 @@ This package provides automated task execution with PyPI auto-publishing.
 """
 
 # Package metadata for PyPI distribution
-__version__ = "0.15.1"
+__version__ = "0.15.2"
 __author__ = "Yigit Konur"
 __email__ = "yigit@thinkbuddy.ai"

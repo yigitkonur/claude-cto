@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.15.2] - 2025-09-03
+
+- fix: update auto-publish workflow to sync all version files
+- fix: sync version to 0.15.1 and fix version-check workflow
+- chore: bump version to 0.15.1 [skip ci]
+- fix: sync version to 0.15.0 across all files
+- chore: bump version to 0.15.0 [skip ci]
+
+
 ## [0.15.1] - 2025-09-03
 
 - fix: sync version to 0.15.0 across all files
