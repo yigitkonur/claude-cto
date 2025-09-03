@@ -83,9 +83,33 @@ async def lifespan(app: FastAPI):
     CRITICAL: Initializes monitoring systems and ensures clean resource cleanup.
     Failure in startup phases prevents server from accepting requests.
     """
+    import os
+    from .server_lock import ServerLock
+    from .recovery import perform_startup_recovery
+    
+    # Get server port from environment or use default
+    port = int(os.environ.get("SERVER_PORT", "8000"))
+    server_lock = None
+    
     # Structured lifecycle logging: enables monitoring of server health transitions
     async with log_lifecycle("claude-cto"):
         try:
+            # Phase 0: Acquire server lock for single instance enforcement
+            logger.info(f"Acquiring server lock for port {port}...")
+            server_lock = ServerLock(port)
+            if not server_lock.acquire(force=True, kill_existing=False):
+                raise RuntimeError(f"Could not acquire server lock for port {port} - another instance may be running")
+            logger.info(f"Server lock acquired for port {port}")
+            
+            # Phase 0.5: Perform recovery from previous crashes
+            logger.info("Performing startup recovery...")
+            try:
+                recovery_stats = await perform_startup_recovery(port)
+                logger.info(f"Recovery complete: {recovery_stats}")
+            except Exception as e:
+                logger.error(f"Recovery failed (non-fatal): {e}")
+                # Recovery failure is non-fatal - server can still start
+            
             # Phase 1: Database initialization - establishes data persistence layer
             logger.info("Initializing database...")
             create_db_and_tables()  # Creates SQLite database and applies migrations
@@ -126,6 +150,14 @@ async def lifespan(app: FastAPI):
             # Resource cleanup: stops background monitoring to prevent resource leaks
             from .memory_monitor import stop_global_monitoring
             await stop_global_monitoring()  # Gracefully stops monitoring background task
+            
+            # Release server lock
+            if server_lock:
+                try:
+                    server_lock.release()
+                    logger.info(f"Released server lock for port {port}")
+                except Exception as e:
+                    logger.error(f"Failed to release server lock: {e}")
 
             logger.info("Server shutdown complete")
 

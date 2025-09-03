@@ -287,6 +287,16 @@ def get_all_orchestrations(
     return list(results)
 
 
+def get_tasks_by_status(session: Session, status: models.TaskStatus) -> List[models.TaskDB]:
+    """
+    Retrieve all tasks with a specific status.
+    Used by recovery service to find orphaned running tasks.
+    """
+    statement = select(models.TaskDB).where(models.TaskDB.status == status)
+    results = session.exec(statement)
+    return list(results)
+
+
 def clear_completed_tasks(session: Session) -> int:
     """
     Clear all completed and failed tasks from the database.

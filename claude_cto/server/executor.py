@@ -22,6 +22,7 @@ from .log_formatter import format_content_block
 from .error_handler import ErrorHandler
 from .task_logger import create_task_logger
 from .memory_monitor import get_memory_monitor
+from .process_registry import get_process_registry
 
 
 class TaskExecutor:
@@ -91,6 +92,10 @@ class TaskExecutor:
         task_logger = create_task_logger(self.task_id, working_directory)  # Structured logging
         memory_monitor = get_memory_monitor()  # System resource tracking
         memory_monitor.start_task_monitoring(self.task_id)  # Begin resource monitoring
+        
+        # Process registry: track task and subprocess PIDs for recovery
+        process_registry = get_process_registry()
+        process_registry.register_task(self.task_id, os.getpid())
 
         # Retry orchestration: implements exponential backoff for transient failures only
         # Distinguishes between recoverable network issues and permanent configuration errors
@@ -145,9 +150,21 @@ class TaskExecutor:
                     async def execute_query():
                         """Async generator wrapper: processes SDK message stream with logging and state updates"""
                         nonlocal message_count
+                        
+                        # Start monitoring for Claude subprocess after first message
+                        claude_pid_captured = False
+                        
                         # Claude SDK query: main AI interaction with streaming response processing
                         async for message in query(prompt=execution_prompt, options=options):
                             message_count += 1
+                            
+                            # Capture Claude subprocess PID on first message
+                            if not claude_pid_captured:
+                                claude_pid_captured = True
+                                # Schedule subprocess detection in background
+                                asyncio.create_task(
+                                    process_registry.register_claude_subprocess(self.task_id, timeout=5.0)
+                                )
                             # Real-time progress logging: timestamps each message for performance analysis
                             raw_log.write(
                                 f"[{datetime.utcnow().isoformat()}] Message {message_count}: {type(message).__name__}\n"
@@ -187,6 +204,7 @@ class TaskExecutor:
 
                     # Resource cleanup: stops monitoring and releases task-specific resources
                     memory_monitor.end_task_monitoring(self.task_id, success=True)
+                    process_registry.mark_task_completed(self.task_id)
                     return  # Success path: exit retry loop and complete execution
 
                 except (CLIConnectionError, ConnectionError, TimeoutError) as e:
@@ -279,6 +297,7 @@ class TaskExecutor:
 
                 # Failed task cleanup: stops monitoring and releases resources
                 memory_monitor.end_task_monitoring(self.task_id, success=False)
+                process_registry.mark_task_completed(self.task_id)
         finally:
             # Critical resource cleanup: prevents file handle leaks and memory accumulation
             # MUST execute regardless of success/failure to maintain system stability

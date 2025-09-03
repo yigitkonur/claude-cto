@@ -1097,6 +1097,10 @@ def server_start(
         "--port",
         str(port),
     ]
+    
+    # Set environment variable for server to know its port
+    env = os.environ.copy()
+    env["SERVER_PORT"] = str(port)
 
     if reload:
         cmd.append("--reload")
@@ -1108,6 +1112,7 @@ def server_start(
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             start_new_session=True,  # Detach from parent process group
+            env=env,  # Pass environment with SERVER_PORT
         )
 
         # Give it a moment to start
@@ -1187,6 +1192,161 @@ def server_start(
     except Exception as e:
         console.print(f"[red]Error starting server: {e}[/red]")
         raise typer.Exit(1)
+
+
+@server_app.command(
+    "cleanup",
+    help="""[bold red]Clean up orphaned processes[/bold red] 🧹
+    
+Kill all orphaned Claude processes and clean up stale locks.
+Use this after a server crash to clean up resources.
+
+[bold]Example:[/bold]
+  $ claude-cto server cleanup
+  $ claude-cto server cleanup --force  # Force kill processes
+""",
+)
+def server_cleanup(
+    force: Annotated[bool, typer.Option("--force", "-f", help="Force kill processes")] = False,
+):
+    """Clean up orphaned processes and locks."""
+    from claude_cto.server.process_registry import get_process_registry
+    from claude_cto.server.server_lock import ServerLock
+    import psutil
+    
+    console.print("[yellow]🧹 Cleaning up orphaned processes and locks...[/yellow]\n")
+    
+    # Clean up stale server locks
+    locks_cleaned = ServerLock.cleanup_all_locks()
+    console.print(f"[green]✓[/green] Cleaned {locks_cleaned} stale server locks")
+    
+    # Clean up orphaned processes
+    registry = get_process_registry()
+    processes_cleaned = registry.cleanup_orphaned_processes(force=force)
+    console.print(f"[green]✓[/green] Terminated {processes_cleaned} orphaned processes")
+    
+    # Clean old registry entries
+    entries_cleaned = registry.cleanup_old_entries(max_age_days=7)
+    console.print(f"[green]✓[/green] Removed {entries_cleaned} old registry entries")
+    
+    # Find and report any remaining Claude processes
+    claude_count = 0
+    for proc in psutil.process_iter(['name', 'cmdline']):
+        try:
+            if 'claude' in proc.info['name'].lower() or 'claude' in ' '.join(proc.info.get('cmdline', [])).lower():
+                claude_count += 1
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            continue
+    
+    if claude_count > 0:
+        console.print(f"\n[yellow]⚠️  {claude_count} Claude processes still running[/yellow]")
+        console.print("[dim]Use --force flag to kill them[/dim]")
+    else:
+        console.print("\n[green]✨ All clean![/green]")
+
+
+@server_app.command(
+    "status",
+    help="""[bold cyan]Show detailed server status[/bold cyan] 📊
+    
+Display server status, running tasks, and system resources.
+
+[bold]Example:[/bold]
+  $ claude-cto server status
+  $ claude-cto server status -v  # Verbose with process tree
+""",
+)
+def server_status(
+    verbose: Annotated[bool, typer.Option("--verbose", "-v", help="Show detailed info")] = False,
+):
+    """Show detailed server status."""
+    from claude_cto.server.process_registry import get_process_registry
+    from claude_cto.server.server_lock import ServerLock
+    import psutil
+    from rich.table import Table
+    
+    # Check for running servers
+    servers = ServerLock.get_all_running_servers()
+    
+    if not servers:
+        console.print("[red]✗[/red] No servers running")
+        console.print("[dim]Start a server with: claude-cto server start[/dim]")
+        return
+    
+    # Display server table
+    table = Table(title="Running Servers")
+    table.add_column("Port", style="cyan")
+    table.add_column("PID", style="green")
+    table.add_column("Memory", style="yellow")
+    table.add_column("CPU %", style="magenta")
+    
+    for port, pid in servers:
+        try:
+            proc = psutil.Process(pid)
+            mem_mb = proc.memory_info().rss / 1024 / 1024
+            cpu_pct = proc.cpu_percent(interval=0.1)
+            table.add_row(str(port), str(pid), f"{mem_mb:.1f} MB", f"{cpu_pct:.1f}%")
+        except psutil.NoSuchProcess:
+            table.add_row(str(port), str(pid), "N/A", "N/A")
+    
+    console.print(table)
+    
+    # Show running tasks
+    registry = get_process_registry()
+    running_tasks = registry.get_running_tasks()
+    
+    if running_tasks:
+        console.print(f"\n[cyan]📋 Running Tasks:[/cyan] {len(running_tasks)}")
+        if verbose:
+            for task in running_tasks:
+                console.print(f"  Task {task['task_id']}: PID {task['pid']}")
+                if task.get('claude_pids'):
+                    console.print(f"    Claude PIDs: {', '.join(map(str, task['claude_pids']))}")
+    
+    # Show orphaned processes
+    orphaned = registry.get_orphaned_processes()
+    if orphaned:
+        console.print(f"\n[yellow]⚠️  Orphaned Processes:[/yellow] {len(orphaned)}")
+        console.print("[dim]Run 'claude-cto server cleanup' to clean them[/dim]")
+
+
+@server_app.command(
+    "recover",
+    help="""[bold yellow]Recover from server crash[/bold yellow] 🔧
+    
+Perform full recovery after a server crash:
+- Kill orphaned processes
+- Mark stuck tasks as failed
+- Clean up locks and registry
+
+[bold]Example:[/bold]
+  $ claude-cto server recover
+""",
+)
+def server_recover():
+    """Perform full recovery after server crash."""
+    import asyncio
+    from claude_cto.server.recovery import RecoveryService
+    
+    console.print("[yellow]🔧 Performing server recovery...[/yellow]\n")
+    
+    async def run_recovery():
+        recovery = RecoveryService()
+        stats = await recovery.recover_on_startup(8000)  # Default port
+        return stats
+    
+    stats = asyncio.run(run_recovery())
+    
+    # Display recovery results
+    console.print("[green]✓[/green] Recovery complete!\n")
+    console.print(f"  Orphaned processes killed: {stats['orphaned_processes_killed']}")
+    console.print(f"  Tasks marked as failed: {stats['tasks_marked_failed']}")
+    console.print(f"  Claude processes terminated: {stats['claude_processes_terminated']}")
+    console.print(f"  Stale locks cleaned: {stats['stale_locks_cleaned']}")
+    console.print(f"  Registry entries cleaned: {stats['registry_entries_cleaned']}")
+    
+    console.print("\n[green]✨ Server ready to start![/green]")
+    console.print("[dim]Start server with: claude-cto server start[/dim]")
 
 
 @server_app.command(
