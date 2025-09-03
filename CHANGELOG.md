@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.12.0] - 2025-09-03
+
+- feat: implement comprehensive auto-recovery system for server crashes
+- chore: bump version to 0.10.2 [skip ci]
+- fix: expand port checking range from 10 to 100 ports
+- chore: bump version to v0.10.1
+- chore: bump version to 0.10.2 [skip ci]
+
+
 ## [0.10.2] - 2025-08-29
 
 - fix: bump to v0.10.1 to rebuild PyPI package with correct version
