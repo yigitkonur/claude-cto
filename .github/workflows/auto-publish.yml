@@ -84,6 +84,18 @@ jobs:
         NEW_VERSION=$(poetry version -s)
         echo "OLD_VERSION=$OLD_VERSION" >> $GITHUB_ENV
         echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+        
+        # Update __init__.py to match
+        sed -i "s/__version__ = \".*\"/__version__ = \"$NEW_VERSION\"/" claude_cto/__init__.py
+        
+        # Update smithery.yaml to match (if it exists)
+        if [ -f smithery.yaml ]; then
+          sed -i "s/^version: .*/version: $NEW_VERSION/" smithery.yaml
+        fi
+        
+        # Verify all files are in sync
+        echo "Verifying version sync..."
+        python -c "import claude_cto; assert claude_cto.__version__ == '$NEW_VERSION', f'Version mismatch: {claude_cto.__version__} != $NEW_VERSION'"
     
     - name: Update changelog
       run: |
@@ -110,7 +122,7 @@ jobs:
     
     - name: Commit version bump
       run: |
-        git add pyproject.toml CHANGELOG.md
+        git add pyproject.toml CHANGELOG.md claude_cto/__init__.py smithery.yaml
         git commit -m "chore: bump version to $NEW_VERSION [skip ci]"
         git push
     
