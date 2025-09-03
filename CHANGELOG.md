@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.15.0] - 2025-09-03
+
+- feat: implement comprehensive version management system
+- docs: update changelog for v0.14.0 release
+- chore: bump version to v0.14.0
+- feat: comprehensive edge case handling and resource management
+- fix: implement task isolation to prevent simultaneous crashes
+
+
 ## [0.14.0] - 2025-09-03
 
 ### Major Features
