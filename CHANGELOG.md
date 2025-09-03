@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.20.0] - 2025-09-03
+
+- feat: automate Homebrew formula updates on PyPI publish
+- chore: bump version to 0.19.0 [skip ci]
+- feat: bulletproof MCP server auto-configuration system
+- fix: resolve MCP server migration and schema issues
+- chore: bump version to 0.18.1 [skip ci]
+
+
 ## [0.19.0] - 2025-09-03
 
 - feat: bulletproof MCP server auto-configuration system
