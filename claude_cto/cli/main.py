@@ -82,24 +82,29 @@ def auto_configure_mcp():
 app = typer.Typer(
     name="claude-cto",
     help="""
-🤖 [bold cyan]Claude CTO[/bold cyan] - Run Claude Code SDK tasks in the background
+🤖 [bold cyan]Claude CTO[/bold cyan] - Production-ready AI task execution system
 
-Delegate long-running AI tasks to Claude without blocking your terminal.
-Perfect for code refactoring, analysis, and automation tasks.
+[bold green]✨ New Enterprise Features:[/bold green]
+  🛡️  [bold]Crash-Resistant:[/bold] Tasks survive server restarts and system crashes
+  🔄  [bold]Auto-Recovery:[/bold] Intelligent error handling with circuit breakers
+  📊  [bold]Resource Limits:[/bold] Memory limits, timeouts, and concurrent task control
+  🚀  [bold]Self-Updating:[/bold] Built-in upgrade system ([cyan]claude-cto upgrade[/cyan])
+  ⚡  [bold]Process Isolation:[/bold] Tasks run in isolated subprocesses
+  📈  [bold]Real-time Monitoring:[/bold] Memory usage and performance tracking
 
 [bold yellow]Quick Start:[/bold yellow]
   $ claude-cto run "analyze this codebase and suggest improvements"
   $ claude-cto run "refactor all Python files to use type hints" --watch
   $ echo "review this code" | claude-cto run
 
-[bold green]Examples:[/bold green]
-  • Simple task:     claude-cto run "create a README.md file"
-  • From file:       claude-cto run instructions.txt
-  • With monitoring: claude-cto run "complex task" --watch
-  • Check progress:  claude-cto status 1
-  • View all tasks:  claude-cto list
+[bold green]Power User Examples:[/bold green]
+  • Complex orchestration: claude-cto orchestrate workflow.json
+  • Task monitoring:       claude-cto run "big task" --watch  
+  • Auto-upgrade:          claude-cto upgrade
+  • Resource usage:        claude-cto status 1 --verbose
+  • Multi-task DAGs:       claude-cto list-orchestrations
 
-[dim]The server starts automatically when needed. No setup required![/dim]
+[dim]🔧 Zero-config: Server auto-starts, MCP auto-configures, no setup needed![/dim]
 """,
     rich_markup_mode="rich",
     no_args_is_help=True,  # Show help when no args provided
