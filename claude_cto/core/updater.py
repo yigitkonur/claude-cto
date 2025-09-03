@@ -23,13 +23,13 @@ class VersionChecker:
     Implements caching to avoid excessive API calls.
     """
     
-    def __init__(self, package_name: str = "claude-cto", cache_duration: int = 86400):
+    def __init__(self, package_name: str = "claude-cto", cache_duration: int = 300):
         """
         Initialize version checker.
         
         Args:
             package_name: Name of the package on PyPI
-            cache_duration: Cache duration in seconds (default: 24 hours)
+            cache_duration: Cache duration in seconds (default: 5 minutes)
         """
         self.package_name = package_name
         self.cache_duration = cache_duration

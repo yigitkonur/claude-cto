@@ -589,9 +589,9 @@ def upgrade(
     current = checker.get_current_version()
     console.print(f"[cyan]Current version:[/cyan] {current}")
     
-    # Check for latest version
+    # Check for latest version (force refresh cache if --force is used)
     with console.status("[yellow]Checking for updates...[/yellow]"):
-        latest = checker.get_latest_version()
+        latest = checker.get_latest_version(force_refresh=force)
     
     if latest is None:
         console.print("[red]❌ Could not check for updates (network error)[/red]")
@@ -623,7 +623,7 @@ def upgrade(
     # Perform upgrade
     console.print(f"\n[yellow]Upgrading to version {latest}...[/yellow]")
     
-    success, message = upgrader.upgrade(target_version=latest if not force else None, method=method)
+    success, message = upgrader.upgrade_package(method=method)
     
     if success:
         console.print(f"[green]✅ {message}[/green]")
