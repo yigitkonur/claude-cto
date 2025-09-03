@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.15.1] - 2025-09-03
+
+- fix: sync version to 0.15.0 across all files
+- chore: bump version to 0.15.0 [skip ci]
+- feat: implement comprehensive version management system
+- docs: update changelog for v0.14.0 release
+- chore: bump version to v0.14.0
+
+
 ## [0.15.0] - 2025-09-03
 
 - feat: implement comprehensive version management system
