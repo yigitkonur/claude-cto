@@ -1,0 +1,264 @@
+name: Emergency Version Fix
+
+on:
+  workflow_dispatch:
+    inputs:
+      fix_type:
+        description: 'Type of fix to apply'
+        required: true
+        type: choice
+        options:
+          - sync-with-remote    # Sync local with remote version
+          - force-version       # Force a specific version
+          - resolve-conflicts   # Auto-resolve version conflicts
+          - rollback           # Rollback to previous version
+        default: 'sync-with-remote'
+      target_version:
+        description: 'Target version (for force-version or rollback)'
+        required: false
+        type: string
+      create_tag:
+        description: 'Create git tag after fix'
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+# Ensure only one emergency fix runs at a time
+concurrency:
+  group: emergency-version-fix
+  cancel-in-progress: false
+
+jobs:
+  emergency-fix:
+    name: Apply Emergency Version Fix
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Configure Git
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+    
+    - name: Fetch all remote data
+      run: |
+        git fetch --all --tags --prune
+        echo "📡 Fetched all remote branches and tags"
+    
+    - name: Diagnose current state
+      id: diagnose
+      run: |
+        echo "## Version Diagnostic Report" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Get current versions from all files
+        echo "### Current File Versions" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        
+        if [ -f "claude_cto/__init__.py" ]; then
+          INIT_VERSION=$(python -c "import re; content=open('claude_cto/__init__.py').read(); match=re.search(r'__version__ = [\"\\']([^\"\\'])+[\"\\']', content); print(match.group(1) if match else 'NOT FOUND')")
+          echo "__init__.py: $INIT_VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "init_version=$INIT_VERSION" >> $GITHUB_OUTPUT
+        fi
+        
+        if [ -f "pyproject.toml" ]; then
+          PYPROJECT_VERSION=$(python -c "import re; content=open('pyproject.toml').read(); match=re.search(r'^\s*version = [\"\\']([^\"\\'])+[\"\\']', content, re.MULTILINE); print(match.group(1) if match else 'NOT FOUND')")
+          echo "pyproject.toml: $PYPROJECT_VERSION" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [ -f "smithery.yaml" ]; then
+          SMITHERY_VERSION=$(python -c "import re; content=open('smithery.yaml').read(); match=re.search(r'^version:\\s*(.+)$', content, re.MULTILINE); print(match.group(1) if match else 'NOT FOUND')")
+          echo "smithery.yaml: $SMITHERY_VERSION" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Get remote version
+        REMOTE_VERSION=$(git describe --tags --abbrev=0 origin/main 2>/dev/null || echo "NO_TAGS")
+        REMOTE_VERSION=${REMOTE_VERSION#v}
+        echo "### Remote Version" >> $GITHUB_STEP_SUMMARY
+        echo "Latest tag on origin/main: $REMOTE_VERSION" >> $GITHUB_STEP_SUMMARY
+        echo "remote_version=$REMOTE_VERSION" >> $GITHUB_OUTPUT
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Check for conflicts
+        python scripts/sync_versions.py --check || true
+    
+    - name: Apply sync with remote fix
+      if: github.event.inputs.fix_type == 'sync-with-remote'
+      run: |
+        echo "📦 Syncing with remote version..."
+        
+        # Get remote version
+        REMOTE_VERSION="${{ steps.diagnose.outputs.remote_version }}"
+        
+        if [ "$REMOTE_VERSION" == "NO_TAGS" ]; then
+          echo "❌ No tags found on remote. Cannot sync."
+          exit 1
+        fi
+        
+        # Update all files to remote version
+        python scripts/sync_versions.py --update "$REMOTE_VERSION" --force
+        
+        # Commit changes
+        git add -A
+        git commit -m "fix: sync version to $REMOTE_VERSION from remote" || echo "No changes to commit"
+        
+        # Push changes
+        git push origin main
+        
+        echo "✅ Synced to version $REMOTE_VERSION"
+    
+    - name: Apply force version fix
+      if: github.event.inputs.fix_type == 'force-version'
+      run: |
+        TARGET_VERSION="${{ github.event.inputs.target_version }}"
+        
+        if [ -z "$TARGET_VERSION" ]; then
+          echo "❌ target_version is required for force-version fix"
+          exit 1
+        fi
+        
+        echo "🔧 Forcing version to $TARGET_VERSION..."
+        
+        # Update all files
+        python scripts/sync_versions.py --update "$TARGET_VERSION" --force
+        
+        # Commit changes
+        git add -A
+        git commit -m "fix: force version to $TARGET_VERSION" || echo "No changes to commit"
+        
+        # Create tag if requested
+        if [ "${{ github.event.inputs.create_tag }}" == "true" ]; then
+          git tag -f "v$TARGET_VERSION"
+          git push origin "v$TARGET_VERSION" --force
+        fi
+        
+        # Push changes
+        git push origin main
+        
+        echo "✅ Forced version to $TARGET_VERSION"
+    
+    - name: Apply resolve conflicts fix
+      if: github.event.inputs.fix_type == 'resolve-conflicts'
+      run: |
+        echo "🔧 Resolving version conflicts..."
+        
+        # Check current state
+        if python scripts/sync_versions.py --check; then
+          echo "✅ No conflicts found!"
+          exit 0
+        fi
+        
+        # Get the most common version or highest version
+        INIT_VERSION="${{ steps.diagnose.outputs.init_version }}"
+        REMOTE_VERSION="${{ steps.diagnose.outputs.remote_version }}"
+        
+        # Prefer remote version if available, otherwise use init version
+        if [ "$REMOTE_VERSION" != "NO_TAGS" ]; then
+          TARGET_VERSION="$REMOTE_VERSION"
+          echo "Using remote version: $TARGET_VERSION"
+        elif [ "$INIT_VERSION" != "NOT FOUND" ]; then
+          TARGET_VERSION="$INIT_VERSION"
+          echo "Using __init__.py version: $TARGET_VERSION"
+        else
+          echo "❌ Cannot determine target version"
+          exit 1
+        fi
+        
+        # Update all files
+        python scripts/sync_versions.py --update "$TARGET_VERSION" --force
+        
+        # Commit changes
+        git add -A
+        git commit -m "fix: resolve version conflicts to $TARGET_VERSION" || echo "No changes to commit"
+        
+        # Push changes
+        git push origin main
+        
+        echo "✅ Resolved conflicts to version $TARGET_VERSION"
+    
+    - name: Apply rollback fix
+      if: github.event.inputs.fix_type == 'rollback'
+      run: |
+        TARGET_VERSION="${{ github.event.inputs.target_version }}"
+        
+        if [ -z "$TARGET_VERSION" ]; then
+          # Get previous version from git tags
+          CURRENT_TAG=$(git describe --tags --abbrev=0 HEAD 2>/dev/null || echo "")
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+          
+          if [ -z "$PREVIOUS_TAG" ]; then
+            echo "❌ No previous version found. Specify target_version manually."
+            exit 1
+          fi
+          
+          TARGET_VERSION=${PREVIOUS_TAG#v}
+          echo "Rolling back to previous version: $TARGET_VERSION"
+        else
+          echo "Rolling back to specified version: $TARGET_VERSION"
+        fi
+        
+        # Update all files
+        python scripts/sync_versions.py --update "$TARGET_VERSION" --force
+        
+        # Commit changes
+        git add -A
+        git commit -m "fix: rollback version to $TARGET_VERSION" || echo "No changes to commit"
+        
+        # Create tag if requested
+        if [ "${{ github.event.inputs.create_tag }}" == "true" ]; then
+          git tag -f "v$TARGET_VERSION"
+          git push origin "v$TARGET_VERSION" --force
+        fi
+        
+        # Push changes
+        git push origin main
+        
+        echo "✅ Rolled back to version $TARGET_VERSION"
+    
+    - name: Final verification
+      run: |
+        echo "## Final State" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Verify all files are in sync
+        if python scripts/sync_versions.py --validate; then
+          echo "✅ All version files are now in sync" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "⚠️ Version files may still have issues" >> $GITHUB_STEP_SUMMARY
+          python scripts/sync_versions.py --check >> $GITHUB_STEP_SUMMARY
+        fi
+    
+    - name: Create issue on failure
+      if: failure()
+      uses: actions/create-issue@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        title: "Emergency Version Fix Failed"
+        body: |
+          The emergency version fix workflow failed.
+          
+          **Fix Type:** ${{ github.event.inputs.fix_type }}
+          **Target Version:** ${{ github.event.inputs.target_version }}
+          **Run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          
+          Please investigate and resolve manually.
+        labels: bug, urgent

@@ -1,0 +1,67 @@
+name: Version Check
+
+on:
+  pull_request:
+    paths:
+      - 'claude_cto/__init__.py'
+      - 'pyproject.toml'
+      - 'smithery.yaml'
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Prevent concurrent version checks
+concurrency:
+  group: version-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-versions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Check version consistency
+        run: |
+          python scripts/sync_versions.py --validate
+        
+      - name: Check against remote
+        if: github.event_name == 'push'
+        run: |
+          # Fetch all tags
+          git fetch --tags --prune
+          
+          # Get current version
+          CURRENT_VERSION=$(python -c "import re; content=open('claude_cto/__init__.py').read(); print(re.search(r'__version__ = [\"\\']([^\"\\'])+[\"\\']', content).group(1))")
+          
+          # Check if tag exists
+          if git rev-parse "v$CURRENT_VERSION" >/dev/null 2>&1; then
+            echo "✅ Tag v$CURRENT_VERSION exists"
+            
+            # Check if current commit is tagged
+            CURRENT_TAG=$(git describe --exact-match HEAD 2>/dev/null || true)
+            if [ -z "$CURRENT_TAG" ]; then
+              echo "⚠️  Warning: Current commit is not tagged with v$CURRENT_VERSION"
+            fi
+          else
+            echo "❌ Tag v$CURRENT_VERSION does not exist!"
+            echo "   Run: git tag v$CURRENT_VERSION && git push origin v$CURRENT_VERSION"
+            exit 1
+          fi
+      
+      - name: Version conflict report
+        if: failure()
+        run: |
+          echo "## Version Conflict Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Version files are out of sync. Please run:" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo "python scripts/sync_versions.py --check" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY

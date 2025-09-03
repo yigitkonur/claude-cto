@@ -22,6 +22,11 @@ on:
         default: false
         type: boolean
 
+# CRITICAL: Prevent concurrent version bumps to avoid conflicts
+concurrency:
+  group: version-management
+  cancel-in-progress: false  # Never cancel version operations
+
 permissions:
   contents: write
   id-token: write
@@ -51,11 +56,24 @@ jobs:
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
     
+    - name: Check for version conflicts
+      run: |
+        # Fetch latest from remote
+        git fetch origin main --tags --prune
+        
+        # Check version consistency
+        if python scripts/sync_versions.py --check; then
+          echo "✅ Version files are in sync"
+        else
+          echo "❌ Version conflicts detected, attempting to sync..."
+          python scripts/sync_versions.py --sync
+        fi
+    
     - name: Bump version
       id: bump
       run: |
-        # Make script executable
-        chmod +x scripts/bump_version.py
+        # Make scripts executable
+        chmod +x scripts/bump_version.py scripts/bump_version_enhanced.py scripts/sync_versions.py
         
         # Determine version argument
         if [[ -n "${{ github.event.inputs.custom_version }}" ]]; then
@@ -66,8 +84,8 @@ jobs:
         
         echo "Bumping version with argument: $VERSION_ARG"
         
-        # Run version bump script (non-interactive)
-        python scripts/bump_version.py "$VERSION_ARG" --no-tag --ci
+        # Use enhanced script with conflict detection
+        python scripts/bump_version_enhanced.py "$VERSION_ARG" --no-tag --ci --sync
         
         # Get the new version
         NEW_VERSION=$(python -c "import claude_cto; print(claude_cto.__version__)")
@@ -87,6 +105,15 @@ jobs:
       run: |
         NEW_VERSION="${{ steps.bump.outputs.new_version }}"
         
+        # Pull latest changes with rebase to avoid conflicts
+        git pull --rebase origin main || {
+          echo "⚠️  Rebase conflict detected, attempting to resolve..."
+          # Accept ours for version files
+          git checkout --ours claude_cto/__init__.py pyproject.toml smithery.yaml
+          git add claude_cto/__init__.py pyproject.toml smithery.yaml
+          git rebase --continue
+        }
+        
         # Check if tag already exists
         if git tag -l | grep -q "^v$NEW_VERSION$"; then
           echo "Tag v$NEW_VERSION already exists, skipping tag creation"
@@ -95,7 +122,8 @@ jobs:
           echo "Created tag v$NEW_VERSION"
         fi
         
-        git push origin main
+        # Push with lease to prevent overwriting concurrent changes
+        git push --force-with-lease origin main
         
         # Push tag only if it was created or doesn't exist on remote
         git push origin "v$NEW_VERSION" || echo "Tag v$NEW_VERSION already exists on remote"
