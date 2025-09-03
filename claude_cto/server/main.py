@@ -16,7 +16,10 @@ from sqlmodel import Session
 from .database import create_db_and_tables, get_session, app_dir
 from . import models, crud
 from .executor import TaskExecutor
+from .task_runner import IsolatedTaskRunner, TaskProcessManager
 from .orchestrator import TaskOrchestrator, CycleDetectedError, InvalidDependencyError
+from .port_manager import PortManager
+from .signal_handler import install_signal_handlers, get_signal_handler
 from .server_logger import (
     initialize_logging,
     log_lifecycle,
@@ -30,21 +33,32 @@ from .server_logger import (
 logger = initialize_logging(debug=False)
 
 
-# Core task execution wrapper: manages TaskExecutor lifecycle within server process
-# CRITICAL: Runs in main process due to Claude SDK OAuth requirements
+# Core task execution wrapper: manages TaskExecutor lifecycle in isolated process
+# NEW: Uses subprocess isolation to survive server crashes
 async def run_task_async(task_id: int):
     """
-    Task execution orchestration: delegates to TaskExecutor while handling server integration.
-    MUST run in main process - Claude SDK OAuth authentication fails in subprocesses.
-    Provides comprehensive logging and error handling for server stability.
+    Task execution orchestration: runs task in isolated subprocess for crash resilience.
+    Tasks continue running even if server process dies or restarts.
+    Uses subprocess with new session to prevent signal propagation.
     """
+    import os
+    
     try:
         # Task execution lifecycle logging: tracks execution phases for monitoring
         log_task_event(task_id, "execution_started")
-        # Core task delegation: TaskExecutor handles SDK interaction and task lifecycle
-        executor = TaskExecutor(task_id)
-        await executor.run()  # Complete task execution with full error handling
-        log_task_event(task_id, "execution_completed")
+        
+        # Check if we should use isolated execution (configurable)
+        use_isolated = os.environ.get("CLAUDE_CTO_ISOLATED_TASKS", "true").lower() == "true"
+        
+        if use_isolated:
+            # NEW: Run task in isolated subprocess that survives server crashes
+            await IsolatedTaskRunner.run_task_isolated(task_id)
+            log_task_event(task_id, "execution_delegated_to_subprocess")
+        else:
+            # Legacy mode: run in same process (original behavior)
+            executor = TaskExecutor(task_id)
+            await executor.run()  # Complete task execution with full error handling
+            log_task_event(task_id, "execution_completed")
     except Exception as e:
         # Server resilience: logs errors without crashing main server process
         logger.error(f"Task {task_id} failed: {e}", exc_info=True)
@@ -85,11 +99,22 @@ async def lifespan(app: FastAPI):
     """
     import os
     from .server_lock import ServerLock
+    from .recovery import RecoveryService
+    from .process_registry import get_process_registry
     from .recovery import perform_startup_recovery
     
     # Get server port from environment or use default
     port = int(os.environ.get("SERVER_PORT", "8000"))
+    
+    # Clean up duplicate servers on other ports
+    killed = PortManager.cleanup_duplicate_servers(keep_port=port)
+    if killed > 0:
+        logger.info(f"Cleaned up {killed} duplicate servers on other ports")
     server_lock = None
+    
+    # Install signal handlers for graceful shutdown
+    install_signal_handlers()
+    signal_handler = get_signal_handler()
     
     # Structured lifecycle logging: enables monitoring of server health transitions
     async with log_lifecycle("claude-cto"):
@@ -126,6 +151,18 @@ async def lifespan(app: FastAPI):
             # Background monitoring: tracks system resources and task performance
             asyncio.create_task(start_global_monitoring())
             logger.info("Memory monitoring started")
+            
+            # Phase 4: Register cleanup callbacks for graceful shutdown
+            def cleanup_on_shutdown():
+                logger.info("Running cleanup on shutdown...")
+                # Clean up isolated task info files
+                TaskProcessManager.cleanup_completed_tasks()
+                # Release server lock
+                if server_lock:
+                    server_lock.release()
+                logger.info("Cleanup complete")
+            
+            signal_handler.add_shutdown_callback(cleanup_on_shutdown)
 
             # Phase 4: Circuit breaker maintenance - prevents disk space accumulation
             logger.info("Starting circuit breaker cleanup...")
@@ -373,6 +410,32 @@ def health_check():
     """Simple health check endpoint with version info."""
     from claude_cto import __version__
     return {"status": "healthy", "service": "claude-cto", "version": __version__}
+
+
+@app.get("/api/v1/tasks/running/isolated")
+def get_isolated_tasks():
+    """
+    Get list of tasks running in isolated subprocesses.
+    These tasks survive server restarts.
+    """
+    running_tasks = TaskProcessManager.list_running_tasks()
+    return {
+        "isolated_tasks": running_tasks,
+        "count": len(running_tasks)
+    }
+
+
+@app.post("/api/v1/tasks/cleanup/isolated")
+def cleanup_isolated_tasks():
+    """
+    Clean up completed isolated task files.
+    Returns number of cleaned up tasks.
+    """
+    cleaned = TaskProcessManager.cleanup_completed_tasks()
+    return {
+        "cleaned": cleaned,
+        "message": f"Cleaned up {cleaned} completed isolated tasks"
+    }
 
 
 # Orchestration endpoints
