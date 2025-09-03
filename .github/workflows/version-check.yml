@@ -39,7 +39,7 @@ jobs:
           git fetch --tags --prune
           
           # Get current version
-          CURRENT_VERSION=$(python -c "import re; content=open('claude_cto/__init__.py').read(); print(re.search(r'__version__ = [\"\\']([^\"\\'])+[\"\\']', content).group(1))")
+          CURRENT_VERSION=$(python -c "import re; content=open('claude_cto/__init__.py').read(); print(re.search(r'__version__ = [\"\\']([^\"\\'']+)[\"\\']', content).group(1))")
           
           # Check if tag exists
           if git rev-parse "v$CURRENT_VERSION" >/dev/null 2>&1; then
