@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.16.0] - 2025-09-03
+
+- feat: add core auto-upgrade infrastructure
+- chore: bump version to 0.15.3 [skip ci]
+- fix: simplify version extraction in version-check workflow
+- chore: bump version to 0.15.2 [skip ci]
+- fix: update auto-publish workflow to sync all version files
+
+
 ## [0.15.3] - 2025-09-03
 
 - fix: simplify version extraction in version-check workflow
