@@ -22,38 +22,32 @@ classifiers = [
     "Framework :: FastAPI",
 ]
 
-# Core dependencies (always needed)
+# Core dependencies (always needed) - includes MCP functionality
 dependencies = [
     "sqlmodel>=0.0.14",
-    "claude-code-sdk>=0.0.19",
+    "claude-code-sdk>=0.0.19", 
     "alembic>=1.13.0",
+    "fastmcp>=2.0.0",
+    "httpx>=0.25.0",
+    "typer[rich]>=0.12.0",
+    "psutil>=5.9.0",
 ]
 
 [project.optional-dependencies]
-# For MCP-only users (lightweight)
-mcp = [
-    "fastmcp>=2.0.0",
-    "httpx>=0.25.0",
-]
-
-# For REST API + CLI users (no MCP)
+# Additional server dependencies (FastAPI REST API)
 server = [
     "fastapi>=0.100.0",
     "uvicorn[standard]>=0.23.0",
-    "typer[rich]>=0.12.0",
-    "httpx>=0.25.0",
-    "psutil>=5.9.0",
 ]
 
-# Everything - full installation
+# Full installation (everything including server)
 full = [
-    "fastapi>=0.100.0",
+    "fastapi>=0.100.0", 
     "uvicorn[standard]>=0.23.0",
-    "typer[rich]>=0.12.0",
-    "httpx>=0.25.0",
-    "fastmcp>=2.0.0",
-    "psutil>=5.9.0",
 ]
+
+# Kept for backwards compatibility
+mcp = []
 
 # Development dependencies
 dev = [
@@ -73,9 +67,9 @@ Changelog = "https://github.com/yigitkonur/claude-cto/blob/main/CHANGELOG.md"
 Smithery = "https://smithery.ai/@yigitkonur/claude-cto"
 
 [project.scripts]
-# CLI entry point (requires 'server' or 'full' extra)
+# CLI entry point (always available)
 claude-cto = "claude_cto.cli.main:cli_entry"
-# MCP entry point (requires 'mcp' or 'full' extra)
+# MCP entry point (always available)
 claude-cto-mcp = "claude_cto.mcp.factory:run_stdio"
 
 [build-system]
@@ -129,28 +123,28 @@ packages = [{include = "claude_cto"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"
-# Core dependencies (always needed)
+# Core dependencies (always needed) - includes MCP functionality
 sqlmodel = ">=0.0.14"
 claude-code-sdk = ">=0.0.19"
 alembic = ">=1.13.0"
+fastmcp = ">=2.0.0"
+httpx = ">=0.25.0"
+typer = {extras = ["rich"], version = ">=0.12.0"}
+psutil = ">=5.9.0"
 
-# Optional dependencies for different installation modes
+# Optional dependencies for server functionality
 fastapi = {version = ">=0.100.0", optional = true}
 uvicorn = {extras = ["standard"], version = ">=0.23.0", optional = true}
-typer = {extras = ["rich"], version = ">=0.12.0", optional = true}
-httpx = {version = ">=0.25.0", optional = true}
-fastmcp = {version = ">=2.0.0", optional = true}
-psutil = {version = ">=5.9.0", optional = true}
 
 [tool.poetry.extras]
-# For MCP-only users (lightweight)
-mcp = ["fastmcp", "httpx"]
+# For backwards compatibility
+mcp = []
 
-# For REST API + CLI users (no MCP)
-server = ["fastapi", "uvicorn", "typer", "httpx", "psutil"]
+# For REST API server functionality
+server = ["fastapi", "uvicorn"]
 
-# Everything - full installation
-full = ["fastapi", "uvicorn", "typer", "httpx", "fastmcp", "psutil"]
+# Full installation (everything including server)
+full = ["fastapi", "uvicorn"]
 
 [tool.poetry.urls]
 "Bug Tracker" = "https://github.com/yigitkonur/claude-cto/issues"
@@ -159,9 +153,9 @@ full = ["fastapi", "uvicorn", "typer", "httpx", "fastmcp", "psutil"]
 "Smithery" = "https://smithery.ai/@yigitkonur/claude-cto"
 
 [tool.poetry.scripts]
-# CLI entry point (requires 'server' or 'full' extra)
+# CLI entry point (always available)
 claude-cto = "claude_cto.cli.main:cli_entry"
-# MCP entry point (requires 'mcp' or 'full' extra)  
+# MCP entry point (always available)
 claude-cto-mcp = "claude_cto.mcp.factory:run_stdio"
 
 [tool.poetry.group.dev.dependencies]
