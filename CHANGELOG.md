@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.17.0] - 2025-09-03
+
+- feat: add upgrade command to CLI
+- docs: add version management guidelines to CLAUDE.md
+- chore: bump version to 0.16.0 [skip ci]
+- feat: add core auto-upgrade infrastructure
+- chore: bump version to 0.15.3 [skip ci]
+
+
 ## [0.16.0] - 2025-09-03
 
 - feat: add core auto-upgrade infrastructure
