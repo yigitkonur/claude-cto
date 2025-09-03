@@ -115,7 +115,7 @@ def run_stdio():
         
         if "import" in str(e).lower() or "module" in str(e).lower():
             print("🔧 Import issue detected. Try:", file=sys.stderr)
-            print("   1. pip install --upgrade claude-cto", file=sys.stderr)
+            print("   1. pip install --upgrade 'claude-cto[full]'", file=sys.stderr)
             print("   2. Check Python environment", file=sys.stderr)
         
         sys.exit(1)

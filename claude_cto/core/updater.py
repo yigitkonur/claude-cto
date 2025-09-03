@@ -237,12 +237,12 @@ class PackageUpgrader:
         try:
             if method == "pip":
                 result = subprocess.run([
-                    sys.executable, "-m", "pip", "install", "--upgrade", "claude-cto"
+                    sys.executable, "-m", "pip", "install", "--upgrade", "claude-cto[full]"
                 ], capture_output=True, text=True, timeout=120)
                 
             elif method == "uv":
                 result = subprocess.run([
-                    "uv", "pip", "install", "--upgrade", "claude-cto"
+                    "uv", "pip", "install", "--upgrade", "claude-cto[full]"
                 ], capture_output=True, text=True, timeout=120)
                 
             elif method == "poetry":
