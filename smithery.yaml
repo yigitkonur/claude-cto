@@ -43,7 +43,7 @@ build:
 # MCP server metadata
 name: "claude-cto"
 description: "🗿 Fire-and-forget task execution system for Claude Code SDK. Delegate complex coding tasks to AI agents with intelligent orchestration, dependency management, and parallel execution."
-version: 0.18.1
+version: 0.19.0
 author: "Yigit Konur"
 license: "MIT"
 homepage: "https://github.com/yigitkonur/claude-cto"

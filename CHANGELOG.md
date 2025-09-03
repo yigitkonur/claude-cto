@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.19.0] - 2025-09-03
+
+- feat: bulletproof MCP server auto-configuration system
+- fix: resolve MCP server migration and schema issues
+- chore: bump version to 0.18.1 [skip ci]
+- hotfix: fix upgrade command cache and method issues
+- chore: bump version to 0.18.0 [skip ci]
+
+
 ## [0.18.1] - 2025-09-03
 
 - hotfix: fix upgrade command cache and method issues
