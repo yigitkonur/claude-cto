@@ -1,0 +1,33 @@
+{
+  "task": {
+    "max_concurrent_tasks": 10,
+    "task_timeout_seconds": 7200,
+    "task_memory_limit_mb": 4096,
+    "use_isolated_tasks": true,
+    "cleanup_interval_days": 7,
+    "max_retries": 3,
+    "retry_delay_seconds": 60
+  },
+  "server": {
+    "port": 8000,
+    "host": "0.0.0.0",
+    "reload": false,
+    "workers": 1,
+    "log_level": "INFO",
+    "cleanup_on_startup": true,
+    "kill_duplicate_servers": true
+  },
+  "database": {
+    "pool_size": 5,
+    "pool_recycle": 3600,
+    "echo": false
+  },
+  "resources": {
+    "memory_warning_threshold": 80.0,
+    "memory_critical_threshold": 95.0,
+    "cpu_limit_percent": 75.0,
+    "disk_usage_limit_percent": 90.0,
+    "max_log_file_size_mb": 100,
+    "max_total_logs_gb": 10
+  }
+}

@@ -42,13 +42,15 @@ async def run_task_async(task_id: int):
     Uses subprocess with new session to prevent signal propagation.
     """
     import os
+    from .config import get_config
     
     try:
         # Task execution lifecycle logging: tracks execution phases for monitoring
         log_task_event(task_id, "execution_started")
         
         # Check if we should use isolated execution (configurable)
-        use_isolated = os.environ.get("CLAUDE_CTO_ISOLATED_TASKS", "true").lower() == "true"
+        config = get_config()
+        use_isolated = config.task.use_isolated_tasks
         
         if use_isolated:
             # NEW: Run task in isolated subprocess that survives server crashes
@@ -435,6 +437,41 @@ def cleanup_isolated_tasks():
     return {
         "cleaned": cleaned,
         "message": f"Cleaned up {cleaned} completed isolated tasks"
+    }
+
+
+@app.delete("/api/v1/tasks/{task_id}/kill")
+def kill_isolated_task(task_id: int, force: bool = False):
+    """
+    Kill a running isolated task.
+    
+    Args:
+        task_id: ID of the task to kill
+        force: Use SIGKILL instead of SIGTERM
+    """
+    killed = TaskProcessManager.kill_task(task_id, force=force)
+    if killed:
+        return {
+            "success": True,
+            "message": f"Task {task_id} killed successfully"
+        }
+    else:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Task {task_id} not found or already completed"
+        )
+
+
+@app.delete("/api/v1/tasks/kill/all")
+def kill_all_isolated_tasks():
+    """
+    Kill all running isolated tasks.
+    Emergency endpoint for stopping all tasks.
+    """
+    killed = TaskProcessManager.kill_all_tasks()
+    return {
+        "killed": killed,
+        "message": f"Killed {killed} running tasks"
     }
 
 
