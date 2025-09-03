@@ -208,7 +208,7 @@ def start_server_in_background() -> bool:
     port = 8000
 
     # Scan for available port (prevents conflicts with existing services)
-    for attempt in range(10):
+    for attempt in range(100):
         if is_port_available(host, port):
             break
         port += 1
@@ -373,7 +373,7 @@ def run(
             console.print("[bold yellow]To fix this, try:[/bold yellow]")
             console.print("  1. Start the server manually:")
             console.print("     [bright_white]$ claude-cto server start[/bright_white]\n")
-            console.print("  2. Check if port 8000-8010 are available:")
+            console.print("  2. Check if port 8000-8099 are available:")
             console.print("     [bright_white]$ lsof -i :8000[/bright_white]\n")
             console.print("  3. Kill any existing servers:")
             console.print("     [bright_white]$ pkill -f claude_cto.server[/bright_white]\n")
@@ -441,7 +441,7 @@ def status(
             console.print("[bold yellow]To fix this, try:[/bold yellow]")
             console.print("  1. Start the server manually:")
             console.print("     [bright_white]$ claude-cto server start[/bright_white]\n")
-            console.print("  2. Check if port 8000-8010 are available:")
+            console.print("  2. Check if port 8000-8099 are available:")
             console.print("     [bright_white]$ lsof -i :8000[/bright_white]\n")
             console.print("  3. Kill any existing servers:")
             console.print("     [bright_white]$ pkill -f claude_cto.server[/bright_white]\n")
@@ -579,7 +579,7 @@ def list():
             console.print("[bold yellow]To fix this, try:[/bold yellow]")
             console.print("  1. Start the server manually:")
             console.print("     [bright_white]$ claude-cto server start[/bright_white]\n")
-            console.print("  2. Check if port 8000-8010 are available:")
+            console.print("  2. Check if port 8000-8099 are available:")
             console.print("     [bright_white]$ lsof -i :8000[/bright_white]\n")
             console.print("  3. Kill any existing servers:")
             console.print("     [bright_white]$ pkill -f claude_cto.server[/bright_white]\n")
@@ -1065,7 +1065,7 @@ def server_start(
     # Find available port if auto_port is enabled
     original_port = port
     if auto_port:
-        max_attempts = 10
+        max_attempts = 100
         for attempt in range(max_attempts):
             if is_port_available(host, port):
                 break
