@@ -554,6 +554,91 @@ def help(ctx: typer.Context):
 
 
 @app.command(
+    help="""[bold yellow]Upgrade to the latest version[/bold yellow] ⬆️
+    
+Check for updates and upgrade claude-cto to the latest version.
+
+[bold]Usage:[/bold]
+  $ claude-cto upgrade          # Check and install updates
+  $ claude-cto upgrade --check  # Only check for updates
+  
+[bold]Examples:[/bold]
+  • Auto-upgrade:    claude-cto upgrade
+  • Check only:      claude-cto upgrade --check
+  • Force reinstall: claude-cto upgrade --force
+""",
+)
+def upgrade(
+    check_only: bool = typer.Option(False, "--check", help="Only check for updates without installing"),
+    force: bool = typer.Option(False, "--force", help="Force reinstall even if already up-to-date"),
+    method: Optional[str] = typer.Option(None, "--method", help="Installation method (auto-detect if not specified)")
+):
+    """Check for updates and upgrade claude-cto."""
+    from claude_cto.core.updater import VersionChecker, PackageUpgrader
+    from packaging import version as pkg_version
+    
+    checker = VersionChecker()
+    upgrader = PackageUpgrader()
+    
+    # Get current and latest versions
+    current = checker.get_current_version()
+    console.print(f"[cyan]Current version:[/cyan] {current}")
+    
+    # Check for latest version
+    with console.status("[yellow]Checking for updates...[/yellow]"):
+        latest = checker.get_latest_version()
+    
+    if latest is None:
+        console.print("[red]❌ Could not check for updates (network error)[/red]")
+        raise typer.Exit(1)
+    
+    if latest == current and not force:
+        console.print(f"[green]✅ You're already on the latest version ({current})[/green]")
+        raise typer.Exit(0)
+    
+    if pkg_version.parse(latest) > pkg_version.parse(current):
+        console.print(f"[yellow]🆕 New version available:[/yellow] {latest}")
+        
+        if check_only:
+            console.print("\n[cyan]Run 'claude-cto upgrade' to install the update[/cyan]")
+            raise typer.Exit(0)
+    elif not force:
+        console.print(f"[green]✅ You're already on the latest version ({current})[/green]")
+        raise typer.Exit(0)
+    
+    # Detect installation method if not specified
+    if not method:
+        method = upgrader.detect_installation_method()
+        if not method:
+            console.print("[red]❌ Could not detect installation method[/red]")
+            console.print("[yellow]Try specifying --method (pip, uv, or poetry)[/yellow]")
+            raise typer.Exit(1)
+        console.print(f"[cyan]Detected installation method:[/cyan] {method}")
+    
+    # Perform upgrade
+    console.print(f"\n[yellow]Upgrading to version {latest}...[/yellow]")
+    
+    success, message = upgrader.upgrade(target_version=latest if not force else None, method=method)
+    
+    if success:
+        console.print(f"[green]✅ {message}[/green]")
+        
+        # Verify upgrade
+        from importlib import reload
+        import claude_cto
+        reload(claude_cto)
+        new_version = claude_cto.__version__
+        
+        if new_version != current:
+            console.print(f"[green]Successfully upgraded from {current} to {new_version}![/green]")
+        else:
+            console.print(f"[green]Package reinstalled successfully![/green]")
+    else:
+        console.print(f"[red]❌ Upgrade failed: {message}[/red]")
+        raise typer.Exit(1)
+
+
+@app.command(
     name="list",
     help="""[bold blue]View all tasks[/bold blue] 📋
     
