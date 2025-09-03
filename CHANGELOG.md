@@ -1,5 +1,45 @@
 # Changelog
 
+## [0.14.0] - 2025-09-03
+
+### Major Features
+- **Task Process Isolation**: Tasks now run in isolated subprocesses that survive server crashes
+  - Tasks continue execution even if server is killed with SIGKILL
+  - Complete process group isolation prevents signal propagation
+  - Tested and verified: tasks complete successfully during server restarts
+
+- **Comprehensive Resource Management**
+  - Memory limits per task (default 4GB, configurable)
+  - Task timeout protection (default 2 hours)
+  - Concurrent task limits (default 10 tasks)
+  - Automatic cleanup of old runner files (7 days)
+  - CPU limits via ulimit on Unix systems
+
+- **Production-Ready Configuration System**
+  - Centralized configuration management (`config.py`)
+  - Environment variable overrides
+  - User and project-level config files
+  - Example configuration included
+
+### Critical Fixes
+- **Fixed database conflicts**: Forced new connections in subprocesses
+- **Fixed port proliferation**: PortManager prevents multiple servers
+- **Fixed resource exhaustion**: Hard limits prevent system overload
+- **Fixed orphaned processes**: Timeout and cleanup mechanisms
+
+### New API Endpoints
+- `DELETE /api/v1/tasks/{task_id}/kill` - Kill specific task
+- `DELETE /api/v1/tasks/kill/all` - Emergency kill all tasks
+- `GET /api/v1/tasks/running/isolated` - List isolated tasks
+- `POST /api/v1/tasks/cleanup/isolated` - Clean up completed tasks
+
+### Safety Features
+- Signal handlers for graceful shutdown
+- Database connection isolation
+- Memory limit enforcement
+- Automatic file cleanup
+- Task cancellation capability
+
 ## [0.12.1] - 2025-09-03
 
 - fix: update __version__ to 0.11.0
@@ -7,7 +47,6 @@
 - feat: implement comprehensive auto-recovery system for server crashes
 - chore: bump version to 0.10.2 [skip ci]
 - fix: expand port checking range from 10 to 100 ports
-
 
 ## [0.12.0] - 2025-09-03
 
