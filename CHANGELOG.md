@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.18.0] - 2025-09-03
+
+- feat: update CLI help to highlight new enterprise features
+- chore: bump version to 0.17.0 [skip ci]
+- feat: add upgrade command to CLI
+- docs: add version management guidelines to CLAUDE.md
+- chore: bump version to 0.16.0 [skip ci]
+
+
 ## [0.17.0] - 2025-09-03
 
 - feat: add upgrade command to CLI
