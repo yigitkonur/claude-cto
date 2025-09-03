@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.18.1] - 2025-09-03
+
+- hotfix: fix upgrade command cache and method issues
+- chore: bump version to 0.18.0 [skip ci]
+- feat: update CLI help to highlight new enterprise features
+- chore: bump version to 0.17.0 [skip ci]
+- feat: add upgrade command to CLI
+
+
 ## [0.18.0] - 2025-09-03
 
 - feat: update CLI help to highlight new enterprise features
