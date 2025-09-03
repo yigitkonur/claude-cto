@@ -240,10 +240,10 @@ jobs:
         python -c "import claude_cto; print(f'Successfully imported claude_cto v{claude_cto.__version__}')"
 
   homebrew-automation:
-    name: Update Homebrew Formula + Build Bottles
+    name: Update Homebrew Formula 
     needs: [version-and-publish, verify]
     if: success()
-    uses: ./.github/workflows/homebrew-automation.yml
+    uses: ./.github/workflows/homebrew-simple.yml
     with:
       version: ${{ needs.version-and-publish.outputs.version }}
       package_url: ${{ needs.version-and-publish.outputs.package_url }}
