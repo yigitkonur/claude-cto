@@ -17,6 +17,7 @@ from sqlalchemy import (
     Integer,
     String,
     DateTime,
+    inspect,
 )
 from sqlalchemy.exc import OperationalError
 from sqlmodel import SQLModel
@@ -169,7 +170,7 @@ class MigrationManager:
                 "Add orchestration support fields",
                 """
             -- Add orchestration table
-            CREATE TABLE IF NOT EXISTS orchestrationdb (
+            CREATE TABLE IF NOT EXISTS orchestrations (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 status TEXT NOT NULL DEFAULT 'pending',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -182,15 +183,15 @@ class MigrationManager:
             );
             
             -- Add orchestration fields to tasks
-            ALTER TABLE taskdb ADD COLUMN orchestration_id INTEGER REFERENCES orchestrationdb(id);
-            ALTER TABLE taskdb ADD COLUMN identifier TEXT;
-            ALTER TABLE taskdb ADD COLUMN depends_on TEXT;
-            ALTER TABLE taskdb ADD COLUMN initial_delay REAL DEFAULT 0;
-            ALTER TABLE taskdb ADD COLUMN dependency_failed_at TIMESTAMP;
+            ALTER TABLE tasks ADD COLUMN orchestration_id INTEGER REFERENCES orchestrations(id);
+            ALTER TABLE tasks ADD COLUMN identifier TEXT;
+            ALTER TABLE tasks ADD COLUMN depends_on TEXT;
+            ALTER TABLE tasks ADD COLUMN initial_delay REAL DEFAULT 0;
+            ALTER TABLE tasks ADD COLUMN dependency_failed_at TIMESTAMP;
             
             -- Add index for orchestration queries
-            CREATE INDEX IF NOT EXISTS idx_task_orchestration ON taskdb(orchestration_id);
-            CREATE INDEX IF NOT EXISTS idx_task_identifier ON taskdb(identifier);
+            CREATE INDEX IF NOT EXISTS idx_task_orchestration ON tasks(orchestration_id);
+            CREATE INDEX IF NOT EXISTS idx_task_identifier ON tasks(identifier);
             """,
             )
         )
@@ -201,7 +202,7 @@ class MigrationManager:
                 2,
                 "Add model field to tasks",
                 """
-            ALTER TABLE taskdb ADD COLUMN model TEXT DEFAULT 'sonnet';
+            ALTER TABLE tasks ADD COLUMN model TEXT DEFAULT 'sonnet';
             """,
             )
         )
@@ -212,9 +213,9 @@ class MigrationManager:
                 3,
                 "Add performance indexes",
                 """
-            CREATE INDEX IF NOT EXISTS idx_task_status ON taskdb(status);
-            CREATE INDEX IF NOT EXISTS idx_task_created ON taskdb(created_at);
-            CREATE INDEX IF NOT EXISTS idx_orch_status ON orchestrationdb(status);
+            CREATE INDEX IF NOT EXISTS idx_task_status ON tasks(status);
+            CREATE INDEX IF NOT EXISTS idx_task_created ON tasks(created_at);
+            CREATE INDEX IF NOT EXISTS idx_orch_status ON orchestrations(status);
             """,
             )
         )
@@ -225,9 +226,9 @@ class MigrationManager:
                 4,
                 "Add retry tracking fields",
                 """
-            ALTER TABLE taskdb ADD COLUMN retry_count INTEGER DEFAULT 0;
-            ALTER TABLE taskdb ADD COLUMN max_retries INTEGER DEFAULT 3;
-            ALTER TABLE taskdb ADD COLUMN last_retry_at TIMESTAMP;
+            ALTER TABLE tasks ADD COLUMN retry_count INTEGER DEFAULT 0;
+            ALTER TABLE tasks ADD COLUMN max_retries INTEGER DEFAULT 3;
+            ALTER TABLE tasks ADD COLUMN last_retry_at TIMESTAMP;
             """,
             )
         )
@@ -243,10 +244,10 @@ class MigrationManager:
         """
         try:
             # Get current schema
-            inspector = self.engine.inspect(self.engine)
+            inspector = inspect(self.engine)
 
             # Check for required tables
-            required_tables = ["taskdb", "orchestrationdb", "schema_migrations"]
+            required_tables = ["tasks", "orchestrations", "schema_migrations"]
             existing_tables = inspector.get_table_names()
 
             for table in required_tables:
@@ -254,8 +255,8 @@ class MigrationManager:
                     logger.warning(f"Missing required table: {table}")
                     return False
 
-            # Check for required columns in taskdb
-            task_columns = [col["name"] for col in inspector.get_columns("taskdb")]
+            # Check for required columns in tasks
+            task_columns = [col["name"] for col in inspector.get_columns("tasks")]
             required_task_columns = [
                 "id",
                 "status",
@@ -269,7 +270,7 @@ class MigrationManager:
 
             for col in required_task_columns:
                 if col not in task_columns:
-                    logger.warning(f"Missing required column in taskdb: {col}")
+                    logger.warning(f"Missing required column in tasks: {col}")
                     return False
 
             return True
@@ -318,8 +319,8 @@ def run_migrations(db_url: str) -> None:
 
     if current_version == 0:
         # Check if tables already exist (legacy database)
-        inspector = manager.engine.inspect(manager.engine)
-        if "taskdb" in inspector.get_table_names():
+        inspector = inspect(manager.engine)
+        if "tasks" in inspector.get_table_names():
             logger.info("Detected existing database without migration tracking")
             # Run migrations to update schema
             manager.run_migrations()
