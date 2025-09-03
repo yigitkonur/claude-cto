@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.15.3] - 2025-09-03
+
+- fix: simplify version extraction in version-check workflow
+- chore: bump version to 0.15.2 [skip ci]
+- fix: update auto-publish workflow to sync all version files
+- fix: sync version to 0.15.1 and fix version-check workflow
+- chore: bump version to 0.15.1 [skip ci]
+
+
 ## [0.15.2] - 2025-09-03
 
 - fix: update auto-publish workflow to sync all version files
