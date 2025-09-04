@@ -1,6 +1,6 @@
 [project]
 name = "claude-cto"
-version = "0.20.0"
+version = "0.20.1"
 description = "Fire-and-forget task execution system for Claude Code SDK with CLI and MCP interfaces"
 authors = [{name = "Yigit Konur", email = "yigit@thinkbuddy.ai"}]
 readme = "README.md"
@@ -96,7 +96,7 @@ members = []
 # Keep existing Poetry config for backwards compatibility
 [tool.poetry]
 name = "claude-cto"
-version = "0.20.0"
+version = "0.20.1"
 description = "Fire-and-forget task execution system for Claude Code SDK with CLI and MCP interfaces"
 authors = ["Yigit Konur <yigit@thinkbuddy.ai>"]
 readme = "README.md"
