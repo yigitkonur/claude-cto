@@ -67,7 +67,9 @@ async def create_orchestration(
 # User says: "Refactor my codebase to use type hints and add tests"
 
 # Claude would call:
-result = await create_orchestration(tasks=[
+async def example_usage():
+    """Example of how Claude would use the orchestration tool."""
+    result = await create_orchestration(tasks=[
     {
         "identifier": "analyze_types",
         "execution_prompt": "Analyze all Python files in /Users/john/project and identify missing type hints",
@@ -103,13 +105,19 @@ result = await create_orchestration(tasks=[
         "initial_delay": 1.0,
         "model": "haiku"
     }
-])
+    ])
+    
+    # Claude would then say:
+    # "I've created an orchestration with 5 tasks that will:
+    #  1. First analyze your code for missing type hints
+    #  2. Add type hints based on the analysis
+    #  3. Then in parallel: validate the types with mypy AND write tests
+    #  4. Finally run all tests to ensure everything works
+    #
+    # The orchestration ID is 7. Tasks will run automatically as their dependencies complete."
+    
+    return result
 
-# Claude would then say:
-# "I've created an orchestration with 5 tasks that will:
-#  1. First analyze your code for missing type hints
-#  2. Add type hints based on the analysis
-#  3. Then in parallel: validate the types with mypy AND write tests
-#  4. Finally run all tests to ensure everything works
-#
-# The orchestration ID is 7. Tasks will run automatically as their dependencies complete."
+# Run the example (commented out to avoid execution)
+# import asyncio
+# asyncio.run(example_usage())

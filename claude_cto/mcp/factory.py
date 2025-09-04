@@ -85,9 +85,45 @@ def create_proxy(**kwargs) -> FastMCP:
     return create_mcp_server(mode="proxy", **kwargs)
 
 
+def validate_startup_config():
+    """Validate configuration and provide auto-healing if needed."""
+    try:
+        from .auto_config import validate_config_paths, migrate_config_paths
+        
+        # Check for configuration issues
+        issues = validate_config_paths()
+        if issues:
+            # Log issues but don't fail startup
+            logging.warning("Configuration issues detected:")
+            for issue in issues:
+                logging.warning(f"  • {issue}")
+            
+            # Attempt automatic healing
+            logging.info("Attempting automatic configuration repair...")
+            try:
+                files_fixed, messages = migrate_config_paths(dry_run=False)
+                if files_fixed > 0:
+                    logging.info(f"✓ Automatically fixed {files_fixed} configuration file(s)")
+                    for message in messages:
+                        if "✓" in message or "✅" in message:
+                            logging.info(f"  {message}")
+            except Exception as e:
+                logging.warning(f"Auto-repair failed: {e}")
+                
+    except ImportError:
+        # auto_config module not available, skip validation
+        pass
+    except Exception as e:
+        # Don't let config validation break startup
+        logging.warning(f"Config validation failed: {e}")
+
+
 def run_stdio():
     """Entry point for claude-cto-mcp CLI command with robust error handling."""
     try:
+        # Validate and potentially fix configuration issues
+        validate_startup_config()
+        
         # Initialize database and perform migrations
         from ..migrations.manager import run_migrations
         from pathlib import Path
@@ -118,6 +154,12 @@ def run_stdio():
             print("   1. pip install --upgrade claude-cto", file=sys.stderr)
             print("   2. Check Python environment", file=sys.stderr)
         
+        if "config" in str(e).lower() or "path" in str(e).lower():
+            print("🔧 Configuration issue detected. Try:", file=sys.stderr)
+            print("   1. python -m claude_cto.mcp.auto_config diagnose", file=sys.stderr)
+            print("   2. python -m claude_cto.mcp.auto_config fix", file=sys.stderr)
+            print("   3. Check if Python path still exists", file=sys.stderr)
+        
         sys.exit(1)
 
 
@@ -133,12 +175,33 @@ def main():
     parser.add_argument("--log-dir", help="Log directory for standalone mode")
     parser.add_argument("--configure", action="store_true", 
                        help="Run auto-configuration for Claude Code")
+    parser.add_argument("--validate", action="store_true",
+                       help="Validate configuration and exit")
+    parser.add_argument("--fix-config", action="store_true",
+                       help="Fix configuration issues and exit")
     
     args = parser.parse_args()
     
     if args.configure:
         from .auto_config import auto_configure
         success = auto_configure()
+        sys.exit(0 if success else 1)
+    
+    if args.validate:
+        from .auto_config import validate_config_paths
+        issues = validate_config_paths()
+        if issues:
+            print("Configuration issues found:", file=sys.stderr)
+            for issue in issues:
+                print(f"  • {issue}", file=sys.stderr)
+            sys.exit(1)
+        else:
+            print("✅ All configurations are valid")
+            sys.exit(0)
+    
+    if args.fix_config:
+        from .auto_config import auto_fix_configurations
+        success = auto_fix_configurations()
         sys.exit(0 if success else 1)
     
     # Set environment variables from args
