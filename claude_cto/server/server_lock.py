@@ -68,64 +68,106 @@ class ServerLock:
             logger.error(f"Error reading lock file: {e}")
             return False, None
     
-    def acquire(self, force: bool = False, kill_existing: bool = False) -> bool:
+    def acquire(self, force: bool = False, kill_existing: bool = False, timeout: int = 30) -> bool:
         """
         Acquire server lock for this port.
         
         Args:
             force: Remove stale locks automatically
             kill_existing: Kill existing server if running
+            timeout: Max seconds to wait for lock acquisition
             
         Returns:
             True if lock acquired, False otherwise
         """
-        is_running, existing_pid = self.is_server_running()
+        start_time = time.time()
         
-        if is_running and existing_pid:
-            if kill_existing:
-                # Kill existing server
-                logger.warning(f"Killing existing server {existing_pid} on port {self.port}")
+        while True:
+            is_running, existing_pid = self.is_server_running()
+            
+            if is_running and existing_pid:
+                if kill_existing:
+                    # Kill existing server
+                    logger.warning(f"Killing existing server {existing_pid} on port {self.port}")
+                    try:
+                        # First try graceful termination
+                        os.kill(existing_pid, signal.SIGTERM)
+                        # Wait for process to die
+                        for _ in range(10):
+                            if not psutil.pid_exists(existing_pid):
+                                break
+                            time.sleep(0.5)
+                        else:
+                            # Force kill if still alive
+                            logger.warning(f"Force killing server {existing_pid}")
+                            os.kill(existing_pid, signal.SIGKILL)
+                            time.sleep(1)
+                        
+                        # Verify process is dead
+                        if psutil.pid_exists(existing_pid):
+                            logger.error(f"Failed to kill server {existing_pid}")
+                            return False
+                            
+                    except (ProcessLookupError, PermissionError) as e:
+                        # Process might have died already
+                        if psutil.pid_exists(existing_pid):
+                            logger.error(f"Failed to kill existing server: {e}")
+                            return False
+                        else:
+                            logger.info(f"Server {existing_pid} already dead")
+                    
+                    # Continue to try acquiring lock after killing
+                    continue
+                    
+                else:
+                    # Check if we've exceeded timeout
+                    if time.time() - start_time > timeout:
+                        logger.error(f"Timeout: Server already running on port {self.port} (PID {existing_pid})")
+                        return False
+                    
+                    # Wait and retry
+                    logger.info(f"Server running on port {self.port} (PID {existing_pid}), waiting...")
+                    time.sleep(2)
+                    continue
+            
+            # Remove stale lock if exists
+            if self.lock_file.exists() and (force or not is_running):
                 try:
-                    os.kill(existing_pid, signal.SIGTERM)
-                    # Wait for process to die
-                    for _ in range(10):
-                        if not psutil.pid_exists(existing_pid):
-                            break
-                        time.sleep(0.5)
-                    else:
-                        # Force kill if still alive
-                        os.kill(existing_pid, signal.SIGKILL)
-                        time.sleep(0.5)
-                except (ProcessLookupError, PermissionError) as e:
-                    logger.error(f"Failed to kill existing server: {e}")
-                    return False
-            else:
-                # Server already running, cannot acquire lock
-                logger.error(f"Server already running on port {self.port} (PID {existing_pid})")
-                return False
-        
-        # Remove stale lock if exists
-        if self.lock_file.exists() and (force or not is_running):
+                    # Check if lock file is stale (older than 1 hour)
+                    lock_age = time.time() - self.lock_file.stat().st_mtime
+                    if lock_age > 3600:  # 1 hour
+                        logger.warning(f"Lock file is {lock_age:.0f}s old, removing as stale")
+                    
+                    self.lock_file.unlink()
+                    logger.info(f"Removed stale lock file for port {self.port}")
+                except OSError as e:
+                    logger.error(f"Failed to remove lock file: {e}")
+                    # Try to continue anyway
+            
+            # Create new lock file
             try:
-                self.lock_file.unlink()
-                logger.info(f"Removed stale lock file for port {self.port}")
+                # Ensure directory exists
+                self.LOCK_DIR.mkdir(exist_ok=True, parents=True)
+                
+                # Write PID atomically
+                temp_file = self.lock_file.with_suffix('.tmp')
+                temp_file.write_text(str(self.pid))
+                temp_file.replace(self.lock_file)
+                
+                logger.info(f"Acquired lock for port {self.port} (PID {self.pid})")
+                return True
+                
             except OSError as e:
-                logger.error(f"Failed to remove lock file: {e}")
-                return False
-        
-        # Create new lock file
-        try:
-            # Write PID atomically
-            temp_file = self.lock_file.with_suffix('.tmp')
-            temp_file.write_text(str(self.pid))
-            temp_file.replace(self.lock_file)
-            
-            logger.info(f"Acquired lock for port {self.port} (PID {self.pid})")
-            return True
-            
-        except OSError as e:
-            logger.error(f"Failed to create lock file: {e}")
-            return False
+                logger.error(f"Failed to create lock file: {e}")
+                
+                # Check if we've exceeded timeout
+                if time.time() - start_time > timeout:
+                    logger.error(f"Timeout: Could not acquire lock after {timeout}s")
+                    return False
+                
+                # Wait and retry
+                time.sleep(1)
+                continue
     
     def release(self) -> None:
         """Release server lock on shutdown."""

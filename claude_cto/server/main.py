@@ -124,8 +124,20 @@ async def lifespan(app: FastAPI):
             # Phase 0: Acquire server lock for single instance enforcement
             logger.info(f"Acquiring server lock for port {port}...")
             server_lock = ServerLock(port)
-            if not server_lock.acquire(force=True, kill_existing=False):
-                raise RuntimeError(f"Could not acquire server lock for port {port} - another instance may be running")
+            
+            # First try with force cleanup of stale locks
+            if not server_lock.acquire(force=True, kill_existing=False, timeout=5):
+                logger.warning(f"Failed to acquire lock, attempting cleanup...")
+                
+                # Clean up all stale locks
+                cleaned = ServerLock.cleanup_all_locks()
+                if cleaned > 0:
+                    logger.info(f"Cleaned {cleaned} stale lock(s)")
+                
+                # Try again with kill_existing option
+                if not server_lock.acquire(force=True, kill_existing=True, timeout=10):
+                    raise RuntimeError(f"Could not acquire server lock for port {port} - another instance may be running")
+            
             logger.info(f"Server lock acquired for port {port}")
             
             # Phase 0.5: Perform recovery from previous crashes

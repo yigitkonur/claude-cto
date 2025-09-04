@@ -1961,6 +1961,109 @@ def server_status(
 
 
 @server_app.command(
+    "cleanup",
+    help="""
+[bold yellow]Clean up stale processes and locks[/bold yellow]
+
+[bold]Cleanup Operations[/bold]
+  • Kill all stale Claude CTO processes
+  • Remove all lock files
+  • Clean process registry
+  • Reset server state
+
+[bold]Cleanup Options[/bold]
+  • Full cleanup: [cyan]claude-cto server cleanup[/cyan]
+  • Force kill all: [cyan]claude-cto server cleanup --force[/cyan]
+  • Dry run: [cyan]claude-cto server cleanup --dry-run[/cyan]
+
+[dim]Use when server fails to start due to lock conflicts[/dim]
+""",
+)
+def server_cleanup(
+    force: bool = typer.Option(False, "--force", help="Force kill all processes"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Show what would be cleaned without doing it")
+):
+    """Clean up stale processes and locks."""
+    import subprocess
+    from pathlib import Path
+    from claude_cto.server.server_lock import ServerLock
+    
+    console.print("[yellow]🧹 Cleaning up server state...[/yellow]\n")
+    
+    if dry_run:
+        console.print("[cyan]DRY RUN MODE - No changes will be made[/cyan]\n")
+    
+    # 1. Kill stale processes
+    console.print("[bold]1. Checking for stale processes...[/bold]")
+    try:
+        # Find Claude CTO processes
+        result = subprocess.run(
+            ["ps", "aux"], 
+            capture_output=True, 
+            text=True
+        )
+        
+        processes_killed = 0
+        for line in result.stdout.split('\n'):
+            if 'claude_cto.server' in line or 'uvicorn.*claude_cto' in line:
+                parts = line.split()
+                if len(parts) > 1:
+                    pid = parts[1]
+                    if not dry_run:
+                        try:
+                            subprocess.run(["kill", "-9" if force else "-15", pid], check=False)
+                            processes_killed += 1
+                            console.print(f"  [red]✗[/red] Killed process {pid}")
+                        except:
+                            pass
+                    else:
+                        console.print(f"  [yellow]Would kill[/yellow] process {pid}")
+        
+        if processes_killed == 0 and not dry_run:
+            console.print("  [green]✓[/green] No stale processes found")
+    except Exception as e:
+        console.print(f"  [red]Error checking processes: {e}[/red]")
+    
+    # 2. Clean lock files
+    console.print("\n[bold]2. Cleaning lock files...[/bold]")
+    if not dry_run:
+        cleaned = ServerLock.cleanup_all_locks()
+        if cleaned > 0:
+            console.print(f"  [green]✓[/green] Cleaned {cleaned} lock file(s)")
+        else:
+            console.print("  [green]✓[/green] No stale locks found")
+    else:
+        lock_dir = Path("/tmp/claude-cto-locks")
+        if lock_dir.exists():
+            locks = list(lock_dir.glob("*.pid"))
+            if locks:
+                console.print(f"  [yellow]Would clean[/yellow] {len(locks)} lock file(s)")
+            else:
+                console.print("  No locks to clean")
+    
+    # 3. Clean process registry
+    console.print("\n[bold]3. Cleaning process registry...[/bold]")
+    registry_path = Path.home() / ".claude-cto" / "process_registry.json"
+    if registry_path.exists():
+        if not dry_run:
+            try:
+                with open(registry_path, 'w') as f:
+                    f.write('{}')
+                console.print("  [green]✓[/green] Process registry reset")
+            except Exception as e:
+                console.print(f"  [red]Error resetting registry: {e}[/red]")
+        else:
+            console.print("  [yellow]Would reset[/yellow] process registry")
+    else:
+        console.print("  [green]✓[/green] No process registry to clean")
+    
+    if not dry_run:
+        console.print("\n[green]✨ Cleanup complete! Server ready to start.[/green]")
+        console.print("[dim]Start server with: claude-cto server start[/dim]")
+    else:
+        console.print("\n[cyan]Dry run complete. Run without --dry-run to perform cleanup.[/cyan]")
+
+@server_app.command(
     "recover",
     help="""
 [bold yellow]Full system recovery after crashes[/bold yellow]
